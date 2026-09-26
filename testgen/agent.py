@@ -37,6 +37,7 @@ from .mutation import describe_survivors, run_mutation_testing
 from .runner import RunResult, describe_missing, run_tests
 
 LOGS_DIR = ROOT_DIR / "logs"
+MUTANTS_PER_PROMPT = 6   # số mutant còn sống tối đa đưa vào một prompt
 OUTPUT_DIR = ROOT_DIR / "generated_tests"
 
 
@@ -76,6 +77,7 @@ class IterationLog:
     mutants_total: int = 0
     mutants_killed: int = 0
     survived_mutants: list = field(default_factory=list)
+    shown_mutant_ids: list = field(default_factory=list)   # mutant đã đưa vào prompt (GĐ7: loại khỏi tập chấm)
     suspected: dict = field(default_factory=dict)       # {tên test: lý do}
     classifications: list = field(default_factory=list)  # kết quả phân loại của LLM ở vòng này
     removed_tests: list = field(default_factory=list)
@@ -109,6 +111,7 @@ class TestGenAgent:
         self.no_improve = 0                     # đếm số lần cải tiến không tăng chỉ số
         self.best_score = -1.0
         self.last_mutation = None               # MutationResult gần nhất (GĐ5)
+        self.last_mutation_code = None
         self.pending_lessons = []               # bài học chờ xác nhận (GĐ6)
         self.pending_good = None                # test mới chờ xác nhận là "tốt" (GĐ6)
         self.lessons_used = ""
@@ -133,6 +136,7 @@ class TestGenAgent:
                 entry = self._new_entry(it, result)
 
                 if it == self.config.max_iterations:
+                    self._rollback_if_broken(result)
                     self._finish(entry, "stop", f"Hết số vòng tối đa ({self.config.max_iterations})")
                     break
 
@@ -143,8 +147,8 @@ class TestGenAgent:
             # Lỗi gọi LLM (mất mạng, hết tiền...): dừng êm, giữ bộ test tốt nhất hiện có
             self.stop_reason = f"Lỗi gọi LLM: {exc}"
             self._message(self.stop_reason)
-            if not self.code and self.last_good_code:
-                self.code = self.last_good_code
+            if self.last_good_code and (not self.code or run_tests(self.module_path, self.code).collection_error):
+                self.code = self.last_good_code  # bộ test hiện tại hỏng -> quay lui
 
         return self._save()
 
@@ -296,6 +300,7 @@ class TestGenAgent:
         mres = run_mutation_testing(self.module_path, self.code, max_mutants=self.config.max_mutants,
                                     timeout=self.config.test_timeout)
         self.last_mutation = mres
+        self.last_mutation_code = self.code   # mutation score này ứng với đúng bộ test này
         entry.phase = "mutation"
         entry.mutation_score, entry.mutants_total, entry.mutants_killed = (
             mres.score, mres.total, mres.killed + mres.timeout)
@@ -315,10 +320,11 @@ class TestGenAgent:
 
         entry.action = "kill_mutants"
         entry.reason = (f"Mutation score {mres.score}% < {self.config.mutation_threshold}% -> đưa "
-                        f"{min(6, mres.survived)} mutant còn sống cho LLM viết test mới")
+                        f"{min(MUTANTS_PER_PROMPT, mres.survived)} mutant còn sống cho LLM viết test mới")
         self._message(entry.reason)
+        entry.shown_mutant_ids = [m.id for m in mres.survivors()[:MUTANTS_PER_PROMPT]]
         prompt = prompts.mutation_prompt(self.module_name, cu.number_lines(self.source), self.code,
-                                         describe_survivors(mres))
+                                         describe_survivors(mres, limit=MUTANTS_PER_PROMPT))
         answer = self.client.chat(prompts.SYSTEM_PROMPT, prompt, task="kill_mutants")
         before = self._test_names()
         self._merge(cu.extract_code(answer), on_conflict="rename")
@@ -336,6 +342,16 @@ class TestGenAgent:
             self.code = cu.merge_tests(self.code, new_code, on_conflict=on_conflict)
         except SyntaxError as exc:
             self._message(f"Code LLM trả về sai cú pháp ({exc.msg}) -> bỏ qua lần này")
+            return
+        # LLM có thể trả lại một test nghi bug nhưng thiếu decorator -> gắn lại nhãn
+        for name, reason in self.suspected.items():
+            self.code = cu.add_suspected_marker(self.code, name, reason)
+
+    def _rollback_if_broken(self, result: RunResult):
+        """Kết thúc mà file test đang hỏng (syntax/import) -> quay về phiên bản chạy được gần nhất."""
+        if result.collection_error and self.last_good_code:
+            self.code = self.last_good_code
+            self._message("File test cuối cùng bị hỏng -> quay lui về phiên bản chạy được gần nhất")
 
     def _improved(self, score: float) -> bool:
         """Cập nhật bộ đếm "không cải thiện". Trả về True nếu còn nên tiếp tục cải tiến."""
@@ -357,7 +373,7 @@ class TestGenAgent:
         if self.last_mutation is not None:
             entry.mutation_score = self.last_mutation.score
             entry.mutants_total = self.last_mutation.total
-            entry.mutants_killed = self.last_mutation.killed
+            entry.mutants_killed = self.last_mutation.killed + self.last_mutation.timeout
         self.iterations.append(entry)
         self._message(f"Vòng {it}: {result.passed} pass, {result.failed + result.errors} fail, "
                       f"{result.xfailed} nghi bug | line {result.line_coverage}% | branch {result.branch_coverage}%")
@@ -441,7 +457,9 @@ class TestGenAgent:
 
     # ================================================================ LƯU KẾT QUẢ
     def _save(self) -> dict:
-        final = self.iterations[-1] if self.iterations else None
+        final = run_tests(self.module_path, self.code, timeout=self.config.test_timeout) if self.code else None
+        final_mutation = (self.last_mutation.score
+                          if self.last_mutation is not None and self.last_mutation_code == self.code else None)
         summary = {
             "module": self.module_name,
             "module_path": str(self.module_path),
@@ -451,7 +469,7 @@ class TestGenAgent:
             "stop_reason": self.stop_reason,
             "iterations": [asdict(e) for e in self.iterations],
             "final_test_code": self.code,
-            "suspected_bugs": dict(self.suspected),
+            "suspected_bugs": {n: r for n, r in self.suspected.items() if n in cu.suspected_tests(self.code)},
             "snapshots": self.snapshots,
             "lessons_used": self.lessons_used,
             "final": {
@@ -460,7 +478,7 @@ class TestGenAgent:
                 "passed": final.passed if final else 0,
                 "failed": (final.failed + final.errors) if final else 0,
                 "xfailed": final.xfailed if final else 0,
-                "mutation_score": self.last_mutation.score if self.last_mutation else None,
+                "mutation_score": final_mutation,  # None nếu bộ test cuối chưa được đo mutation
                 "num_iterations": max(0, len(self.iterations) - 1),
             },
             "stats": {**self.client.stats(), "total_seconds": round(time.time() - self.start_time, 1)},

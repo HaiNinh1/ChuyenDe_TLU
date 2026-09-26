@@ -101,3 +101,29 @@ def test_stops_when_coverage_does_not_improve(setup):
     summary = agent.run()
     assert "không cải thiện" in summary["stop_reason"]
     assert summary["stats"]["llm_calls"] == 3  # sinh ban đầu + 2 lần bổ sung vô ích
+
+
+def test_suspected_marker_restored_when_llm_drops_it(setup):
+    module_path, client, _ = setup
+    first = ('```python\nimport mod\n\n\ndef test_boundary():\n    assert mod.grade(50) == "PASS"\n\n\n'
+             'def test_wrong():\n    assert mod.grade(10) == "PASS"\n```')
+    verdict = json.dumps({"verdicts": [
+        {"test": "test_boundary", "verdict": "SUSPECTED_BUG", "reason": "50 phải PASS"},
+        {"test": "test_wrong", "verdict": "TEST_WRONG", "reason": "10 -> FAIL"}]})
+    # LLM sửa test_wrong nhưng trả lại cả test_boundary KHÔNG có decorator
+    fix = ('```python\ndef test_boundary():\n    assert mod.grade(50) == "PASS"\n\n\n'
+           'def test_wrong():\n    assert mod.grade(10) == "FAIL"\n```')
+    client.mock_responses = [first, verdict, fix]
+    summary = TestGenAgent(module_path, client=client, config=AgentConfig(max_iterations=3)).run()
+    assert "SUSPECTED_BUG" in summary["final_test_code"]
+    assert summary["final"]["failed"] == 0
+
+
+def test_rollback_when_run_ends_with_broken_file(setup):
+    module_path, client, _ = setup
+    good = '```python\nimport mod\n\n\ndef test_pass():\n    assert mod.grade(80) == "PASS"\n```'
+    broken = "```python\nfrom mod import khong_ton_tai\n\n\ndef test_x():\n    assert khong_ton_tai\n```"
+    client.mock_responses = [good, broken]
+    summary = TestGenAgent(module_path, client=client, config=AgentConfig(max_iterations=1)).run()
+    assert "khong_ton_tai" not in summary["final_test_code"]
+    assert summary["final"]["line_coverage"] > 0

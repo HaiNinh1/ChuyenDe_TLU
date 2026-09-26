@@ -29,14 +29,20 @@ def extract_lesson(text: str) -> str:
 
 
 def extract_json(text: str) -> dict:
-    """Lấy object JSON đầu tiên trong câu trả lời (LLM đôi khi bọc JSON trong ```json```)."""
-    start, end = text.find("{"), text.rfind("}")
-    if start == -1 or end == -1:
-        return {}
-    try:
-        return json.loads(text[start:end + 1])
-    except json.JSONDecodeError:
-        return {}
+    """Lấy object JSON trong câu trả lời (LLM hay bọc JSON trong ```json``` hoặc viết thêm chữ xung quanh).
+
+    Thử lần lượt từ mỗi dấu "{": raw_decode đọc đúng MỘT object JSON rồi dừng, nên chữ thừa (kể cả chữ có
+    dấu ngoặc nhọn) trước/sau JSON không làm hỏng việc đọc.
+    """
+    decoder = json.JSONDecoder()
+    for start in [i for i, ch in enumerate(text) if ch == "{"]:
+        try:
+            obj, _ = decoder.raw_decode(text, start)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(obj, dict):
+            return obj
+    return {}
 
 
 def is_valid_python(code: str) -> bool:
@@ -114,17 +120,25 @@ def merge_tests(base: str, new: str, on_conflict: str = "rename") -> str:
     new_tree = ast.parse(new)
     new_lines = new.splitlines()
     base_tree = ast.parse(base)
-    existing = _function_spans(base_tree)
+    spans = _function_spans(base_tree)      # hàm/class đang có trong file cũ
+    existing = dict(spans)                  # + các tên vừa thêm trong lần ghép này
+    base_lines = base.splitlines()
+    base_imports = {"\n".join(base_lines[n.lineno - 1:n.end_lineno]).strip()
+                    for n in base_tree.body if isinstance(n, (ast.Import, ast.ImportFrom))}
 
     imports, appended, replacements = [], [], {}
     for node in new_tree.body:
         start = min([node.lineno] + [d.lineno for d in getattr(node, "decorator_list", [])])
         snippet = "\n".join(new_lines[start - 1:node.end_lineno])
         if isinstance(node, (ast.Import, ast.ImportFrom)):
-            if snippet.strip() not in base:
+            if snippet.strip() not in base_imports and snippet.strip() not in imports:
                 imports.append(snippet.strip())
         elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-            if node.name in existing and on_conflict == "replace":
+            if node.name in spans and get_functions_code(base, [node.name]).strip() == snippet.strip():
+                continue  # LLM chép lại y nguyên hàm cũ -> bỏ qua, không nhân đôi
+            if node.name in spans and (on_conflict == "replace" or not node.name.startswith("test")):
+                # Sửa test, hoặc fixture/hàm phụ trùng tên: THAY bản cũ tại chỗ
+                # (không đổi tên fixture, vì các test mới vẫn gọi fixture bằng tên cũ)
                 replacements[node.name] = snippet
             elif node.name in existing:
                 new_name = _unique_name(node.name, set(existing))
@@ -139,7 +153,6 @@ def merge_tests(base: str, new: str, on_conflict: str = "rename") -> str:
 
     # 1) thay các hàm bị sửa (duyệt từ dưới lên để số dòng phía trên không bị lệch)
     lines = base.splitlines()
-    spans = _function_spans(base_tree)
     for name in sorted(replacements, key=lambda n: spans[n][0], reverse=True):
         start, end = spans[name]
         lines[start - 1:end] = replacements[name].splitlines()

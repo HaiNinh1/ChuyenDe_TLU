@@ -77,3 +77,27 @@ def test_add_marker_adds_pytest_import():
 
 def test_number_lines():
     assert cu.number_lines("a\nb").splitlines()[1] == "   2 | b"
+
+
+# ---- các trường hợp được phát hiện khi review code ----
+def test_extract_json_with_braces_in_surrounding_text():
+    text = 'Kết quả cho {test_x}:\n```json\n{"verdicts": [{"test": "test_x", "verdict": "SUSPECTED_BUG"}]}\n```'
+    assert cu.extract_json(text)["verdicts"][0]["verdict"] == "SUSPECTED_BUG"
+
+
+def test_merge_replaces_fixture_instead_of_renaming():
+    base = ("import pytest\n\n\n@pytest.fixture\ndef cart():\n    return []\n\n\n"
+            "def test_empty(cart):\n    assert cart == []\n")
+    new = ("@pytest.fixture\ndef cart():\n    return [1]\n\n\n"
+           "def test_empty(cart):\n    assert cart == []\n\n\n"   # LLM chép lại test cũ
+           "def test_one(cart):\n    assert len(cart) == 1\n")
+    merged = cu.merge_tests(base, new, on_conflict="rename")
+    assert "cart_v2" not in merged and "return [1]" in merged       # fixture được THAY, không đổi tên
+    assert cu.test_function_names(merged).count("test_empty") == 1  # test y nguyên chép lại -> bỏ qua
+    assert "test_empty_v2" not in merged
+
+
+def test_merge_import_dedup_is_exact():
+    base = "from shop import CartX\n\n\ndef test_a():\n    assert CartX\n"
+    merged = cu.merge_tests(base, "from shop import Cart\n\n\ndef test_b():\n    assert Cart\n")
+    assert "from shop import Cart\n" in merged

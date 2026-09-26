@@ -254,7 +254,7 @@ summary = st.session_state.get("summary")
 with tab_chart:
     if summary and summary["iterations"]:
         st.pyplot(progress_chart(summary["iterations"]))
-        st.dataframe(history_frame(summary["iterations"]), hide_index=True, use_container_width=True)
+        st.dataframe(history_frame(summary["iterations"]), hide_index=True)
     else:
         st.info("Chưa có dữ liệu. Hãy chạy agent hoặc replay một log.")
 
@@ -286,18 +286,18 @@ with tab_exp:
     results_csv = RESULTS_DIR / "results.csv"
     if results_csv.exists():
         st.subheader("Trung bình theo cấu hình")
-        st.dataframe(pd.read_csv(results_csv), hide_index=True, use_container_width=True)
+        st.dataframe(pd.read_csv(results_csv), hide_index=True)
         for image in ("summary.png", "mutation_by_module.png"):
             if (RESULTS_DIR / image).exists():
                 st.image(str(RESULTS_DIR / image))
         by_module = RESULTS_DIR / "results_by_module.csv"
         if by_module.exists():
             with st.expander("Chi tiết theo module"):
-                st.dataframe(pd.read_csv(by_module), hide_index=True, use_container_width=True)
+                st.dataframe(pd.read_csv(by_module), hide_index=True)
         runs = RESULTS_DIR / "runs.csv"
         if runs.exists():
             with st.expander("Dữ liệu thô (từng lần chạy)"):
-                st.dataframe(pd.read_csv(runs), hide_index=True, use_container_width=True)
+                st.dataframe(pd.read_csv(runs), hide_index=True)
         st.caption("Nguồn: `python evaluate.py`. Xem phần hạn chế trong HOC_TAP.md (GĐ7).")
     else:
         st.info("Chưa có kết quả. Chạy `python evaluate.py --quick` hoặc `python evaluate.py --runs 3`.")

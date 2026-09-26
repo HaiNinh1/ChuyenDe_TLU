@@ -1,0 +1,152 @@
+{
+  "module": "safe_parser",
+  "module_path": "C:\\Workin\\ChuyenDe\\targets\\safe_parser.py",
+  "label": "eval_C",
+  "config": {
+    "max_iterations": 6,
+    "line_threshold": 95.0,
+    "branch_threshold": 90.0,
+    "patience": 2,
+    "max_fix_attempts": 2,
+    "test_timeout": 60,
+    "use_mutation": true,
+    "mutation_threshold": 80.0,
+    "max_mutants": 20,
+    "use_memory": false,
+    "label": "eval_C"
+  },
+  "llm": {
+    "provider": "openrouter",
+    "model": "nvidia/nemotron-3-super-120b-a12b:free"
+  },
+  "stop_reason": "Đạt ngưỡng mutation score (100.0%)",
+  "iterations": [
+    {
+      "iteration": 0,
+      "phase": "repair",
+      "action": "fix_tests",
+      "reason": "1 test fail -> LLM phân loại: 0 nghi bug (giữ + gắn nhãn), 1 test sai (sửa), 0 xoá",
+      "test_code": "import pytest\nfrom safe_parser import (\n    ConfigError,\n    parse_int,\n    parse_config,\n    get_port,\n    safe_ratio,\n)\n\n\n# ------------------- parse_int -------------------\ndef test_parse_int_valid():\n    assert parse_int(\"42\") == 42\n    assert parse_int(\"  -7  \") == -7\n\n\ndef test_parse_int_with_default():\n    assert parse_int(None, default=5) == 5\n    assert parse_int(\"not_a_number\", default=0) == 0\n\n\ndef test_parse_int_invalid_raises():\n    with pytest.raises(ValueError):\n        parse_int(\"abc\")\n    with pytest.raises(ValueError):\n        parse_int(\"\")  # empty string after strip raises\n\n\n# ------------------- parse_config -------------------\ndef test_parse_config_basic():\n    assert parse_config(\"a=1;b=2\") == {\"a\": \"1\", \"b\": \"2\"}\n\n\ndef test_parse_config_whitespace_and_empty_parts():\n    assert parse_config(\" a = 1 ; b=2 ;\") == {\"a\": \"1\", \"b\": \"2\"}\n    assert parse_config(\";;a=1;;b=2;;\") == {\"a\": \"1\", \"b\": \"2\"}\n\n\ndef test_parse_config_value_contains_equal():\n    assert parse_config(\"key=val=ue\") == {\"key\": \"val=ue\"}\n\n\ndef test_parse_config_missing_equal():\n    with pytest.raises(ConfigError):\n        parse_config(\"noglue\")\n\n\ndef test_parse_config_empty_key():\n    with pytest.raises(ConfigError):\n        parse_config(\"=value\")\n\n\ndef test_parse_config_duplicate_key():\n    with pytest.raises(ConfigError):\n        parse_config(\"a=1;a=2\")\n\n\n# ------------------- get_port -------------------\ndef test_get_port_missing_returns_default():\n    assert get_port({}) == 8080\n    assert get_port({\"host\": \"localhost\"}) == 8080\n\n\ndef test_get_port_valid_values():\n    assert get_port({\"port\": \"8080\"}) == 8080\n    assert get_port({\"port\": 8080}) == 8080\n    assert get_port({\"port\": \"1\"}) == 1\n    assert get_port({\"port\": \"65535\"}) == 65535\n\n\ndef test_get_port_out_of_range_raises():\n    with pytest.raises(ConfigError):\n        get_port({\"port\": \"0\"})\n    with pytest.raises(ConfigError):\n        get_port({\"port\": \"-10\"})\n    with pytest.raises(ConfigError):\n        get_port({\"port\": \"65536\"})\n\n\ndef test_get_port_non_integer_raises():\n    with pytest.raises(ConfigError):\n        get_port({\"port\": \"abc\"})\n    with pytest.raises(ConfigError):\n        get_port({\"port\": None})  # None causes ValueError in parse_int -> ConfigError\n\n\n# ------------------- safe_ratio -------------------\ndef test_safe_ratio_normal():\n    assert safe_ratio(1, 2) == 0.5\n    assert safe_ratio(2, 3) == pytest.approx(0.67)  # 0.666... rounded to 2 dp\n    assert safe_ratio(-1, 4) == -0.25\n    assert safe_ratio(1.5, 2) == pytest.approx(0.75)\n\n\ndef test_safe_ratio_denominator_zero():\n    assert safe_ratio(5, 0) is None\n    assert safe_ratio(0, 0) is None\n\n\ndef test_safe_ratio_type_error():\n    assert safe_ratio(\"a\", 2) is None\n    assert safe_ratio(5, \"b\") is None\n    assert safe_ratio(None, 5) is None\n    assert safe_ratio(5, None) is None\n    assert safe_ratio(\"x\", \"y\") is None\n\n\n# Optional: test that rounding behaves as described (two decimal places)\ndef test_safe_ratio_rounding_edge():\n    # 1/3 = 0.333... -> 0.33\n    assert safe_ratio(1, 3) == pytest.approx(0.33)\n    # 2/3 = 0.666... -> 0.67\n    assert safe_ratio(2, 3) == pytest.approx(0.67)\n    # 1/6 = 0.1666... -> 0.17\n    assert safe_ratio(1, 6) == pytest.approx(0.17)\n",
+      "passed": 16,
+      "failed": 1,
+      "errors": 0,
+      "xfailed": 0,
+      "collection_error": "",
+      "line_coverage": 100.0,
+      "branch_coverage": 100.0,
+      "missing_lines": [],
+      "missing_branches": [],
+      "mutation_score": null,
+      "mutants_total": 0,
+      "mutants_killed": 0,
+      "survived_mutants": [],
+      "suspected": {},
+      "classifications": [
+        {
+          "test": "test_get_port_valid_values",
+          "verdict": "TEST_WRONG",
+          "reason": "Test assumes get_port accepts integer port values, but docstring states non-integer values should raise ConfigError, and parse_int only processes strings."
+        }
+      ],
+      "removed_tests": [],
+      "lesson": "Viết assert chỉ cho các trường hợp được docstring mô tả là thành công; các trường hợp gây ngoại lệ phải kiểm tra bằng `pytest.raises`, không giả định chúng trả về giá trị mong đợi.",
+      "llm_calls_so_far": 3,
+      "elapsed": 63.2
+    },
+    {
+      "iteration": 1,
+      "phase": "mutation",
+      "action": "kill_mutants",
+      "reason": "Mutation score 75.0% < 80.0% -> đưa 5 mutant còn sống cho LLM viết test mới",
+      "test_code": "from safe_parser import get_port\nimport pytest\nfrom safe_parser import (\n    ConfigError,\n    parse_int,\n    parse_config,\n    get_port,\n    safe_ratio,\n)\n\n\n# ------------------- parse_int -------------------\ndef test_parse_int_valid():\n    assert parse_int(\"42\") == 42\n    assert parse_int(\"  -7  \") == -7\n\n\ndef test_parse_int_with_default():\n    assert parse_int(None, default=5) == 5\n    assert parse_int(\"not_a_number\", default=0) == 0\n\n\ndef test_parse_int_invalid_raises():\n    with pytest.raises(ValueError):\n        parse_int(\"abc\")\n    with pytest.raises(ValueError):\n        parse_int(\"\")  # empty string after strip raises\n\n\n# ------------------- parse_config -------------------\ndef test_parse_config_basic():\n    assert parse_config(\"a=1;b=2\") == {\"a\": \"1\", \"b\": \"2\"}\n\n\ndef test_parse_config_whitespace_and_empty_parts():\n    assert parse_config(\" a = 1 ; b=2 ;\") == {\"a\": \"1\", \"b\": \"2\"}\n    assert parse_config(\";;a=1;;b=2;;\") == {\"a\": \"1\", \"b\": \"2\"}\n\n\ndef test_parse_config_value_contains_equal():\n    assert parse_config(\"key=val=ue\") == {\"key\": \"val=ue\"}\n\n\ndef test_parse_config_missing_equal():\n    with pytest.raises(ConfigError):\n        parse_config(\"noglue\")\n\n\ndef test_parse_config_empty_key():\n    with pytest.raises(ConfigError):\n        parse_config(\"=value\")\n\n\ndef test_parse_config_duplicate_key():\n    with pytest.raises(ConfigError):\n        parse_config(\"a=1;a=2\")\n\n\n# ------------------- get_port -------------------\ndef test_get_port_missing_returns_default():\n    assert get_port({}) == 8080\n    assert get_port({\"host\": \"localhost\"}) == 8080\n\n\ndef test_get_port_valid_values():\n    assert get_port({\"port\": \"8080\"}) == 8080\n    assert get_port({\"port\": \"1\"}) == 1\n    assert get_port({\"port\": \"65535\"}) == 65535\n\n\ndef test_get_port_out_of_range_raises():\n    with pytest.raises(ConfigError):\n        get_port({\"port\": \"0\"})\n    with pytest.raises(ConfigError):\n        get_port({\"port\": \"-10\"})\n    with pytest.raises(ConfigError):\n        get_port({\"port\": \"65536\"})\n\n\ndef test_get_port_non_integer_raises():\n    with pytest.raises(ConfigError):\n        get_port({\"port\": \"abc\"})\n    with pytest.raises(ConfigError):\n        get_port({\"port\": None})  # None causes ValueError in parse_int -> ConfigError\n\n\n# ------------------- safe_ratio -------------------\ndef test_safe_ratio_normal():\n    assert safe_ratio(1, 2) == 0.5\n    assert safe_ratio(2, 3) == pytest.approx(0.67)  # 0.666... rounded to 2 dp\n    assert safe_ratio(-1, 4) == -0.25\n    assert safe_ratio(1.5, 2) == pytest.approx(0.75)\n\n\ndef test_safe_ratio_denominator_zero():\n    assert safe_ratio(5, 0) is None\n    assert safe_ratio(0, 0) is None\n\n\ndef test_safe_ratio_type_error():\n    assert safe_ratio(\"a\", 2) is None\n    assert safe_ratio(5, \"b\") is None\n    assert safe_ratio(None, 5) is None\n    assert safe_ratio(5, None) is None\n    assert safe_ratio(\"x\", \"y\") is None\n\n\n# Optional: test that rounding behaves as described (two decimal places)\ndef test_safe_ratio_rounding_edge():\n    # 1/3 = 0.333... -> 0.33\n    assert safe_ratio(1, 3) == pytest.approx(0.33)\n    # 2/3 = 0.666... -> 0.67\n    assert safe_ratio(2, 3) == pytest.approx(0.67)\n    # 1/6 = 0.1666... -> 0.17\n    assert safe_ratio(1, 6) == pytest.approx(0.17)\n",
+      "passed": 17,
+      "failed": 0,
+      "errors": 0,
+      "xfailed": 0,
+      "collection_error": "",
+      "line_coverage": 100.0,
+      "branch_coverage": 100.0,
+      "missing_lines": [],
+      "missing_branches": [],
+      "mutation_score": 75.0,
+      "mutants_total": 20,
+      "mutants_killed": 15,
+      "survived_mutants": [
+        "Mutant #2, dòng 21: `raise ValueError(f\"Không phải số nguyên: {text!r}\")`  ->  `raise ValueError(f\"XXKhông phải số nguyên: {text!r}XX\")`",
+        "Mutant #10, dòng 39: `raise ConfigError(f\"Thiếu dấu '=' trong: {part!r}\")`  ->  `raise ConfigError(f\"XXThiếu dấu '=' trong: {part!r}XX\")`",
+        "Mutant #16, dòng 43: `raise ConfigError(\"Key rỗng\")`  ->  `raise ConfigError(\"XXKey rỗngXX\")`",
+        "Mutant #18, dòng 45: `raise ConfigError(f\"Key bị trùng: {key!r}\")`  ->  `raise ConfigError(f\"XXKey bị trùng: {key!r}XX\")`",
+        "Mutant #25, dòng 62: `raise ConfigError(\"Port phải là số nguyên\") from exc`  ->  `raise ConfigError(\"XXPort phải là số nguyênXX\") from exc`"
+      ],
+      "suspected": {},
+      "classifications": [],
+      "removed_tests": [],
+      "lesson": "",
+      "llm_calls_so_far": 4,
+      "elapsed": 91.8
+    },
+    {
+      "iteration": 2,
+      "phase": "done",
+      "action": "stop",
+      "reason": "Đạt ngưỡng mutation score (100.0%)",
+      "test_code": "from safe_parser import ConfigError, parse_int, parse_config, get_port\nfrom safe_parser import get_port\nimport pytest\nfrom safe_parser import (\n    ConfigError,\n    parse_int,\n    parse_config,\n    get_port,\n    safe_ratio,\n)\n\n\n# ------------------- parse_int -------------------\ndef test_parse_int_valid():\n    assert parse_int(\"42\") == 42\n    assert parse_int(\"  -7  \") == -7\n\n\ndef test_parse_int_with_default():\n    assert parse_int(None, default=5) == 5\n    assert parse_int(\"not_a_number\", default=0) == 0\n\n\ndef test_parse_int_invalid_raises():\n    with pytest.raises(ValueError):\n        parse_int(\"abc\")\n    with pytest.raises(ValueError):\n        parse_int(\"\")  # empty string after strip raises\n\n\n# ------------------- parse_config -------------------\ndef test_parse_config_basic():\n    assert parse_config(\"a=1;b=2\") == {\"a\": \"1\", \"b\": \"2\"}\n\n\ndef test_parse_config_whitespace_and_empty_parts():\n    assert parse_config(\" a = 1 ; b=2 ;\") == {\"a\": \"1\", \"b\": \"2\"}\n    assert parse_config(\";;a=1;;b=2;;\") == {\"a\": \"1\", \"b\": \"2\"}\n\n\ndef test_parse_config_value_contains_equal():\n    assert parse_config(\"key=val=ue\") == {\"key\": \"val=ue\"}\n\n\ndef test_parse_config_missing_equal():\n    with pytest.raises(ConfigError):\n        parse_config(\"noglue\")\n\n\ndef test_parse_config_empty_key():\n    with pytest.raises(ConfigError):\n        parse_config(\"=value\")\n\n\ndef test_parse_config_duplicate_key():\n    with pytest.raises(ConfigError):\n        parse_config(\"a=1;a=2\")\n\n\n# ------------------- get_port -------------------\ndef test_get_port_missing_returns_default():\n    assert get_port({}) == 8080\n    assert get_port({\"host\": \"localhost\"}) == 8080\n\n\ndef test_get_port_valid_values():\n    assert get_port({\"port\": \"8080\"}) == 8080\n    assert get_port({\"port\": \"1\"}) == 1\n    assert get_port({\"port\": \"65535\"}) == 65535\n\n\ndef test_get_port_out_of_range_raises():\n    with pytest.raises(ConfigError):\n        get_port({\"port\": \"0\"})\n    with pytest.raises(ConfigError):\n        get_port({\"port\": \"-10\"})\n    with pytest.raises(ConfigError):\n        get_port({\"port\": \"65536\"})\n\n\ndef test_get_port_non_integer_raises():\n    with pytest.raises(ConfigError):\n        get_port({\"port\": \"abc\"})\n    with pytest.raises(ConfigError):\n        get_port({\"port\": None})  # None causes ValueError in parse_int -> ConfigError\n\n\n# ------------------- safe_ratio -------------------\ndef test_safe_ratio_normal():\n    assert safe_ratio(1, 2) == 0.5\n    assert safe_ratio(2, 3) == pytest.approx(0.67)  # 0.666... rounded to 2 dp\n    assert safe_ratio(-1, 4) == -0.25\n    assert safe_ratio(1.5, 2) == pytest.approx(0.75)\n\n\ndef test_safe_ratio_denominator_zero():\n    assert safe_ratio(5, 0) is None\n    assert safe_ratio(0, 0) is None\n\n\ndef test_safe_ratio_type_error():\n    assert safe_ratio(\"a\", 2) is None\n    assert safe_ratio(5, \"b\") is None\n    assert safe_ratio(None, 5) is None\n    assert safe_ratio(5, None) is None\n    assert safe_ratio(\"x\", \"y\") is None\n\n\n# Optional: test that rounding behaves as described (two decimal places)\ndef test_safe_ratio_rounding_edge():\n    # 1/3 = 0.333... -> 0.33\n    assert safe_ratio(1, 3) == pytest.approx(0.33)\n    # 2/3 = 0.666... -> 0.67\n    assert safe_ratio(2, 3) == pytest.approx(0.67)\n    # 1/6 = 0.1666... -> 0.17\n    assert safe_ratio(1, 6) == pytest.approx(0.17)\n\n\ndef test_parse_int_value_error_message():\n    with pytest.raises(ValueError) as excinfo:\n        parse_int(\"abc\")\n    assert str(excinfo.value) == \"Không phải số nguyên: 'abc'\"\n\n\ndef test_parse_int_empty_string_message():\n    with pytest.raises(ValueError) as excinfo:\n        parse_int(\"\")\n    assert str(excinfo.value) == \"Không phải số nguyên: ''\"\n\n\ndef test_parse_config_missing_equal_message():\n    with pytest.raises(ConfigError) as excinfo:\n        parse_config(\"noglue\")\n    assert str(excinfo.value) == \"Thiếu dấu '=' trong: 'noglue'\"\n\n\ndef test_parse_config_empty_key_message():\n    with pytest.raises(ConfigError) as excinfo:\n        parse_config(\"=value\")\n    assert str(excinfo.value) == \"Key rỗng\"\n\n\ndef test_parse_config_duplicate_key_message():\n    with pytest.raises(ConfigError) as excinfo:\n        parse_config(\"a=1;a=2\")\n    assert str(excinfo.value) == \"Key bị trùng: 'a'\"\n\n\ndef test_get_port_non_integer_message():\n    with pytest.raises(ConfigError) as excinfo:\n        get_port({\"port\": \"abc\"})\n    assert str(excinfo.value) == \"Port phải là số nguyên\"\n",
+      "passed": 23,
+      "failed": 0,
+      "errors": 0,
+      "xfailed": 0,
+      "collection_error": "",
+      "line_coverage": 100.0,
+      "branch_coverage": 100.0,
+      "missing_lines": [],
+      "missing_branches": [],
+      "mutation_score": 100.0,
+      "mutants_total": 20,
+      "mutants_killed": 20,
+      "survived_mutants": [],
+      "suspected": {},
+      "classifications": [],
+      "removed_tests": [],
+      "lesson": "",
+      "llm_calls_so_far": 4,
+      "elapsed": 97.0
+    }
+  ],
+  "final_test_code": "from safe_parser import ConfigError, parse_int, parse_config, get_port\nfrom safe_parser import get_port\nimport pytest\nfrom safe_parser import (\n    ConfigError,\n    parse_int,\n    parse_config,\n    get_port,\n    safe_ratio,\n)\n\n\n# ------------------- parse_int -------------------\ndef test_parse_int_valid():\n    assert parse_int(\"42\") == 42\n    assert parse_int(\"  -7  \") == -7\n\n\ndef test_parse_int_with_default():\n    assert parse_int(None, default=5) == 5\n    assert parse_int(\"not_a_number\", default=0) == 0\n\n\ndef test_parse_int_invalid_raises():\n    with pytest.raises(ValueError):\n        parse_int(\"abc\")\n    with pytest.raises(ValueError):\n        parse_int(\"\")  # empty string after strip raises\n\n\n# ------------------- parse_config -------------------\ndef test_parse_config_basic():\n    assert parse_config(\"a=1;b=2\") == {\"a\": \"1\", \"b\": \"2\"}\n\n\ndef test_parse_config_whitespace_and_empty_parts():\n    assert parse_config(\" a = 1 ; b=2 ;\") == {\"a\": \"1\", \"b\": \"2\"}\n    assert parse_config(\";;a=1;;b=2;;\") == {\"a\": \"1\", \"b\": \"2\"}\n\n\ndef test_parse_config_value_contains_equal():\n    assert parse_config(\"key=val=ue\") == {\"key\": \"val=ue\"}\n\n\ndef test_parse_config_missing_equal():\n    with pytest.raises(ConfigError):\n        parse_config(\"noglue\")\n\n\ndef test_parse_config_empty_key():\n    with pytest.raises(ConfigError):\n        parse_config(\"=value\")\n\n\ndef test_parse_config_duplicate_key():\n    with pytest.raises(ConfigError):\n        parse_config(\"a=1;a=2\")\n\n\n# ------------------- get_port -------------------\ndef test_get_port_missing_returns_default():\n    assert get_port({}) == 8080\n    assert get_port({\"host\": \"localhost\"}) == 8080\n\n\ndef test_get_port_valid_values():\n    assert get_port({\"port\": \"8080\"}) == 8080\n    assert get_port({\"port\": \"1\"}) == 1\n    assert get_port({\"port\": \"65535\"}) == 65535\n\n\ndef test_get_port_out_of_range_raises():\n    with pytest.raises(ConfigError):\n        get_port({\"port\": \"0\"})\n    with pytest.raises(ConfigError):\n        get_port({\"port\": \"-10\"})\n    with pytest.raises(ConfigError):\n        get_port({\"port\": \"65536\"})\n\n\ndef test_get_port_non_integer_raises():\n    with pytest.raises(ConfigError):\n        get_port({\"port\": \"abc\"})\n    with pytest.raises(ConfigError):\n        get_port({\"port\": None})  # None causes ValueError in parse_int -> ConfigError\n\n\n# ------------------- safe_ratio -------------------\ndef test_safe_ratio_normal():\n    assert safe_ratio(1, 2) == 0.5\n    assert safe_ratio(2, 3) == pytest.approx(0.67)  # 0.666... rounded to 2 dp\n    assert safe_ratio(-1, 4) == -0.25\n    assert safe_ratio(1.5, 2) == pytest.approx(0.75)\n\n\ndef test_safe_ratio_denominator_zero():\n    assert safe_ratio(5, 0) is None\n    assert safe_ratio(0, 0) is None\n\n\ndef test_safe_ratio_type_error():\n    assert safe_ratio(\"a\", 2) is None\n    assert safe_ratio(5, \"b\") is None\n    assert safe_ratio(None, 5) is None\n    assert safe_ratio(5, None) is None\n    assert safe_ratio(\"x\", \"y\") is None\n\n\n# Optional: test that rounding behaves as described (two decimal places)\ndef test_safe_ratio_rounding_edge():\n    # 1/3 = 0.333... -> 0.33\n    assert safe_ratio(1, 3) == pytest.approx(0.33)\n    # 2/3 = 0.666... -> 0.67\n    assert safe_ratio(2, 3) == pytest.approx(0.67)\n    # 1/6 = 0.1666... -> 0.17\n    assert safe_ratio(1, 6) == pytest.approx(0.17)\n\n\ndef test_parse_int_value_error_message():\n    with pytest.raises(ValueError) as excinfo:\n        parse_int(\"abc\")\n    assert str(excinfo.value) == \"Không phải số nguyên: 'abc'\"\n\n\ndef test_parse_int_empty_string_message():\n    with pytest.raises(ValueError) as excinfo:\n        parse_int(\"\")\n    assert str(excinfo.value) == \"Không phải số nguyên: ''\"\n\n\ndef test_parse_config_missing_equal_message():\n    with pytest.raises(ConfigError) as excinfo:\n        parse_config(\"noglue\")\n    assert str(excinfo.value) == \"Thiếu dấu '=' trong: 'noglue'\"\n\n\ndef test_parse_config_empty_key_message():\n    with pytest.raises(ConfigError) as excinfo:\n        parse_config(\"=value\")\n    assert str(excinfo.value) == \"Key rỗng\"\n\n\ndef test_parse_config_duplicate_key_message():\n    with pytest.raises(ConfigError) as excinfo:\n        parse_config(\"a=1;a=2\")\n    assert str(excinfo.value) == \"Key bị trùng: 'a'\"\n\n\ndef test_get_port_non_integer_message():\n    with pytest.raises(ConfigError) as excinfo:\n        get_port({\"port\": \"abc\"})\n    assert str(excinfo.value) == \"Port phải là số nguyên\"\n",
+  "suspected_bugs": {},
+  "snapshots": {
+    "initial": {
+      "code": "import pytest\nfrom safe_parser import (\n    ConfigError,\n    parse_int,\n    parse_config,\n    get_port,\n    safe_ratio,\n)\n\n\n# ------------------- parse_int -------------------\ndef test_parse_int_valid():\n    assert parse_int(\"42\") == 42\n    assert parse_int(\"  -7  \") == -7\n\n\ndef test_parse_int_with_default():\n    assert parse_int(None, default=5) == 5\n    assert parse_int(\"not_a_number\", default=0) == 0\n\n\ndef test_parse_int_invalid_raises():\n    with pytest.raises(ValueError):\n        parse_int(\"abc\")\n    with pytest.raises(ValueError):\n        parse_int(\"\")  # empty string after strip raises\n\n\n# ------------------- parse_config -------------------\ndef test_parse_config_basic():\n    assert parse_config(\"a=1;b=2\") == {\"a\": \"1\", \"b\": \"2\"}\n\n\ndef test_parse_config_whitespace_and_empty_parts():\n    assert parse_config(\" a = 1 ; b=2 ;\") == {\"a\": \"1\", \"b\": \"2\"}\n    assert parse_config(\";;a=1;;b=2;;\") == {\"a\": \"1\", \"b\": \"2\"}\n\n\ndef test_parse_config_value_contains_equal():\n    assert parse_config(\"key=val=ue\") == {\"key\": \"val=ue\"}\n\n\ndef test_parse_config_missing_equal():\n    with pytest.raises(ConfigError):\n        parse_config(\"noglue\")\n\n\ndef test_parse_config_empty_key():\n    with pytest.raises(ConfigError):\n        parse_config(\"=value\")\n\n\ndef test_parse_config_duplicate_key():\n    with pytest.raises(ConfigError):\n        parse_config(\"a=1;a=2\")\n\n\n# ------------------- get_port -------------------\ndef test_get_port_missing_returns_default():\n    assert get_port({}) == 8080\n    assert get_port({\"host\": \"localhost\"}) == 8080\n\n\ndef test_get_port_valid_values():\n    assert get_port({\"port\": \"8080\"}) == 8080\n    assert get_port({\"port\": 8080}) == 8080\n    assert get_port({\"port\": \"1\"}) == 1\n    assert get_port({\"port\": \"65535\"}) == 65535\n\n\ndef test_get_port_out_of_range_raises():\n    with pytest.raises(ConfigError):\n        get_port({\"port\": \"0\"})\n    with pytest.raises(ConfigError):\n        get_port({\"port\": \"-10\"})\n    with pytest.raises(ConfigError):\n        get_port({\"port\": \"65536\"})\n\n\ndef test_get_port_non_integer_raises():\n    with pytest.raises(ConfigError):\n        get_port({\"port\": \"abc\"})\n    with pytest.raises(ConfigError):\n        get_port({\"port\": None})  # None causes ValueError in parse_int -> ConfigError\n\n\n# ------------------- safe_ratio -------------------\ndef test_safe_ratio_normal():\n    assert safe_ratio(1, 2) == 0.5\n    assert safe_ratio(2, 3) == pytest.approx(0.67)  # 0.666... rounded to 2 dp\n    assert safe_ratio(-1, 4) == -0.25\n    assert safe_ratio(1.5, 2) == pytest.approx(0.75)\n\n\ndef test_safe_ratio_denominator_zero():\n    assert safe_ratio(5, 0) is None\n    assert safe_ratio(0, 0) is None\n\n\ndef test_safe_ratio_type_error():\n    assert safe_ratio(\"a\", 2) is None\n    assert safe_ratio(5, \"b\") is None\n    assert safe_ratio(None, 5) is None\n    assert safe_ratio(5, None) is None\n    assert safe_ratio(\"x\", \"y\") is None\n\n\n# Optional: test that rounding behaves as described (two decimal places)\ndef test_safe_ratio_rounding_edge():\n    # 1/3 = 0.333... -> 0.33\n    assert safe_ratio(1, 3) == pytest.approx(0.33)\n    # 2/3 = 0.666... -> 0.67\n    assert safe_ratio(2, 3) == pytest.approx(0.67)\n    # 1/6 = 0.1666... -> 0.17\n    assert safe_ratio(1, 6) == pytest.approx(0.17)\n",
+      "llm_calls": 1,
+      "cost_usd": 0.0,
+      "seconds": 20.5,
+      "iterations": 0
+    },
+    "coverage_done": {
+      "code": "from safe_parser import get_port\nimport pytest\nfrom safe_parser import (\n    ConfigError,\n    parse_int,\n    parse_config,\n    get_port,\n    safe_ratio,\n)\n\n\n# ------------------- parse_int -------------------\ndef test_parse_int_valid():\n    assert parse_int(\"42\") == 42\n    assert parse_int(\"  -7  \") == -7\n\n\ndef test_parse_int_with_default():\n    assert parse_int(None, default=5) == 5\n    assert parse_int(\"not_a_number\", default=0) == 0\n\n\ndef test_parse_int_invalid_raises():\n    with pytest.raises(ValueError):\n        parse_int(\"abc\")\n    with pytest.raises(ValueError):\n        parse_int(\"\")  # empty string after strip raises\n\n\n# ------------------- parse_config -------------------\ndef test_parse_config_basic():\n    assert parse_config(\"a=1;b=2\") == {\"a\": \"1\", \"b\": \"2\"}\n\n\ndef test_parse_config_whitespace_and_empty_parts():\n    assert parse_config(\" a = 1 ; b=2 ;\") == {\"a\": \"1\", \"b\": \"2\"}\n    assert parse_config(\";;a=1;;b=2;;\") == {\"a\": \"1\", \"b\": \"2\"}\n\n\ndef test_parse_config_value_contains_equal():\n    assert parse_config(\"key=val=ue\") == {\"key\": \"val=ue\"}\n\n\ndef test_parse_config_missing_equal():\n    with pytest.raises(ConfigError):\n        parse_config(\"noglue\")\n\n\ndef test_parse_config_empty_key():\n    with pytest.raises(ConfigError):\n        parse_config(\"=value\")\n\n\ndef test_parse_config_duplicate_key():\n    with pytest.raises(ConfigError):\n        parse_config(\"a=1;a=2\")\n\n\n# ------------------- get_port -------------------\ndef test_get_port_missing_returns_default():\n    assert get_port({}) == 8080\n    assert get_port({\"host\": \"localhost\"}) == 8080\n\n\ndef test_get_port_valid_values():\n    assert get_port({\"port\": \"8080\"}) == 8080\n    assert get_port({\"port\": \"1\"}) == 1\n    assert get_port({\"port\": \"65535\"}) == 65535\n\n\ndef test_get_port_out_of_range_raises():\n    with pytest.raises(ConfigError):\n        get_port({\"port\": \"0\"})\n    with pytest.raises(ConfigError):\n        get_port({\"port\": \"-10\"})\n    with pytest.raises(ConfigError):\n        get_port({\"port\": \"65536\"})\n\n\ndef test_get_port_non_integer_raises():\n    with pytest.raises(ConfigError):\n        get_port({\"port\": \"abc\"})\n    with pytest.raises(ConfigError):\n        get_port({\"port\": None})  # None causes ValueError in parse_int -> ConfigError\n\n\n# ------------------- safe_ratio -------------------\ndef test_safe_ratio_normal():\n    assert safe_ratio(1, 2) == 0.5\n    assert safe_ratio(2, 3) == pytest.approx(0.67)  # 0.666... rounded to 2 dp\n    assert safe_ratio(-1, 4) == -0.25\n    assert safe_ratio(1.5, 2) == pytest.approx(0.75)\n\n\ndef test_safe_ratio_denominator_zero():\n    assert safe_ratio(5, 0) is None\n    assert safe_ratio(0, 0) is None\n\n\ndef test_safe_ratio_type_error():\n    assert safe_ratio(\"a\", 2) is None\n    assert safe_ratio(5, \"b\") is None\n    assert safe_ratio(None, 5) is None\n    assert safe_ratio(5, None) is None\n    assert safe_ratio(\"x\", \"y\") is None\n\n\n# Optional: test that rounding behaves as described (two decimal places)\ndef test_safe_ratio_rounding_edge():\n    # 1/3 = 0.333... -> 0.33\n    assert safe_ratio(1, 3) == pytest.approx(0.33)\n    # 2/3 = 0.666... -> 0.67\n    assert safe_ratio(2, 3) == pytest.approx(0.67)\n    # 1/6 = 0.1666... -> 0.17\n    assert safe_ratio(1, 6) == pytest.approx(0.17)\n",
+      "llm_calls": 3,
+      "cost_usd": 0.0,
+      "seconds": 64.0,
+      "iterations": 1
+    }
+  },
+  "lessons_used": "",
+  "final": {
+    "line_coverage": 100.0,
+    "branch_coverage": 100.0,
+    "passed": 23,
+    "failed": 0,
+    "xfailed": 0,
+    "mutation_score": 100.0,
+    "num_iterations": 2
+  },
+  "stats": {
+    "llm_calls": 4,
+    "input_tokens": 6717,
+    "output_tokens": 8022,
+    "cost_usd": 0.0,
+    "llm_seconds": 86.1,
+    "total_seconds": 97.0
+  },
+  "source_code": "\"\"\"Module 4 (trung bình - khó): xử lý ngoại lệ khi phân tích dữ liệu đầu vào.\"\"\"\n\n\nclass ConfigError(Exception):\n    \"\"\"Lỗi cấu hình không hợp lệ.\"\"\"\n\n\ndef parse_int(text, default=None):\n    \"\"\"Chuyển chuỗi sang số nguyên (cho phép khoảng trắng ở hai đầu).\n\n    - Chuyển được -> trả về số nguyên.\n    - Không chuyển được (hoặc text là None):\n        + nếu default khác None -> trả về default\n        + nếu default là None   -> ném ValueError\n    \"\"\"\n    try:\n        return int(text.strip())\n    except (ValueError, AttributeError):\n        if default is not None:\n            return default\n        raise ValueError(f\"Không phải số nguyên: {text!r}\")\n\n\ndef parse_config(text):\n    \"\"\"Phân tích chuỗi cấu hình dạng \"key1=value1;key2=value2\" thành dict.\n\n    - Bỏ qua khoảng trắng quanh key/value và các đoạn rỗng (ví dụ \";;\").\n    - Đoạn không có dấu \"=\" -> ném ConfigError.\n    - Key rỗng -> ném ConfigError.\n    - Key trùng lặp -> ném ConfigError.\n    Ví dụ: parse_config(\" a = 1; b=2 ;\") == {\"a\": \"1\", \"b\": \"2\"}\n    \"\"\"\n    result = {}\n    for part in text.split(\";\"):\n        part = part.strip()\n        if not part:\n            continue\n        if \"=\" not in part:\n            raise ConfigError(f\"Thiếu dấu '=' trong: {part!r}\")\n        key, value = part.split(\"=\", 1)\n        key = key.strip()\n        if not key:\n            raise ConfigError(\"Key rỗng\")\n        if key in result:\n            raise ConfigError(f\"Key bị trùng: {key!r}\")\n        result[key] = value.strip()\n    return result\n\n\ndef get_port(config):\n    \"\"\"Lấy cổng (port) từ dict cấu hình.\n\n    - Không có key \"port\" -> trả về 8080.\n    - Giá trị không phải số nguyên -> ném ConfigError.\n    - Port ngoài khoảng [1, 65535] -> ném ConfigError.\n    \"\"\"\n    if \"port\" not in config:\n        return 8080\n    try:\n        port = parse_int(config[\"port\"])\n    except ValueError as exc:\n        raise ConfigError(\"Port phải là số nguyên\") from exc\n    if port < 1 or port > 65535:\n        raise ConfigError(\"Port ngoài khoảng cho phép\")\n    return port\n\n\ndef safe_ratio(numerator, denominator):\n    \"\"\"Tính tỉ lệ numerator / denominator an toàn.\n\n    - denominator == 0 -> trả về None (không ném lỗi).\n    - Tham số không phải số (TypeError) -> trả về None.\n    - Ngược lại -> trả về kết quả làm tròn 2 chữ số thập phân.\n    \"\"\"\n    try:\n        return round(numerator / denominator, 2)\n    except ZeroDivisionError:\n        return None\n    except TypeError:\n        return None\n"
+}

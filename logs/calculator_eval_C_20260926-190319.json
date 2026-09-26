@@ -1,0 +1,93 @@
+{
+  "module": "calculator",
+  "module_path": "C:\\Workin\\ChuyenDe\\targets\\calculator.py",
+  "label": "eval_C",
+  "config": {
+    "max_iterations": 6,
+    "line_threshold": 95.0,
+    "branch_threshold": 90.0,
+    "patience": 2,
+    "max_fix_attempts": 2,
+    "test_timeout": 60,
+    "use_mutation": true,
+    "mutation_threshold": 80.0,
+    "max_mutants": 20,
+    "use_memory": false,
+    "label": "eval_C"
+  },
+  "llm": {
+    "provider": "openrouter",
+    "model": "nvidia/nemotron-3-super-120b-a12b:free"
+  },
+  "stop_reason": "Đạt ngưỡng mutation score (80.0%)",
+  "iterations": [
+    {
+      "iteration": 0,
+      "phase": "done",
+      "action": "stop",
+      "reason": "Đạt ngưỡng mutation score (80.0%)",
+      "test_code": "import calculator\nimport pytest\n\n\ndef test_add_basic():\n    assert calculator.add(2, 3) == 5\n    assert calculator.add(-1, 1) == 0\n    assert calculator.add(0, 0) == 0\n    assert calculator.add(2.5, 3.5) == 6.0\n\n\ndef test_divide_normal():\n    assert calculator.divide(10, 2) == 5\n    assert calculator.divide(5, 2) == 2.5\n    assert calculator.divide(0, 5) == 0\n    assert calculator.divide(-10, 2) == -5\n\n\ndef test_divide_by_zero_exception():\n    with pytest.raises(ZeroDivisionError, match=\"Không thể chia cho 0\"):\n        calculator.divide(5, 0)\n\n\ndef test_average_normal():\n    assert calculator.average([1, 2, 3]) == 2.0\n    assert calculator.average([10, 20, 30, 40]) == 25.0\n    assert calculator.average([-1, 0, 1]) == 0.0\n    assert calculator.average([1.5, 2.5, 3.5]) == pytest.approx(2.5)\n\n\ndef test_average_empty():\n    assert calculator.average([]) == 0\n\n\ndef test_clamp_within_range():\n    assert calculator.clamp(5, 0, 10) == 5\n    assert calculator.clamp(0, 0, 10) == 0\n    assert calculator.clamp(10, 0, 10) == 10\n    assert calculator.clamp(-5, -10, -1) == -5\n\n\ndef test_clamp_below_low():\n    assert calculator.clamp(-5, 0, 10) == 0\n    assert calculator.clamp(0, 5, 10) == 5\n\n\ndef test_clamp_above_high():\n    assert calculator.clamp(15, 0, 10) == 10\n    assert calculator.clamp(10, 0, 5) == 5\n\n\ndef test_clamp_edge_low_eq_high():\n    assert calculator.clamp(7, 5, 5) == 5\n    assert calculator.clamp(5, 5, 5) == 5\n    assert calculator.clamp(3, 5, 5) == 5\n\n\ndef test_clamp_exception_low_gt_high():\n    with pytest.raises(ValueError, match=\"low phải nhỏ hơn hoặc bằng high\"):\n        calculator.clamp(0, 10, 5)\n\n\ndef test_factorial_normal():\n    assert calculator.factorial(1) == 1\n    assert calculator.factorial(5) == 120\n    assert calculator.factorial(3) == 6\n    assert calculator.factorial(0) == 1\n\n\ndef test_factorial_exception_negative():\n    with pytest.raises(ValueError, match=\"n phải >= 0\"):\n        calculator.factorial(-1)\n    with pytest.raises(ValueError, match=\"n phải >= 0\"):\n        calculator.factorial(-10)\n",
+      "passed": 12,
+      "failed": 0,
+      "errors": 0,
+      "xfailed": 0,
+      "collection_error": "",
+      "line_coverage": 100.0,
+      "branch_coverage": 100.0,
+      "missing_lines": [],
+      "missing_branches": [],
+      "mutation_score": 80.0,
+      "mutants_total": 20,
+      "mutants_killed": 16,
+      "survived_mutants": [
+        "Mutant #4, dòng 15: `raise ZeroDivisionError(\"Không thể chia cho 0\")`  ->  `raise ZeroDivisionError(\"XXKhông thể chia cho 0XX\")`",
+        "Mutant #10, dòng 39: `raise ValueError(\"low phải nhỏ hơn hoặc bằng high\")`  ->  `raise ValueError(\"XXlow phải nhỏ hơn hoặc bằng highXX\")`",
+        "Mutant #12, dòng 42: `if value > high:`  ->  `if value >= high:`",
+        "Mutant #15, dòng 54: `raise ValueError(\"n phải >= 0\")`  ->  `raise ValueError(\"XXn phải >= 0XX\")`"
+      ],
+      "suspected": {},
+      "classifications": [],
+      "removed_tests": [],
+      "lesson": "",
+      "llm_calls_so_far": 1,
+      "elapsed": 13.0
+    }
+  ],
+  "final_test_code": "import calculator\nimport pytest\n\n\ndef test_add_basic():\n    assert calculator.add(2, 3) == 5\n    assert calculator.add(-1, 1) == 0\n    assert calculator.add(0, 0) == 0\n    assert calculator.add(2.5, 3.5) == 6.0\n\n\ndef test_divide_normal():\n    assert calculator.divide(10, 2) == 5\n    assert calculator.divide(5, 2) == 2.5\n    assert calculator.divide(0, 5) == 0\n    assert calculator.divide(-10, 2) == -5\n\n\ndef test_divide_by_zero_exception():\n    with pytest.raises(ZeroDivisionError, match=\"Không thể chia cho 0\"):\n        calculator.divide(5, 0)\n\n\ndef test_average_normal():\n    assert calculator.average([1, 2, 3]) == 2.0\n    assert calculator.average([10, 20, 30, 40]) == 25.0\n    assert calculator.average([-1, 0, 1]) == 0.0\n    assert calculator.average([1.5, 2.5, 3.5]) == pytest.approx(2.5)\n\n\ndef test_average_empty():\n    assert calculator.average([]) == 0\n\n\ndef test_clamp_within_range():\n    assert calculator.clamp(5, 0, 10) == 5\n    assert calculator.clamp(0, 0, 10) == 0\n    assert calculator.clamp(10, 0, 10) == 10\n    assert calculator.clamp(-5, -10, -1) == -5\n\n\ndef test_clamp_below_low():\n    assert calculator.clamp(-5, 0, 10) == 0\n    assert calculator.clamp(0, 5, 10) == 5\n\n\ndef test_clamp_above_high():\n    assert calculator.clamp(15, 0, 10) == 10\n    assert calculator.clamp(10, 0, 5) == 5\n\n\ndef test_clamp_edge_low_eq_high():\n    assert calculator.clamp(7, 5, 5) == 5\n    assert calculator.clamp(5, 5, 5) == 5\n    assert calculator.clamp(3, 5, 5) == 5\n\n\ndef test_clamp_exception_low_gt_high():\n    with pytest.raises(ValueError, match=\"low phải nhỏ hơn hoặc bằng high\"):\n        calculator.clamp(0, 10, 5)\n\n\ndef test_factorial_normal():\n    assert calculator.factorial(1) == 1\n    assert calculator.factorial(5) == 120\n    assert calculator.factorial(3) == 6\n    assert calculator.factorial(0) == 1\n\n\ndef test_factorial_exception_negative():\n    with pytest.raises(ValueError, match=\"n phải >= 0\"):\n        calculator.factorial(-1)\n    with pytest.raises(ValueError, match=\"n phải >= 0\"):\n        calculator.factorial(-10)\n",
+  "suspected_bugs": {},
+  "snapshots": {
+    "initial": {
+      "code": "import calculator\nimport pytest\n\n\ndef test_add_basic():\n    assert calculator.add(2, 3) == 5\n    assert calculator.add(-1, 1) == 0\n    assert calculator.add(0, 0) == 0\n    assert calculator.add(2.5, 3.5) == 6.0\n\n\ndef test_divide_normal():\n    assert calculator.divide(10, 2) == 5\n    assert calculator.divide(5, 2) == 2.5\n    assert calculator.divide(0, 5) == 0\n    assert calculator.divide(-10, 2) == -5\n\n\ndef test_divide_by_zero_exception():\n    with pytest.raises(ZeroDivisionError, match=\"Không thể chia cho 0\"):\n        calculator.divide(5, 0)\n\n\ndef test_average_normal():\n    assert calculator.average([1, 2, 3]) == 2.0\n    assert calculator.average([10, 20, 30, 40]) == 25.0\n    assert calculator.average([-1, 0, 1]) == 0.0\n    assert calculator.average([1.5, 2.5, 3.5]) == pytest.approx(2.5)\n\n\ndef test_average_empty():\n    assert calculator.average([]) == 0\n\n\ndef test_clamp_within_range():\n    assert calculator.clamp(5, 0, 10) == 5\n    assert calculator.clamp(0, 0, 10) == 0\n    assert calculator.clamp(10, 0, 10) == 10\n    assert calculator.clamp(-5, -10, -1) == -5\n\n\ndef test_clamp_below_low():\n    assert calculator.clamp(-5, 0, 10) == 0\n    assert calculator.clamp(0, 5, 10) == 5\n\n\ndef test_clamp_above_high():\n    assert calculator.clamp(15, 0, 10) == 10\n    assert calculator.clamp(10, 0, 5) == 5\n\n\ndef test_clamp_edge_low_eq_high():\n    assert calculator.clamp(7, 5, 5) == 5\n    assert calculator.clamp(5, 5, 5) == 5\n    assert calculator.clamp(3, 5, 5) == 5\n\n\ndef test_clamp_exception_low_gt_high():\n    with pytest.raises(ValueError, match=\"low phải nhỏ hơn hoặc bằng high\"):\n        calculator.clamp(0, 10, 5)\n\n\ndef test_factorial_normal():\n    assert calculator.factorial(1) == 1\n    assert calculator.factorial(5) == 120\n    assert calculator.factorial(3) == 6\n    assert calculator.factorial(0) == 1\n\n\ndef test_factorial_exception_negative():\n    with pytest.raises(ValueError, match=\"n phải >= 0\"):\n        calculator.factorial(-1)\n    with pytest.raises(ValueError, match=\"n phải >= 0\"):\n        calculator.factorial(-10)\n",
+      "llm_calls": 1,
+      "cost_usd": 0.0,
+      "seconds": 8.7,
+      "iterations": 0
+    },
+    "coverage_done": {
+      "code": "import calculator\nimport pytest\n\n\ndef test_add_basic():\n    assert calculator.add(2, 3) == 5\n    assert calculator.add(-1, 1) == 0\n    assert calculator.add(0, 0) == 0\n    assert calculator.add(2.5, 3.5) == 6.0\n\n\ndef test_divide_normal():\n    assert calculator.divide(10, 2) == 5\n    assert calculator.divide(5, 2) == 2.5\n    assert calculator.divide(0, 5) == 0\n    assert calculator.divide(-10, 2) == -5\n\n\ndef test_divide_by_zero_exception():\n    with pytest.raises(ZeroDivisionError, match=\"Không thể chia cho 0\"):\n        calculator.divide(5, 0)\n\n\ndef test_average_normal():\n    assert calculator.average([1, 2, 3]) == 2.0\n    assert calculator.average([10, 20, 30, 40]) == 25.0\n    assert calculator.average([-1, 0, 1]) == 0.0\n    assert calculator.average([1.5, 2.5, 3.5]) == pytest.approx(2.5)\n\n\ndef test_average_empty():\n    assert calculator.average([]) == 0\n\n\ndef test_clamp_within_range():\n    assert calculator.clamp(5, 0, 10) == 5\n    assert calculator.clamp(0, 0, 10) == 0\n    assert calculator.clamp(10, 0, 10) == 10\n    assert calculator.clamp(-5, -10, -1) == -5\n\n\ndef test_clamp_below_low():\n    assert calculator.clamp(-5, 0, 10) == 0\n    assert calculator.clamp(0, 5, 10) == 5\n\n\ndef test_clamp_above_high():\n    assert calculator.clamp(15, 0, 10) == 10\n    assert calculator.clamp(10, 0, 5) == 5\n\n\ndef test_clamp_edge_low_eq_high():\n    assert calculator.clamp(7, 5, 5) == 5\n    assert calculator.clamp(5, 5, 5) == 5\n    assert calculator.clamp(3, 5, 5) == 5\n\n\ndef test_clamp_exception_low_gt_high():\n    with pytest.raises(ValueError, match=\"low phải nhỏ hơn hoặc bằng high\"):\n        calculator.clamp(0, 10, 5)\n\n\ndef test_factorial_normal():\n    assert calculator.factorial(1) == 1\n    assert calculator.factorial(5) == 120\n    assert calculator.factorial(3) == 6\n    assert calculator.factorial(0) == 1\n\n\ndef test_factorial_exception_negative():\n    with pytest.raises(ValueError, match=\"n phải >= 0\"):\n        calculator.factorial(-1)\n    with pytest.raises(ValueError, match=\"n phải >= 0\"):\n        calculator.factorial(-10)\n",
+      "llm_calls": 1,
+      "cost_usd": 0.0,
+      "seconds": 9.4,
+      "iterations": 0
+    }
+  },
+  "lessons_used": "",
+  "final": {
+    "line_coverage": 100.0,
+    "branch_coverage": 100.0,
+    "passed": 12,
+    "failed": 0,
+    "xfailed": 0,
+    "mutation_score": 80.0,
+    "num_iterations": 0
+  },
+  "stats": {
+    "llm_calls": 1,
+    "input_tokens": 734,
+    "output_tokens": 1014,
+    "cost_usd": 0.0,
+    "llm_seconds": 8.7,
+    "total_seconds": 13.0
+  },
+  "source_code": "\"\"\"Module 1 (dễ): các hàm tính toán đơn giản.\"\"\"\n\n\ndef add(a, b):\n    \"\"\"Trả về tổng a + b.\"\"\"\n    return a + b\n\n\ndef divide(a, b):\n    \"\"\"Trả về a / b.\n\n    Ném ZeroDivisionError với thông báo \"Không thể chia cho 0\" nếu b == 0.\n    \"\"\"\n    if b == 0:\n        raise ZeroDivisionError(\"Không thể chia cho 0\")\n    return a / b\n\n\ndef average(numbers):\n    \"\"\"Trả về trung bình cộng của danh sách số.\n\n    Danh sách rỗng thì trả về 0.\n    Ví dụ: average([1, 2, 3]) == 2.0\n    \"\"\"\n    if not numbers:\n        return 0\n    return sum(numbers) / len(numbers)\n\n\ndef clamp(value, low, high):\n    \"\"\"Giới hạn value trong đoạn [low, high].\n\n    - value < low  -> trả về low\n    - value > high -> trả về high\n    - còn lại      -> trả về value\n    Ném ValueError nếu low > high.\n    \"\"\"\n    if low > high:\n        raise ValueError(\"low phải nhỏ hơn hoặc bằng high\")\n    if value < low:\n        return low\n    if value > high:\n        return high\n    return value\n\n\ndef factorial(n):\n    \"\"\"Trả về n! (n giai thừa) với n là số nguyên không âm.\n\n    factorial(0) == 1, factorial(5) == 120.\n    Ném ValueError nếu n < 0.\n    \"\"\"\n    if n < 0:\n        raise ValueError(\"n phải >= 0\")\n    result = 1\n    for i in range(2, n + 1):\n        result *= i\n    return result\n"
+}

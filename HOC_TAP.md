@@ -424,3 +424,135 @@ python -c "import json; print(json.dumps(json.load(open('memory/memory.json', en
    nhãn AST + khớp loại lỗi là đủ và giải thích được. Hướng phát triển: embedding để tìm theo ngữ nghĩa.
 3. **Làm sao tránh học điều sai?** → Chỉ lưu bài học khi lần chạy sau xác nhận lỗi đã hết; mẫu test chỉ lưu khi chỉ số
    (coverage/mutation) thực sự tăng. Vẫn còn rủi ro (bài học đúng kết quả nhưng sai lý do) — là hạn chế.
+
+---
+
+## GĐ7 — Thực nghiệm (`evaluate.py`)
+
+### (a) Đã làm gì và tại sao
+So sánh 4 cấu hình trên 5 module: **A** baseline · **B** agent + coverage · **C** B + mutation · **D** C + bộ nhớ.
+`evaluate.py` tách **2 bước**:
+1. **SINH** (gọi LLM): chạy agent cấu hình C và D, mỗi lần lưu một log `logs/<module>_eval_C|D_<thời gian>.json`.
+   - **Thiết kế ghép cặp:** A = bộ test ban đầu của lần chạy C (cùng prompt, cùng *một* lần gọi); B = trạng thái của C
+     đúng lúc phase coverage kết thúc (agent B sẽ dừng đúng ở đó). Agent lưu các mốc này (`snapshots`) → **một lần chạy
+     C cho ra A, B, C** → tiết kiệm ~50% request, và so sánh trên *cùng* chuỗi trả lời của LLM (giảm nhiễu).
+   - D chạy riêng; bộ nhớ **rỗng ở đầu mỗi lần lặp**, các module chạy lần lượt để bộ nhớ tích luỹ.
+   - Lần chạy bị dừng do lỗi LLM **không được tính**; chạy lại lệnh sẽ chỉ chạy phần còn thiếu (qua nhiều ngày được).
+2. **CHẤM** (không gọi LLM): đọc log, chấm lại **mọi** cấu hình bằng cùng một thước đo:
+   - line/branch coverage; số test fail;
+   - **mutation score held-out**: loại khỏi tập chấm mọi mutant đã được đưa vào prompt của C/D → không bị thổi phồng
+     (cột `mutation_all` = trên mọi mutant, để thấy mức chênh);
+   - **phát hiện bug**: có test fail/xfail trên code lỗi **và** pass trên bản đã sửa;
+     **gắn nhãn đúng**: có test SUSPECTED_BUG pass trên bản đã sửa (TP), ngược lại là FP.
+
+   Xuất `results/runs.csv`, `results/results.csv`, `results/results_by_module.csv`, `results/summary.png`,
+   `results/mutation_by_module.png`.
+
+**Chuyện có thật khi làm (bài học quan trọng):** phiên bản đầu của `evaluate.py` chấm mutation trên tập mutant *chứa*
+chính các mutant đã đưa cho LLM "giết" (cùng seed → cùng mẫu). Một **reviewer độc lập** (agent review code) phát hiện
+lỗi này. Sau khi sửa (chấm trên mutant held-out), kết luận **đổi hẳn** — xem kết quả bên dưới. Đây là lỗi kinh điển
+"đánh giá trên dữ liệu huấn luyện" (data leakage) giống trong học máy. Reviewer cũng tìm ra vài lỗi khác đã được sửa
+(ghép code đổi tên nhầm fixture, mất nhãn SUSPECTED khi LLM trả lại test thiếu decorator, không quay lui khi file test
+cuối bị hỏng, đọc JSON sai khi có dấu `{` thừa). Em đã kiểm tra log lượt 1: các lỗi này **không xảy ra** trong lượt đó,
+nên log vẫn hợp lệ và chỉ cần chấm lại.
+
+### Kết quả (lượt 1: 5 module × 1 lần, model `nvidia/nemotron-3-super-120b-a12b:free` qua OpenRouter)
+
+| Cấu hình | Line % | Branch % | Mutation held-out % | Mutation mọi mutant % | Test fail còn lại | Bug có test fail | Bug được gắn nhãn đúng | Nhãn sai (FP) | Gọi LLM TB | Thời gian TB (s) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| A Baseline | 99.0 | 98.4 | 89.1 | 80.7 | 1.2 / module | 2/2 | 0/2 | 0 | 1.0 | 22 |
+| B + coverage | 99.0 | 98.4 | 91.8 | 83.0 | 0 | 2/2 | **2/2** | 0 | 2.4 | 41 |
+| C + mutation | 99.0 | 98.4 | 91.8 | 86.0 | 0 | 2/2 | **2/2** | 0 | 2.6 | 51 |
+| D + memory | 99.0 | 98.4 | 91.8 | 88.1 | 0 | 2/2 | **2/2** | 0 | 3.2 | 122 |
+
+**Đọc kết quả một cách trung thực:**
+1. **Coverage gần như bão hoà ngay từ lần sinh đầu** (99% / 98%) với model này và các module nhỏ → phản hồi coverage
+   hầu như không có gì để cải thiện. Phần chưa phủ ở `grading`/`shopping_cart` là dòng *code chết* do bug.
+2. **Giá trị thật của vòng lặp là xử lý test fail:** baseline để lại trung bình 1.2 test fail/module *không phân loại*
+   (người dùng không biết test sai hay code sai). B/C/D đưa về **0 test fail**, sửa các test viết sai, và **gắn nhãn
+   đúng cả 2 bug** (3 test SUSPECTED_BUG, cả 3 đều pass trên bản đã sửa → **0 nhãn sai** trong lượt này).
+3. **Mutation feedback (C so với B):** trên mutant **LLM chưa thấy** thì **không tăng** (91.8 = 91.8); chỉ tăng trên *mọi*
+   mutant (83.0 → 86.0), tức phần tăng chủ yếu nằm ở **chính các mutant đã đưa cho LLM**. Với dữ liệu hiện có, em
+   **không** kết luận được mutation feedback giúp test "chặt" hơn một cách tổng quát.
+4. **Bộ nhớ (D so với C):** không khác biệt trên held-out; tốn thêm gọi LLM/thời gian (một phần do ngẫu nhiên: D ở
+   `safe_parser` chạy 4 vòng kill_mutants). Với 1 lần chạy, không thể tách tác dụng bộ nhớ khỏi độ ngẫu nhiên của LLM.
+5. **Chi phí:** số lần gọi LLM tăng từ 1 (A) lên 2.4–3.2; thời gian tăng 2–5 lần. Chi phí tiền = 0 (model miễn phí).
+
+**Hạn chế của thực nghiệm (bắt buộc nêu khi báo cáo):**
+- Mới **1 lần chạy** (đề bài yêu cầu 3): model miễn phí chỉ cho **50 request/ngày**, một lượt đầy đủ tốn ~30 request.
+  Hai lượt còn lại chạy tiếp bằng `python evaluate.py --runs 3` ở các ngày sau (lệnh tự chạy phần còn thiếu).
+- 5 module nhỏ tự viết, 2 bug tự cài, 1 model → **không có ý nghĩa thống kê**, chỉ là quan sát ban đầu.
+- Tập held-out đã bỏ đi các mutant "khó" (những mutant sống sót mới được đưa cho LLM) → điểm held-out của **mọi** cấu
+  hình đều cao hơn điểm trên mọi mutant; so sánh *giữa các cấu hình* vẫn công bằng vì dùng chung một tập.
+- Mutation score là ước lượng trên tối đa 40 mutant lấy mẫu (seed cố định).
+
+### (b) Khái niệm quan trọng
+- **Nhóm đối chứng / baseline:** muốn nói "vòng lặp có ích" phải so với cách đơn giản nhất (A).
+- **Ablation study (thí nghiệm bỏ bớt thành phần):** B → C → D mỗi bước thêm đúng một thành phần, để biết thành phần nào
+  đóng góp gì.
+- **Rò rỉ dữ liệu đánh giá (data leakage):** chấm trên chính những mutant đã "mớm" cho LLM giống cho học sinh làm bài
+  kiểm tra trùng bài tập về nhà. Cách chữa: tách **held-out** (tập LLM chưa thấy).
+- **Thiết kế ghép cặp (paired design):** so sánh các cấu hình trên cùng một "đối tượng" (cùng lần sinh đầu) → giảm nhiễu.
+- **Precision của nhãn nghi bug:** TP / (TP + FP). Lượt này 3/3 — nhưng mẫu quá nhỏ để tin tưởng tuyệt đối.
+
+### (c) File liên quan
+`evaluate.py` (đọc `generate`, `measure`, `measure_all`), `testgen/agent.py` (`_snapshot`, `shown_mutant_ids`),
+`testgen/mutation.py` (`exclude_ids`), `results/*.csv`, `results/*.png`, `logs/*_eval_*.json`, `tests/test_evaluate.py`
+
+### (d) Lệnh tự chạy thử
+```bash
+python evaluate.py --measure-only       # không tốn API: chấm lại từ log có sẵn, vẽ lại biểu đồ
+python evaluate.py --quick              # tốn ~6 request: 1 module grading
+python evaluate.py --runs 3             # chạy tiếp lượt 2, 3 (~30 request/lượt) — nên chạy vào các ngày khác nhau
+```
+
+### (e) Câu hỏi giảng viên có thể hỏi
+1. **Coverage của baseline đã 99%, vậy agent có ích gì?** → Với model này và module nhỏ, coverage không phải điểm khác
+   biệt. Khác biệt nằm ở **test fail**: baseline để lại test fail không phân loại; agent phân loại, sửa test sai và gắn
+   nhãn đúng 2/2 bug, 0 nhãn sai. Với module lớn/phức tạp hơn, phần coverage có thể quan trọng hơn — chưa kiểm chứng.
+2. **Vì sao mutation score held-out của C không cao hơn B?** → Test do LLM viết để giết mutant cụ thể thường chỉ nhắm
+   đúng mutant đó (đúng biên đó), không làm các assert khác chặt hơn. Ngoài ra cỡ mẫu nhỏ. Em báo cáo đúng như đo được,
+   kèm cả số trên mọi mutant để thấy sự khác nhau.
+3. **Tại sao chỉ chạy 1 lần thay vì 3?** → Giới hạn 50 request/ngày của model miễn phí; công cụ đã hỗ trợ chạy tiếp
+   (`--runs 3`). Em ghi rõ đây là hạn chế và kết luận chỉ mang tính quan sát.
+
+---
+
+## GĐ8 — Giao diện demo (`app.py`, Streamlit)
+
+### (a) Đã làm gì và tại sao
+- **Thanh bên:** chọn *Chạy mới* (module mẫu trong `targets/` hoặc **dán code Python** → lưu vào `workspace/user_code/`)
+  hoặc *REPLAY từ log*; bật/tắt mutation, bộ nhớ; chỉnh số vòng, ngưỡng; chọn nhà cung cấp/model (có `mock`).
+- **Tab Tiến trình:** agent gọi hàm callback `progress(kind, payload)` mỗi khi có thông báo hoặc xong một vòng → giao
+  diện hiện ngay thẻ của vòng đó (pass/fail, coverage, mutation, hành động, phân loại của LLM, mutant còn sống, LESSON)
+  và biểu đồ cập nhật trực tiếp.
+- **Tab Biểu đồ:** matplotlib — line/branch coverage và mutation score qua các vòng + bảng số liệu.
+- **Tab Code test:** kéo thanh chọn vòng để xem code ở từng vòng; test SUSPECTED_BUG **tô đỏ**; chế độ **diff** so với
+  vòng trước; nút tải file test.
+- **Tab Kết quả thực nghiệm:** bảng `results/*.csv` + ảnh biểu đồ.
+- **REPLAY:** đọc log JSON và phát lại từng vòng (không gọi LLM, không cần mạng) — phương án dự phòng khi demo.
+- Kiểm thử giao diện tự động bằng `streamlit.testing.AppTest` (`tests/test_app.py`) + kiểm tra bằng mắt qua trình duyệt
+  (đã sửa: code bị mất thụt lề khi hiển thị bằng markdown → chuyển sang `st.html` với font monospace).
+
+### (b) Khái niệm quan trọng
+- **Mô hình chạy của Streamlit:** mỗi lần người dùng thao tác, **toàn bộ script chạy lại từ đầu**. Dữ liệu cần giữ giữa
+  các lần (kết quả agent) phải cất trong `st.session_state`.
+- **Callback:** agent không biết gì về giao diện; nó chỉ gọi `progress(...)`. Giao diện truyền vào một hàm vẽ ra màn hình.
+  Nhờ vậy cùng một agent dùng được cho CLI, test, và Streamlit (tách lớp logic và lớp hiển thị).
+- **Replay từ log:** vì mọi vòng đều được ghi đầy đủ (code, số liệu, lý do), có thể tái hiện lần chạy mà không cần LLM.
+
+### (c) File liên quan
+`app.py`, `tests/test_app.py`, `logs/*.json`
+
+### (d) Lệnh tự chạy thử
+```bash
+streamlit run app.py
+pytest tests/test_app.py -v
+```
+
+### (e) Câu hỏi giảng viên có thể hỏi
+1. **Nếu lúc demo mất mạng thì sao?** → Chế độ REPLAY phát lại log JSON đã lưu, dữ liệu y hệt lần chạy thật.
+2. **Làm sao giao diện cập nhật từng vòng khi agent đang chạy?** → Agent gọi callback sau mỗi vòng; callback ghi vào các
+   "chỗ trống" (`st.empty`, `st.status`) nên Streamlit vẽ lại phần đó ngay, không cần chờ agent chạy xong.
+3. **Người dùng dán code bất kỳ có an toàn không?** → Code và test chạy trong tiến trình con có timeout, trong thư mục tạm;
+   nhưng **không** phải sandbox bảo mật (code vẫn chạy với quyền của máy). Chỉ dùng cho demo với code tin cậy.

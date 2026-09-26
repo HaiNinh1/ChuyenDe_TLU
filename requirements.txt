@@ -16,5 +16,5 @@ anthropic>=0.30     # dùng cho Anthropic Claude
 requests>=2.31      # dùng cho Ollama (gọi HTTP trực tiếp)
 
 # Giao diện demo và biểu đồ
-streamlit>=1.30
+streamlit>=1.40
 matplotlib>=3.7

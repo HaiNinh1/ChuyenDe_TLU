@@ -126,11 +126,13 @@ def _run_one(mutant: Mutant, module_name: str, test_code: str, timeout: int, des
 
 def run_mutation_testing(module_path, test_code: str, max_mutants: int = 20, seed: int = 0,
                          timeout: int = 30, workers: int = None, deselect=None,
-                         skip_failing: bool = False) -> MutationResult:
+                         skip_failing: bool = False, exclude_ids=None) -> MutationResult:
     """Chạy mutation testing cho một module với bộ test cho trước.
 
     skip_failing=True: bỏ qua các test đang FAIL trên code gốc (dùng khi ĐO để so sánh các cấu hình,
     ví dụ baseline có test fail thì mutation score được tính trên các test còn lại).
+    exclude_ids: bỏ các mutant có id này (dùng khi chấm: loại các mutant LLM đã được xem trong prompt,
+    giống tách tập train/test trong học máy). max_mutants=None: dùng tất cả mutant, không lấy mẫu.
     """
     start = time.time()
     module_path = Path(module_path)
@@ -148,9 +150,9 @@ def run_mutation_testing(module_path, test_code: str, max_mutants: int = 20, see
         result.error = "Bộ test chưa pass trên code gốc nên không thể chạy mutation testing"
         return result
 
-    mutants = generate_mutants(source)
+    mutants = [m for m in generate_mutants(source) if m.id not in set(exclude_ids or [])]
     result.sampled_from = len(mutants)
-    if len(mutants) > max_mutants:
+    if max_mutants is not None and len(mutants) > max_mutants:
         # Lấy mẫu ngẫu nhiên nhưng CỐ ĐỊNH (seed) -> các cấu hình khác nhau được đo trên cùng tập mutant
         mutants = sorted(random.Random(seed).sample(mutants, max_mutants), key=lambda m: m.id)
 

@@ -1,0 +1,162 @@
+{
+  "module": "text_utils",
+  "module_path": "C:\\Workin\\ChuyenDe\\targets\\text_utils.py",
+  "label": "eval_D",
+  "config": {
+    "max_iterations": 6,
+    "line_threshold": 95.0,
+    "branch_threshold": 90.0,
+    "patience": 2,
+    "max_fix_attempts": 2,
+    "test_timeout": 60,
+    "use_mutation": true,
+    "mutation_threshold": 80.0,
+    "max_mutants": 20,
+    "use_memory": true,
+    "label": "eval_D"
+  },
+  "llm": {
+    "provider": "openrouter",
+    "model": "nvidia/nemotron-3-super-120b-a12b:free"
+  },
+  "stop_reason": "Mutation score không cải thiện sau 2 lần thử",
+  "iterations": [
+    {
+      "iteration": 0,
+      "phase": "mutation",
+      "action": "kill_mutants",
+      "reason": "Mutation score 75.0% < 80.0% -> đưa 5 mutant còn sống cho LLM viết test mới",
+      "test_code": "import text_utils\nimport pytest\n\n\ndef test_reverse_words_basic():\n    assert text_utils.reverse_words(\"xin chao ban\") == \"ban chao xin\"\n\n\ndef test_reverse_words_extra_spaces():\n    assert text_utils.reverse_words(\"  xin   chao ban \") == \"ban chao xin\"\n\n\ndef test_reverse_words_single_word():\n    assert text_utils.reverse_words(\"hello\") == \"hello\"\n\n\ndef test_reverse_words_empty():\n    assert text_utils.reverse_words(\"\") == \"\"\n\n\ndef test_reverse_words_multiple_spaces_between():\n    assert text_utils.reverse_words(\"a  b   c\") == \"c b a\"\n\n\ndef test_reverse_words_punctuation_preserved():\n    assert text_utils.reverse_words(\"hello, world!\") == \"world! hello,\"\n\n\ndef test_is_palindrome_example():\n    assert text_utils.is_palindrome(\"A man, a plan, a canal: Panama\") is True\n\n\ndef test_is_palindrome_non_palindrome():\n    assert text_utils.is_palindrome(\"hello\") is False\n\n\ndef test_is_palindrome_empty():\n    assert text_utils.is_palindrome(\"\") is True\n\n\ndef test_is_palindrome_single_char():\n    assert text_utils.is_palindrome(\"x\") is True\n\n\ndef test_is_palindrome_case_insensitive():\n    assert text_utils.is_palindrome(\"RaceCar\") is True\n\n\ndef test_is_palindrome_only_non_alnum():\n    assert text_utils.is_palindrome(\"!!!\") is True\n\n\ndef test_is_palindrome_even_with_space():\n    assert text_utils.is_palindrome(\"ab ba\") is True\n\n\ndef test_is_palindrome_not_palindrome():\n    assert text_utils.is_palindrome(\"ab ca\") is False\n\n\ndef test_count_vowels_basic():\n    assert text_utils.count_vowels(\"Hello World\") == 3\n\n\ndef test_count_vowels_case_insensitive():\n    assert text_utils.count_vowels(\"AEIOU\") == 5\n\n\ndef test_count_vowels_no_vowels():\n    assert text_utils.count_vowels(\"xyz\") == 0\n\n\ndef test_count_vowels_empty():\n    assert text_utils.count_vowels(\"\") == 0\n\n\ndef test_count_vowels_mixed_case():\n    assert text_utils.count_vowels(\"aEiOu\") == 5\n\n\ndef test_count_vowels_non_letters():\n    assert text_utils.count_vowels(\"123!@#\") == 0\n\n\ndef test_truncate_when_short():\n    assert text_utils.truncate(\"hello\", 10) == \"hello\"\n\n\ndef test_truncate_exact_len():\n    assert text_utils.truncate(\"hello\", 5) == \"hello\"\n\n\ndef test_truncate_normal_case():\n    assert text_utils.truncate(\"hello world\", 8) == \"hello...\"\n\n\ndef test_truncate_custom_suffix():\n    assert text_utils.truncate(\"hello world\", 8, suffix=\"--\") == \"hello --\"\n\n\ndef test_truncate_max_len_equals_suffix_len():\n    # suffix default \"...\" length 3\n    assert text_utils.truncate(\"abcd\", 3) == \"...\"\n\n\ndef test_truncate_max_len_greater_than_suffix_but_prefix_zero():\n    # max_len == len(suffix) -> prefix length 0\n    assert text_utils.truncate(\"\", 3) == \"\"\n\n\ndef test_truncate_raises_value_error():\n    with pytest.raises(ValueError):\n        text_utils.truncate(\"any\", 2)  # suffix \"...\" length 3 > max_len 2\n\n\ndef test_slugify_example():\n    assert text_utils.slugify(\"  Hello, World!! 2024 \") == \"hello-world-2024\"\n\n\ndef test_slugify_leading_trailing_spaces():\n    assert text_utils.slugify(\"   leading and trailing   \") == \"leading-and-trailing\"\n\n\ndef test_slugify_multiple_non_alnum():\n    assert text_utils.slugify(\"Hello---World\") == \"hello-world\"\n\n\ndef test_slugify_only_non_alnum():\n    assert text_utils.slugify(\"!!!\") == \"\"\n\n\ndef test_slugify_mixed_alnum_and_non_alnum():\n    assert text_utils.slugify(\"a1b2!@#c3d4\") == \"a1b2-c3d4\"\n\n\ndef test_slugify_already_slug():\n    assert text_utils.slugify(\"hello-world\") == \"hello-world\"\n\n\ndef test_slugify_empty_string():\n    assert text_utils.slugify(\"\") == \"\"\n",
+      "passed": 34,
+      "failed": 0,
+      "errors": 0,
+      "xfailed": 0,
+      "collection_error": "",
+      "line_coverage": 100.0,
+      "branch_coverage": 100.0,
+      "missing_lines": [],
+      "missing_branches": [],
+      "mutation_score": 75.0,
+      "mutants_total": 20,
+      "mutants_killed": 15,
+      "survived_mutants": [
+        "Mutant #10, dòng 28: `if ch in \"aeiou\":`  ->  `if ch in \"XXaeiouXX\":`",
+        "Mutant #16, dòng 42: `raise ValueError(\"max_len quá nhỏ\")`  ->  `raise ValueError(\"XXmax_len quá nhỏXX\")`",
+        "Mutant #21, dòng 57: `previous_dash = False`  ->  `previous_dash = True`",
+        "Mutant #22, dòng 57: `previous_dash = False`  ->  `previous_dash = None`",
+        "Mutant #24, dòng 61: `previous_dash = False`  ->  `previous_dash = None`"
+      ],
+      "suspected": {},
+      "classifications": [],
+      "removed_tests": [],
+      "lesson": "",
+      "llm_calls_so_far": 2,
+      "elapsed": 74.6
+    },
+    {
+      "iteration": 1,
+      "phase": "mutation",
+      "action": "kill_mutants",
+      "reason": "Mutation score 75.0% < 80.0% -> đưa 5 mutant còn sống cho LLM viết test mới",
+      "test_code": "import text_utils\nimport pytest\n\n\ndef test_reverse_words_basic():\n    assert text_utils.reverse_words(\"xin chao ban\") == \"ban chao xin\"\n\n\ndef test_reverse_words_extra_spaces():\n    assert text_utils.reverse_words(\"  xin   chao ban \") == \"ban chao xin\"\n\n\ndef test_reverse_words_single_word():\n    assert text_utils.reverse_words(\"hello\") == \"hello\"\n\n\ndef test_reverse_words_empty():\n    assert text_utils.reverse_words(\"\") == \"\"\n\n\ndef test_reverse_words_multiple_spaces_between():\n    assert text_utils.reverse_words(\"a  b   c\") == \"c b a\"\n\n\ndef test_reverse_words_punctuation_preserved():\n    assert text_utils.reverse_words(\"hello, world!\") == \"world! hello,\"\n\n\ndef test_is_palindrome_example():\n    assert text_utils.is_palindrome(\"A man, a plan, a canal: Panama\") is True\n\n\ndef test_is_palindrome_non_palindrome():\n    assert text_utils.is_palindrome(\"hello\") is False\n\n\ndef test_is_palindrome_empty():\n    assert text_utils.is_palindrome(\"\") is True\n\n\ndef test_is_palindrome_single_char():\n    assert text_utils.is_palindrome(\"x\") is True\n\n\ndef test_is_palindrome_case_insensitive():\n    assert text_utils.is_palindrome(\"RaceCar\") is True\n\n\ndef test_is_palindrome_only_non_alnum():\n    assert text_utils.is_palindrome(\"!!!\") is True\n\n\ndef test_is_palindrome_even_with_space():\n    assert text_utils.is_palindrome(\"ab ba\") is True\n\n\ndef test_is_palindrome_not_palindrome():\n    assert text_utils.is_palindrome(\"ab ca\") is False\n\n\ndef test_count_vowels_basic():\n    assert text_utils.count_vowels(\"Hello World\") == 3\n\n\ndef test_count_vowels_case_insensitive():\n    assert text_utils.count_vowels(\"AEIOU\") == 5\n\n\ndef test_count_vowels_no_vowels():\n    assert text_utils.count_vowels(\"xyz\") == 0\n\n\ndef test_count_vowels_empty():\n    assert text_utils.count_vowels(\"\") == 0\n\n\ndef test_count_vowels_mixed_case():\n    assert text_utils.count_vowels(\"aEiOu\") == 5\n\n\ndef test_count_vowels_non_letters():\n    assert text_utils.count_vowels(\"123!@#\") == 0\n\n\ndef test_truncate_when_short():\n    assert text_utils.truncate(\"hello\", 10) == \"hello\"\n\n\ndef test_truncate_exact_len():\n    assert text_utils.truncate(\"hello\", 5) == \"hello\"\n\n\ndef test_truncate_normal_case():\n    assert text_utils.truncate(\"hello world\", 8) == \"hello...\"\n\n\ndef test_truncate_custom_suffix():\n    assert text_utils.truncate(\"hello world\", 8, suffix=\"--\") == \"hello --\"\n\n\ndef test_truncate_max_len_equals_suffix_len():\n    # suffix default \"...\" length 3\n    assert text_utils.truncate(\"abcd\", 3) == \"...\"\n\n\ndef test_truncate_max_len_greater_than_suffix_but_prefix_zero():\n    # max_len == len(suffix) -> prefix length 0\n    assert text_utils.truncate(\"\", 3) == \"\"\n\n\ndef test_truncate_raises_value_error():\n    with pytest.raises(ValueError):\n        text_utils.truncate(\"any\", 2)  # suffix \"...\" length 3 > max_len 2\n\n\ndef test_slugify_example():\n    assert text_utils.slugify(\"  Hello, World!! 2024 \") == \"hello-world-2024\"\n\n\ndef test_slugify_leading_trailing_spaces():\n    assert text_utils.slugify(\"   leading and trailing   \") == \"leading-and-trailing\"\n\n\ndef test_slugify_multiple_non_alnum():\n    assert text_utils.slugify(\"Hello---World\") == \"hello-world\"\n\n\ndef test_slugify_only_non_alnum():\n    assert text_utils.slugify(\"!!!\") == \"\"\n\n\ndef test_slugify_mixed_alnum_and_non_alnum():\n    assert text_utils.slugify(\"a1b2!@#c3d4\") == \"a1b2-c3d4\"\n\n\ndef test_slugify_already_slug():\n    assert text_utils.slugify(\"hello-world\") == \"hello-world\"\n\n\ndef test_slugify_empty_string():\n    assert text_utils.slugify(\"\") == \"\"\n\n\ndef test_count_vowels_lowercase_x():\n    \"\"\"'x' không phải nguyên âm nên phải được đếm là 0.\"\"\"\n    assert text_utils.count_vowels(\"x\") == 0\n\n\ndef test_count_vowels_uppercase_X():\n    \"\"\"'X' (chữ hoa của x) cũng không phải nguyên âm, đếm là 0.\"\"\"\n    assert text_utils.count_vowels(\"X\") == 0\n\n\ndef test_count_vowels_only_x_characters():\n    \"\"\"Chuỗi chứa chỉ các ký tự 'x'/'X' phải trả về 0.\"\"\"\n    assert text_utils.count_vowels(\"xxXx\") == 0\n",
+      "passed": 37,
+      "failed": 0,
+      "errors": 0,
+      "xfailed": 0,
+      "collection_error": "",
+      "line_coverage": 100.0,
+      "branch_coverage": 100.0,
+      "missing_lines": [],
+      "missing_branches": [],
+      "mutation_score": 75.0,
+      "mutants_total": 20,
+      "mutants_killed": 15,
+      "survived_mutants": [
+        "Mutant #10, dòng 28: `if ch in \"aeiou\":`  ->  `if ch in \"XXaeiouXX\":`",
+        "Mutant #16, dòng 42: `raise ValueError(\"max_len quá nhỏ\")`  ->  `raise ValueError(\"XXmax_len quá nhỏXX\")`",
+        "Mutant #21, dòng 57: `previous_dash = False`  ->  `previous_dash = True`",
+        "Mutant #22, dòng 57: `previous_dash = False`  ->  `previous_dash = None`",
+        "Mutant #24, dòng 61: `previous_dash = False`  ->  `previous_dash = None`"
+      ],
+      "suspected": {},
+      "classifications": [],
+      "removed_tests": [],
+      "lesson": "",
+      "llm_calls_so_far": 3,
+      "elapsed": 152.0
+    },
+    {
+      "iteration": 2,
+      "phase": "done",
+      "action": "stop",
+      "reason": "Mutation score không cải thiện sau 2 lần thử",
+      "test_code": "import text_utils\nimport pytest\n\n\ndef test_reverse_words_basic():\n    assert text_utils.reverse_words(\"xin chao ban\") == \"ban chao xin\"\n\n\ndef test_reverse_words_extra_spaces():\n    assert text_utils.reverse_words(\"  xin   chao ban \") == \"ban chao xin\"\n\n\ndef test_reverse_words_single_word():\n    assert text_utils.reverse_words(\"hello\") == \"hello\"\n\n\ndef test_reverse_words_empty():\n    assert text_utils.reverse_words(\"\") == \"\"\n\n\ndef test_reverse_words_multiple_spaces_between():\n    assert text_utils.reverse_words(\"a  b   c\") == \"c b a\"\n\n\ndef test_reverse_words_punctuation_preserved():\n    assert text_utils.reverse_words(\"hello, world!\") == \"world! hello,\"\n\n\ndef test_is_palindrome_example():\n    assert text_utils.is_palindrome(\"A man, a plan, a canal: Panama\") is True\n\n\ndef test_is_palindrome_non_palindrome():\n    assert text_utils.is_palindrome(\"hello\") is False\n\n\ndef test_is_palindrome_empty():\n    assert text_utils.is_palindrome(\"\") is True\n\n\ndef test_is_palindrome_single_char():\n    assert text_utils.is_palindrome(\"x\") is True\n\n\ndef test_is_palindrome_case_insensitive():\n    assert text_utils.is_palindrome(\"RaceCar\") is True\n\n\ndef test_is_palindrome_only_non_alnum():\n    assert text_utils.is_palindrome(\"!!!\") is True\n\n\ndef test_is_palindrome_even_with_space():\n    assert text_utils.is_palindrome(\"ab ba\") is True\n\n\ndef test_is_palindrome_not_palindrome():\n    assert text_utils.is_palindrome(\"ab ca\") is False\n\n\ndef test_count_vowels_basic():\n    assert text_utils.count_vowels(\"Hello World\") == 3\n\n\ndef test_count_vowels_case_insensitive():\n    assert text_utils.count_vowels(\"AEIOU\") == 5\n\n\ndef test_count_vowels_no_vowels():\n    assert text_utils.count_vowels(\"xyz\") == 0\n\n\ndef test_count_vowels_empty():\n    assert text_utils.count_vowels(\"\") == 0\n\n\ndef test_count_vowels_mixed_case():\n    assert text_utils.count_vowels(\"aEiOu\") == 5\n\n\ndef test_count_vowels_non_letters():\n    assert text_utils.count_vowels(\"123!@#\") == 0\n\n\ndef test_truncate_when_short():\n    assert text_utils.truncate(\"hello\", 10) == \"hello\"\n\n\ndef test_truncate_exact_len():\n    assert text_utils.truncate(\"hello\", 5) == \"hello\"\n\n\ndef test_truncate_normal_case():\n    assert text_utils.truncate(\"hello world\", 8) == \"hello...\"\n\n\ndef test_truncate_custom_suffix():\n    assert text_utils.truncate(\"hello world\", 8, suffix=\"--\") == \"hello --\"\n\n\ndef test_truncate_max_len_equals_suffix_len():\n    # suffix default \"...\" length 3\n    assert text_utils.truncate(\"abcd\", 3) == \"...\"\n\n\ndef test_truncate_max_len_greater_than_suffix_but_prefix_zero():\n    # max_len == len(suffix) -> prefix length 0\n    assert text_utils.truncate(\"\", 3) == \"\"\n\n\ndef test_truncate_raises_value_error():\n    with pytest.raises(ValueError):\n        text_utils.truncate(\"any\", 2)  # suffix \"...\" length 3 > max_len 2\n\n\ndef test_slugify_example():\n    assert text_utils.slugify(\"  Hello, World!! 2024 \") == \"hello-world-2024\"\n\n\ndef test_slugify_leading_trailing_spaces():\n    assert text_utils.slugify(\"   leading and trailing   \") == \"leading-and-trailing\"\n\n\ndef test_slugify_multiple_non_alnum():\n    assert text_utils.slugify(\"Hello---World\") == \"hello-world\"\n\n\ndef test_slugify_only_non_alnum():\n    assert text_utils.slugify(\"!!!\") == \"\"\n\n\ndef test_slugify_mixed_alnum_and_non_alnum():\n    assert text_utils.slugify(\"a1b2!@#c3d4\") == \"a1b2-c3d4\"\n\n\ndef test_slugify_already_slug():\n    assert text_utils.slugify(\"hello-world\") == \"hello-world\"\n\n\ndef test_slugify_empty_string():\n    assert text_utils.slugify(\"\") == \"\"\n\n\ndef test_count_vowels_lowercase_x():\n    \"\"\"'x' không phải nguyên âm nên phải được đếm là 0.\"\"\"\n    assert text_utils.count_vowels(\"x\") == 0\n\n\ndef test_count_vowels_uppercase_X():\n    \"\"\"'X' (chữ hoa của x) cũng không phải nguyên âm, đếm là 0.\"\"\"\n    assert text_utils.count_vowels(\"X\") == 0\n\n\ndef test_count_vowels_only_x_characters():\n    \"\"\"Chuỗi chứa chỉ các ký tự 'x'/'X' phải trả về 0.\"\"\"\n    assert text_utils.count_vowels(\"xxXx\") == 0\n",
+      "passed": 37,
+      "failed": 0,
+      "errors": 0,
+      "xfailed": 0,
+      "collection_error": "",
+      "line_coverage": 100.0,
+      "branch_coverage": 100.0,
+      "missing_lines": [],
+      "missing_branches": [],
+      "mutation_score": 75.0,
+      "mutants_total": 20,
+      "mutants_killed": 15,
+      "survived_mutants": [
+        "Mutant #10, dòng 28: `if ch in \"aeiou\":`  ->  `if ch in \"XXaeiouXX\":`",
+        "Mutant #16, dòng 42: `raise ValueError(\"max_len quá nhỏ\")`  ->  `raise ValueError(\"XXmax_len quá nhỏXX\")`",
+        "Mutant #21, dòng 57: `previous_dash = False`  ->  `previous_dash = True`",
+        "Mutant #22, dòng 57: `previous_dash = False`  ->  `previous_dash = None`",
+        "Mutant #24, dòng 61: `previous_dash = False`  ->  `previous_dash = None`"
+      ],
+      "suspected": {},
+      "classifications": [],
+      "removed_tests": [],
+      "lesson": "",
+      "llm_calls_so_far": 3,
+      "elapsed": 157.3
+    }
+  ],
+  "final_test_code": "import text_utils\nimport pytest\n\n\ndef test_reverse_words_basic():\n    assert text_utils.reverse_words(\"xin chao ban\") == \"ban chao xin\"\n\n\ndef test_reverse_words_extra_spaces():\n    assert text_utils.reverse_words(\"  xin   chao ban \") == \"ban chao xin\"\n\n\ndef test_reverse_words_single_word():\n    assert text_utils.reverse_words(\"hello\") == \"hello\"\n\n\ndef test_reverse_words_empty():\n    assert text_utils.reverse_words(\"\") == \"\"\n\n\ndef test_reverse_words_multiple_spaces_between():\n    assert text_utils.reverse_words(\"a  b   c\") == \"c b a\"\n\n\ndef test_reverse_words_punctuation_preserved():\n    assert text_utils.reverse_words(\"hello, world!\") == \"world! hello,\"\n\n\ndef test_is_palindrome_example():\n    assert text_utils.is_palindrome(\"A man, a plan, a canal: Panama\") is True\n\n\ndef test_is_palindrome_non_palindrome():\n    assert text_utils.is_palindrome(\"hello\") is False\n\n\ndef test_is_palindrome_empty():\n    assert text_utils.is_palindrome(\"\") is True\n\n\ndef test_is_palindrome_single_char():\n    assert text_utils.is_palindrome(\"x\") is True\n\n\ndef test_is_palindrome_case_insensitive():\n    assert text_utils.is_palindrome(\"RaceCar\") is True\n\n\ndef test_is_palindrome_only_non_alnum():\n    assert text_utils.is_palindrome(\"!!!\") is True\n\n\ndef test_is_palindrome_even_with_space():\n    assert text_utils.is_palindrome(\"ab ba\") is True\n\n\ndef test_is_palindrome_not_palindrome():\n    assert text_utils.is_palindrome(\"ab ca\") is False\n\n\ndef test_count_vowels_basic():\n    assert text_utils.count_vowels(\"Hello World\") == 3\n\n\ndef test_count_vowels_case_insensitive():\n    assert text_utils.count_vowels(\"AEIOU\") == 5\n\n\ndef test_count_vowels_no_vowels():\n    assert text_utils.count_vowels(\"xyz\") == 0\n\n\ndef test_count_vowels_empty():\n    assert text_utils.count_vowels(\"\") == 0\n\n\ndef test_count_vowels_mixed_case():\n    assert text_utils.count_vowels(\"aEiOu\") == 5\n\n\ndef test_count_vowels_non_letters():\n    assert text_utils.count_vowels(\"123!@#\") == 0\n\n\ndef test_truncate_when_short():\n    assert text_utils.truncate(\"hello\", 10) == \"hello\"\n\n\ndef test_truncate_exact_len():\n    assert text_utils.truncate(\"hello\", 5) == \"hello\"\n\n\ndef test_truncate_normal_case():\n    assert text_utils.truncate(\"hello world\", 8) == \"hello...\"\n\n\ndef test_truncate_custom_suffix():\n    assert text_utils.truncate(\"hello world\", 8, suffix=\"--\") == \"hello --\"\n\n\ndef test_truncate_max_len_equals_suffix_len():\n    # suffix default \"...\" length 3\n    assert text_utils.truncate(\"abcd\", 3) == \"...\"\n\n\ndef test_truncate_max_len_greater_than_suffix_but_prefix_zero():\n    # max_len == len(suffix) -> prefix length 0\n    assert text_utils.truncate(\"\", 3) == \"\"\n\n\ndef test_truncate_raises_value_error():\n    with pytest.raises(ValueError):\n        text_utils.truncate(\"any\", 2)  # suffix \"...\" length 3 > max_len 2\n\n\ndef test_slugify_example():\n    assert text_utils.slugify(\"  Hello, World!! 2024 \") == \"hello-world-2024\"\n\n\ndef test_slugify_leading_trailing_spaces():\n    assert text_utils.slugify(\"   leading and trailing   \") == \"leading-and-trailing\"\n\n\ndef test_slugify_multiple_non_alnum():\n    assert text_utils.slugify(\"Hello---World\") == \"hello-world\"\n\n\ndef test_slugify_only_non_alnum():\n    assert text_utils.slugify(\"!!!\") == \"\"\n\n\ndef test_slugify_mixed_alnum_and_non_alnum():\n    assert text_utils.slugify(\"a1b2!@#c3d4\") == \"a1b2-c3d4\"\n\n\ndef test_slugify_already_slug():\n    assert text_utils.slugify(\"hello-world\") == \"hello-world\"\n\n\ndef test_slugify_empty_string():\n    assert text_utils.slugify(\"\") == \"\"\n\n\ndef test_count_vowels_lowercase_x():\n    \"\"\"'x' không phải nguyên âm nên phải được đếm là 0.\"\"\"\n    assert text_utils.count_vowels(\"x\") == 0\n\n\ndef test_count_vowels_uppercase_X():\n    \"\"\"'X' (chữ hoa của x) cũng không phải nguyên âm, đếm là 0.\"\"\"\n    assert text_utils.count_vowels(\"X\") == 0\n\n\ndef test_count_vowels_only_x_characters():\n    \"\"\"Chuỗi chứa chỉ các ký tự 'x'/'X' phải trả về 0.\"\"\"\n    assert text_utils.count_vowels(\"xxXx\") == 0\n",
+  "suspected_bugs": {},
+  "snapshots": {
+    "initial": {
+      "code": "import text_utils\nimport pytest\n\n\ndef test_reverse_words_basic():\n    assert text_utils.reverse_words(\"xin chao ban\") == \"ban chao xin\"\n\n\ndef test_reverse_words_extra_spaces():\n    assert text_utils.reverse_words(\"  xin   chao ban \") == \"ban chao xin\"\n\n\ndef test_reverse_words_single_word():\n    assert text_utils.reverse_words(\"hello\") == \"hello\"\n\n\ndef test_reverse_words_empty():\n    assert text_utils.reverse_words(\"\") == \"\"\n\n\ndef test_reverse_words_multiple_spaces_between():\n    assert text_utils.reverse_words(\"a  b   c\") == \"c b a\"\n\n\ndef test_reverse_words_punctuation_preserved():\n    assert text_utils.reverse_words(\"hello, world!\") == \"world! hello,\"\n\n\ndef test_is_palindrome_example():\n    assert text_utils.is_palindrome(\"A man, a plan, a canal: Panama\") is True\n\n\ndef test_is_palindrome_non_palindrome():\n    assert text_utils.is_palindrome(\"hello\") is False\n\n\ndef test_is_palindrome_empty():\n    assert text_utils.is_palindrome(\"\") is True\n\n\ndef test_is_palindrome_single_char():\n    assert text_utils.is_palindrome(\"x\") is True\n\n\ndef test_is_palindrome_case_insensitive():\n    assert text_utils.is_palindrome(\"RaceCar\") is True\n\n\ndef test_is_palindrome_only_non_alnum():\n    assert text_utils.is_palindrome(\"!!!\") is True\n\n\ndef test_is_palindrome_even_with_space():\n    assert text_utils.is_palindrome(\"ab ba\") is True\n\n\ndef test_is_palindrome_not_palindrome():\n    assert text_utils.is_palindrome(\"ab ca\") is False\n\n\ndef test_count_vowels_basic():\n    assert text_utils.count_vowels(\"Hello World\") == 3\n\n\ndef test_count_vowels_case_insensitive():\n    assert text_utils.count_vowels(\"AEIOU\") == 5\n\n\ndef test_count_vowels_no_vowels():\n    assert text_utils.count_vowels(\"xyz\") == 0\n\n\ndef test_count_vowels_empty():\n    assert text_utils.count_vowels(\"\") == 0\n\n\ndef test_count_vowels_mixed_case():\n    assert text_utils.count_vowels(\"aEiOu\") == 5\n\n\ndef test_count_vowels_non_letters():\n    assert text_utils.count_vowels(\"123!@#\") == 0\n\n\ndef test_truncate_when_short():\n    assert text_utils.truncate(\"hello\", 10) == \"hello\"\n\n\ndef test_truncate_exact_len():\n    assert text_utils.truncate(\"hello\", 5) == \"hello\"\n\n\ndef test_truncate_normal_case():\n    assert text_utils.truncate(\"hello world\", 8) == \"hello...\"\n\n\ndef test_truncate_custom_suffix():\n    assert text_utils.truncate(\"hello world\", 8, suffix=\"--\") == \"hello --\"\n\n\ndef test_truncate_max_len_equals_suffix_len():\n    # suffix default \"...\" length 3\n    assert text_utils.truncate(\"abcd\", 3) == \"...\"\n\n\ndef test_truncate_max_len_greater_than_suffix_but_prefix_zero():\n    # max_len == len(suffix) -> prefix length 0\n    assert text_utils.truncate(\"\", 3) == \"\"\n\n\ndef test_truncate_raises_value_error():\n    with pytest.raises(ValueError):\n        text_utils.truncate(\"any\", 2)  # suffix \"...\" length 3 > max_len 2\n\n\ndef test_slugify_example():\n    assert text_utils.slugify(\"  Hello, World!! 2024 \") == \"hello-world-2024\"\n\n\ndef test_slugify_leading_trailing_spaces():\n    assert text_utils.slugify(\"   leading and trailing   \") == \"leading-and-trailing\"\n\n\ndef test_slugify_multiple_non_alnum():\n    assert text_utils.slugify(\"Hello---World\") == \"hello-world\"\n\n\ndef test_slugify_only_non_alnum():\n    assert text_utils.slugify(\"!!!\") == \"\"\n\n\ndef test_slugify_mixed_alnum_and_non_alnum():\n    assert text_utils.slugify(\"a1b2!@#c3d4\") == \"a1b2-c3d4\"\n\n\ndef test_slugify_already_slug():\n    assert text_utils.slugify(\"hello-world\") == \"hello-world\"\n\n\ndef test_slugify_empty_string():\n    assert text_utils.slugify(\"\") == \"\"\n",
+      "llm_calls": 1,
+      "cost_usd": 0.0,
+      "seconds": 33.5,
+      "iterations": 0
+    },
+    "coverage_done": {
+      "code": "import text_utils\nimport pytest\n\n\ndef test_reverse_words_basic():\n    assert text_utils.reverse_words(\"xin chao ban\") == \"ban chao xin\"\n\n\ndef test_reverse_words_extra_spaces():\n    assert text_utils.reverse_words(\"  xin   chao ban \") == \"ban chao xin\"\n\n\ndef test_reverse_words_single_word():\n    assert text_utils.reverse_words(\"hello\") == \"hello\"\n\n\ndef test_reverse_words_empty():\n    assert text_utils.reverse_words(\"\") == \"\"\n\n\ndef test_reverse_words_multiple_spaces_between():\n    assert text_utils.reverse_words(\"a  b   c\") == \"c b a\"\n\n\ndef test_reverse_words_punctuation_preserved():\n    assert text_utils.reverse_words(\"hello, world!\") == \"world! hello,\"\n\n\ndef test_is_palindrome_example():\n    assert text_utils.is_palindrome(\"A man, a plan, a canal: Panama\") is True\n\n\ndef test_is_palindrome_non_palindrome():\n    assert text_utils.is_palindrome(\"hello\") is False\n\n\ndef test_is_palindrome_empty():\n    assert text_utils.is_palindrome(\"\") is True\n\n\ndef test_is_palindrome_single_char():\n    assert text_utils.is_palindrome(\"x\") is True\n\n\ndef test_is_palindrome_case_insensitive():\n    assert text_utils.is_palindrome(\"RaceCar\") is True\n\n\ndef test_is_palindrome_only_non_alnum():\n    assert text_utils.is_palindrome(\"!!!\") is True\n\n\ndef test_is_palindrome_even_with_space():\n    assert text_utils.is_palindrome(\"ab ba\") is True\n\n\ndef test_is_palindrome_not_palindrome():\n    assert text_utils.is_palindrome(\"ab ca\") is False\n\n\ndef test_count_vowels_basic():\n    assert text_utils.count_vowels(\"Hello World\") == 3\n\n\ndef test_count_vowels_case_insensitive():\n    assert text_utils.count_vowels(\"AEIOU\") == 5\n\n\ndef test_count_vowels_no_vowels():\n    assert text_utils.count_vowels(\"xyz\") == 0\n\n\ndef test_count_vowels_empty():\n    assert text_utils.count_vowels(\"\") == 0\n\n\ndef test_count_vowels_mixed_case():\n    assert text_utils.count_vowels(\"aEiOu\") == 5\n\n\ndef test_count_vowels_non_letters():\n    assert text_utils.count_vowels(\"123!@#\") == 0\n\n\ndef test_truncate_when_short():\n    assert text_utils.truncate(\"hello\", 10) == \"hello\"\n\n\ndef test_truncate_exact_len():\n    assert text_utils.truncate(\"hello\", 5) == \"hello\"\n\n\ndef test_truncate_normal_case():\n    assert text_utils.truncate(\"hello world\", 8) == \"hello...\"\n\n\ndef test_truncate_custom_suffix():\n    assert text_utils.truncate(\"hello world\", 8, suffix=\"--\") == \"hello --\"\n\n\ndef test_truncate_max_len_equals_suffix_len():\n    # suffix default \"...\" length 3\n    assert text_utils.truncate(\"abcd\", 3) == \"...\"\n\n\ndef test_truncate_max_len_greater_than_suffix_but_prefix_zero():\n    # max_len == len(suffix) -> prefix length 0\n    assert text_utils.truncate(\"\", 3) == \"\"\n\n\ndef test_truncate_raises_value_error():\n    with pytest.raises(ValueError):\n        text_utils.truncate(\"any\", 2)  # suffix \"...\" length 3 > max_len 2\n\n\ndef test_slugify_example():\n    assert text_utils.slugify(\"  Hello, World!! 2024 \") == \"hello-world-2024\"\n\n\ndef test_slugify_leading_trailing_spaces():\n    assert text_utils.slugify(\"   leading and trailing   \") == \"leading-and-trailing\"\n\n\ndef test_slugify_multiple_non_alnum():\n    assert text_utils.slugify(\"Hello---World\") == \"hello-world\"\n\n\ndef test_slugify_only_non_alnum():\n    assert text_utils.slugify(\"!!!\") == \"\"\n\n\ndef test_slugify_mixed_alnum_and_non_alnum():\n    assert text_utils.slugify(\"a1b2!@#c3d4\") == \"a1b2-c3d4\"\n\n\ndef test_slugify_already_slug():\n    assert text_utils.slugify(\"hello-world\") == \"hello-world\"\n\n\ndef test_slugify_empty_string():\n    assert text_utils.slugify(\"\") == \"\"\n",
+      "llm_calls": 1,
+      "cost_usd": 0.0,
+      "seconds": 34.6,
+      "iterations": 0
+    }
+  },
+  "lessons_used": "- Mẫu test tốt (giết được mutant, từ module calculator):\n```python\ndef test_clamp_low_eq_high_no_error():\n    \"\"\"Khi low == high, hàm clamp không ném lỗi và trả về giá trị đó (hoặc low).\"\"\"\n    assert calculator.clamp(value=0, low=5, high=5) == 5\n    assert calculator.clamp(value=5, low=5, high=5) == 5\n    assert calculator.clamp(value=10, low=5, high=5) == 5\n```\n- Mẫu test tốt (giết được mutant, từ module calculator):\n```python\ndef test_clamp_low_gt_high_exact_message():\n    \"\"\"Kiểm tra thông báo lỗi ValueError khi low > high chính xác.\"\"\"\n    with pytest.raises(ValueError) as excinfo:\n        calculator.clamp(value=0, low=5, high=3)\n    assert str(excinfo.value) == \"low phải nhỏ hơn hoặc bằng high\"\n```",
+  "final": {
+    "line_coverage": 100.0,
+    "branch_coverage": 100.0,
+    "passed": 37,
+    "failed": 0,
+    "xfailed": 0,
+    "mutation_score": 75.0,
+    "num_iterations": 2
+  },
+  "stats": {
+    "llm_calls": 3,
+    "input_tokens": 6531,
+    "output_tokens": 10287,
+    "cost_usd": 0.0,
+    "llm_seconds": 140.8,
+    "total_seconds": 157.3
+  },
+  "source_code": "\"\"\"Module 2 (dễ - trung bình): xử lý chuỗi.\"\"\"\n\n\ndef reverse_words(sentence):\n    \"\"\"Đảo ngược thứ tự các từ trong câu, các từ cách nhau bởi đúng một dấu cách.\n\n    Khoảng trắng thừa ở đầu/cuối/giữa bị bỏ.\n    Ví dụ: reverse_words(\"  xin   chao ban \") == \"ban chao xin\"\n    \"\"\"\n    words = sentence.split()\n    return \" \".join(reversed(words))\n\n\ndef is_palindrome(text):\n    \"\"\"Kiểm tra chuỗi đối xứng, KHÔNG phân biệt hoa thường và BỎ QUA ký tự không phải chữ/số.\n\n    Ví dụ: is_palindrome(\"A man, a plan, a canal: Panama\") == True\n    Chuỗi rỗng được coi là đối xứng.\n    \"\"\"\n    cleaned = [ch.lower() for ch in text if ch.isalnum()]\n    return cleaned == cleaned[::-1]\n\n\ndef count_vowels(text):\n    \"\"\"Đếm số nguyên âm tiếng Anh (a, e, i, o, u), không phân biệt hoa thường.\"\"\"\n    count = 0\n    for ch in text.lower():\n        if ch in \"aeiou\":\n            count += 1\n    return count\n\n\ndef truncate(text, max_len, suffix=\"...\"):\n    \"\"\"Cắt chuỗi để độ dài KẾT QUẢ (tính cả suffix) không vượt quá max_len.\n\n    - Nếu len(text) <= max_len: trả về nguyên text.\n    - Ngược lại: giữ phần đầu của text rồi nối suffix sao cho tổng độ dài đúng bằng max_len.\n    - Ném ValueError nếu max_len < len(suffix).\n    Ví dụ: truncate(\"hello world\", 8) == \"hello...\"\n    \"\"\"\n    if max_len < len(suffix):\n        raise ValueError(\"max_len quá nhỏ\")\n    if len(text) <= max_len:\n        return text\n    return text[: max_len - len(suffix)] + suffix\n\n\ndef slugify(title):\n    \"\"\"Chuyển tiêu đề thành slug cho URL.\n\n    - Chữ thường\n    - Ký tự chữ/số giữ nguyên, mọi nhóm ký tự còn lại thay bằng một dấu \"-\"\n    - Bỏ dấu \"-\" ở đầu và cuối\n    Ví dụ: slugify(\"  Hello, World!! 2024 \") == \"hello-world-2024\"\n    \"\"\"\n    result = []\n    previous_dash = False\n    for ch in title.lower():\n        if ch.isalnum():\n            result.append(ch)\n            previous_dash = False\n        elif not previous_dash:\n            result.append(\"-\")\n            previous_dash = True\n    return \"\".join(result).strip(\"-\")\n",
+  "memory": {
+    "lessons": 0,
+    "good_tests": 2
+  }
+}
