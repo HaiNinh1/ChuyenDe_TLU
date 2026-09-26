@@ -53,3 +53,61 @@ git log --oneline
    bộ toán tử đột biến của mutmut 2 và tự viết phần chạy để giới hạn số mutant và phạm vi (1 module).
 3. **Vì sao cần `pytest.ini` với `testpaths`?** → Để phân biệt test của công cụ với test do LLM sinh
    (các test sinh ra import module theo tên và chỉ chạy đúng trong thư mục tạm do runner tạo).
+
+---
+
+## GĐ1 — Code mục tiêu (`targets/`)
+
+### (a) Đã làm gì và tại sao
+Viết 5 module nhỏ, độ khó tăng dần, để agent có "đề bài" sinh test:
+
+| Module | Độ khó | Đặc điểm cần test |
+|--------|--------|-------------------|
+| `calculator.py` | dễ | hàm tính toán, 1 vòng lặp, ném ngoại lệ đơn giản |
+| `text_utils.py` | dễ-TB | xử lý chuỗi, trường hợp biên (chuỗi rỗng, khoảng trắng) |
+| `grading.py` | TB | **nhiều nhánh if/elif**, điều kiện kép (`and`) → branch coverage có ý nghĩa |
+| `safe_parser.py` | TB-khó | **try/except**, class exception riêng, `raise ... from ...` |
+| `shopping_cart.py` | khó | **class có trạng thái**: kết quả phụ thuộc chuỗi thao tác trước đó |
+
+- Mỗi hàm có **docstring mô tả đặc tả** (hành vi đúng). Đây là "nguồn sự thật" để LLM viết assert —
+  nếu không có đặc tả, LLM chỉ có thể viết test "chụp lại" hành vi hiện tại của code (kể cả khi code sai).
+- Cài **2 bug** (xem `BUGS.md`), **không comment trong code**: lỗi biên ở `letter_grade(80)` và lỗi
+  không xoá sản phẩm khi số lượng về 0 ở `ShoppingCart.remove_item`.
+- Tạo bản đã sửa ở `evaluation/fixed_targets/` để GĐ7 chấm tự động "bộ test có phát hiện bug không".
+- `tests/test_targets.py` kiểm tra các module import được và bug hoạt động đúng như mô tả.
+
+### (b) Khái niệm quan trọng
+- **Đặc tả (specification) vs cài đặt (implementation):** đặc tả nói code *nên* làm gì (docstring),
+  cài đặt là code *thực sự* làm gì. Bug = chỗ hai thứ này khác nhau.
+  Ví dụ: docstring nói `80 -> "B"`, code trả `"C"` → bug.
+- **Oracle problem (bài toán "trọng tài"):** khi sinh test tự động, làm sao biết *kết quả đúng* là gì để viết
+  `assert`? Nếu LLM nhìn code rồi viết `assert letter_grade(80) == "C"` thì test PASS nhưng lại
+  "hợp thức hoá" bug. Vì vậy prompt sẽ yêu cầu LLM viết assert theo **docstring**, không theo code.
+- **Line coverage vs branch coverage:**
+  ```python
+  def f(x):
+      if x > 0:      # 1 dòng, 2 nhánh (True/False)
+          x = -x
+      return x
+  ```
+  Test `f(5)` chạy **mọi dòng** (line coverage 100%) nhưng chỉ đi nhánh True → branch coverage 50%.
+  Cần thêm `f(-1)` để phủ nhánh False.
+- **Code chết (dead code):** dòng không bao giờ chạy được. Bug 2 tạo ra code chết (`del self.items[name]`),
+  nên coverage tối đa của `shopping_cart.py` < 100% — một "manh mối" có thể dẫn tới bug.
+
+### (c) File liên quan
+`targets/*.py`, `BUGS.md`, `evaluation/fixed_targets/`, `tests/test_targets.py`
+
+### (d) Lệnh tự chạy thử
+```bash
+pytest -v tests/test_targets.py
+python -c "import sys; sys.path.insert(0,'targets'); import grading; print(grading.letter_grade(80))"
+```
+
+### (e) Câu hỏi giảng viên có thể hỏi
+1. **Vì sao không comment vị trí bug trong code?** → LLM đọc toàn bộ code; nếu có comment "BUG ở đây" thì
+   việc "phát hiện" là giả. Bug chỉ được ghi trong `BUGS.md`, file này không bao giờ đưa vào prompt.
+2. **Coverage 100% có đảm bảo không còn bug không?** → Không. Bug 1 là ví dụ: test `letter_grade(85)` phủ
+   nhánh `"B"` nhưng không lộ bug. Cần test đúng giá trị biên (80). Đây là lý do dự án dùng thêm mutation testing.
+3. **Vì sao chọn module có độ khó tăng dần?** → Để thấy agent xử lý thế nào khi code có nhiều nhánh, ngoại lệ,
+   và trạng thái; kết quả thực nghiệm có thể so sánh theo độ khó.
