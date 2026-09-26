@@ -322,15 +322,20 @@ tự viết (~60 dòng) thì kiểm soát được hoàn toàn và vẫn dùng �
 - `grading.py` (agent + mutation): vòng 0 phát hiện **bug 1** (LLM phân loại SUSPECTED_BUG: *"docstring nói 80 → B
   nhưng code trả C vì dùng > 80"*), coverage 97.5/96.9%, mutation score 95% → dừng. 2 lần gọi LLM.
 - `calculator.py` (ngưỡng mutation 100%): coverage 100% ngay từ đầu nhưng mutation 90.9% — 2 mutant còn sống đều
-  ở **biên** của `clamp` (`value < low` → `value <= low`). LLM viết thêm test `clamp(low, low, high)` → **100%**.
-  Đây là minh hoạ rõ nhất cho việc **coverage 100% chưa đủ**.
+  ở **biên** của `clamp` (`value < low` → `value <= low`, `value > high` → `value >= high`). LLM viết thêm 2 test → **100%**.
+  **Nhưng phải nhìn kỹ (trung thực):** hai mutant này *gần như tương đương* — khi `value == low`, bản gốc trả `value`,
+  mutant trả `low`, mà hai số này bằng nhau! LLM đã "giết" chúng bằng một class tự chế và `assert result is value`
+  (kiểm tra **danh tính object**) — một chi tiết cài đặt mà docstring **không hề quy định**. Test như vậy "giòn"
+  (brittle): nếu ai đó viết lại `clamp` đúng đặc tả nhưng trả `low` thì test fail oan.
+  → Bài học: **tối ưu mù quáng theo mutation score có thể sinh test bám vào chi tiết cài đặt** (overfitting).
+  Đây là hạn chế cần nêu trong báo cáo; ngưỡng mặc định 80% (không phải 100%) một phần vì lý do này.
 - Chạy `python -m testgen.mutation` trên test baseline của `grading.py`: mutant `elif score > 80` → `elif score >= 80`
   **sống sót** — mutant này thực chất là *bản sửa của bug 1*! (test bắt bug bị bỏ qua vì đang fail).
 
 ### (b) Khái niệm quan trọng
-- **Mutant và "giết" mutant:** ví dụ code `if value < low: return low`. Mutant đổi thành `if value <= low:`.
-  Test `clamp(-5, 0, 10) == 0` vẫn pass với cả hai → mutant **sống**. Test `clamp(0, 0, 10) == 0`... cũng pass
-  (vì trả về low = 0 = value) → mutant tương đương ở điểm này! Phải thử `clamp(value=low)` với kiểu khác, v.v.
+- **Mutant và "giết" mutant:** ví dụ `letter_grade` có `if score >= 90: return "A"`. Mutant đổi thành `score > 90`.
+  Test `letter_grade(95) == "A"` pass với cả hai → mutant **sống**. Test `letter_grade(90) == "A"` pass với bản gốc
+  nhưng FAIL với mutant (mutant trả "B") → mutant **bị giết**.
   Ý chính: test phải kiểm tra **đúng biên** và **đúng giá trị** thì mới giết được mutant.
 - **Mutation score = mutant bị giết / tổng mutant.** Đo "độ nhạy" của bộ test: nếu code bị sửa sai một chút, bộ test
   có kêu không? Coverage chỉ đo "code có được chạy không".
@@ -360,5 +365,8 @@ pytest tests/test_mutation.py -v
 2. **Mutation testing rất chậm, em giải quyết thế nào?** → Chỉ đột biến module đang test, lấy mẫu tối đa N mutant,
    chạy song song 4 tiến trình, pytest `-x` dừng ngay khi có test fail, timeout mỗi mutant. Đánh đổi: điểm là ước lượng
    trên mẫu, không phải toàn bộ mutant.
-3. **Vì sao chạy mutation SAU khi đạt coverage?** → Mutant ở dòng chưa được test chạy tới chắc chắn sống sót — gửi cho
+3. **Mutation score 100% có phải luôn tốt?** → Không hẳn. Ví dụ `clamp`: để đạt 100%, LLM viết test kiểm tra
+   `result is value` — chi tiết cài đặt ngoài đặc tả. Có những mutant (gần) tương đương mà muốn giết phải "bám" vào
+   cách cài đặt. Nên đặt ngưỡng hợp lý (80%) và người review cần xem các test sinh ra ở phase mutation.
+4. **Vì sao chạy mutation SAU khi đạt coverage?** → Mutant ở dòng chưa được test chạy tới chắc chắn sống sót — gửi cho
    LLM chỉ lặp lại việc tăng coverage mà tốn thêm thời gian. Tăng coverage trước (rẻ), rồi mới "mài" chất lượng assert.
