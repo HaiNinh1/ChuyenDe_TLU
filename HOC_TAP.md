@@ -1077,3 +1077,62 @@ Kiểm tra hồi quy: phần Python tất định vẫn **giống hệt** baseli
    pháp sẽ bị công cụ test báo lỗi thu thập ngay ở vòng 0.
 2. **Máy không có Node.js thì giao diện ra sao?** → Chọn JavaScript sẽ thấy báo "chưa cài Node.js" + lệnh cài, nút chạy
    bị khoá; phần Python và REPLAY log JS vẫn dùng được (REPLAY không cần chạy công cụ).
+
+---
+
+## RF8 — Slide, tài liệu; giải thích design pattern Adapter / Strategy
+
+### (a) Đã làm gì và tại sao
+- `slides/slides.md` (17 trang): đổi tên đề tài; **slide kiến trúc Adapter** (sơ đồ agent → LanguageAdapter →
+  Python/JS/Java); **slide "refactor an toàn"** (bảng so sánh ảnh chụp trước/sau); kết quả Python dùng biểu đồ mới
+  `summary_python.png`; **slide kết quả JS** ghi đúng những gì đã có (2 lần chạy thử agent thật) và nói rõ **chưa có
+  lượt A/B/C/D**; hạn chế ghi rõ **mới hiện thực 2 ngôn ngữ, Java/Go là hướng phát triển**. Đã render thử bằng Marp
+  CLI, sửa sơ đồ bị lệch (chữ có dấu trong khung ASCII) và slide bị tràn.
+- `slides/speaker_notes.md`: lời thoại theo slide mới + **13 câu hỏi** (thêm: kiến trúc Adapter là gì, vì sao chọn JS
+  làm ngôn ngữ thứ hai, thêm ngôn ngữ mới mất bao lâu).
+- `docs/THEM_NGON_NGU_MOI.md`: hướng dẫn viết adapter mới (bảng phương thức bắt buộc/tuỳ chọn), **phác thảo Java**
+  (JUnit 5 + JaCoCo + PIT, cách đọc báo cáo XML, 2 cách gắn nhãn nghi bug khi JUnit không có "expected failure"),
+  khó khăn dự kiến và **ước lượng công sức** (JS đã làm ~3,5 ngày; Java ~5–6 ngày).
+- `README.md` (cài cả Python và Node.js, bảng công cụ theo ngôn ngữ, lệnh cho cả hai ngôn ngữ), `DEMO_CHECKLIST.md`
+  (kịch bản 5 phút chạy TypeScript + Python, dự phòng khi máy demo thiếu Node), `CLAUDE.md`.
+
+### (b) Khái niệm quan trọng: Adapter và Strategy
+- **Adapter pattern** — "ổ cắm chuyển đổi": một bên *mong đợi* một giao diện (agent cần `run_tests()` trả về
+  `TestResult`), bên kia *có sẵn* một giao diện khác (pytest in XML, Jest in JSON, Stryker in `mutation.json`).
+  Adapter đứng giữa, dịch qua lại:
+  ```
+  agent ──run_tests()──► PythonAdapter ──► python -m pytest --junitxml ... ──► đọc XML ──► TestResult
+  agent ──run_tests()──► JavaScriptAdapter ──► node jest --json ...       ──► đọc JSON ──► TestResult
+  ```
+- **Strategy pattern** — "chọn thuật toán lúc chạy": cùng một thuật toán lớn (vòng lặp agent), phần thay đổi được
+  (cách chạy test, cách sửa file test) được gói thành đối tượng và **chọn khi chạy** (`adapter_for_file()` theo đuôi
+  file). Trong đồ án, mỗi adapter vừa là Adapter (bọc công cụ ngoài) vừa đóng vai Strategy (được agent chọn động).
+- **Open/Closed principle** (chữ O trong SOLID): "mở để mở rộng, đóng để sửa đổi" — thêm ngôn ngữ = thêm lớp mới, không
+  sửa code agent đã chạy ổn.
+
+**Lợi ích cụ thể của refactor này (đo được, không chỉ lý thuyết):**
+| Trước | Sau |
+|---|---|
+| Agent gọi thẳng pytest/mutmut/`ast` ở ~16 chỗ | Agent chỉ gọi `self.adapter.*`; chữ "pytest" chỉ còn trong comment |
+| Thêm ngôn ngữ = sửa agent, prompt, bộ nhớ, evaluate, app | Thêm JS: **0 dòng** sửa logic vòng lặp/oracle/thực nghiệm; chỉ thêm 2 file adapter |
+| Prompt viết cứng cho pytest | Khung prompt chung + `prompt_hints()`; Python ra **đúng từng ký tự** như cũ |
+| Bộ nhớ chung | Bộ nhớ theo ngôn ngữ, dữ liệu cũ tự chuyển đổi |
+| 64 test | 102 test (thêm test adapter giả `.fake` chứng minh giao diện đủ để cắm ngôn ngữ mới) |
+Cái giá: nhiều file hơn (thêm `adapters/`), và có thêm một tầng gián tiếp khi đọc code lần đầu.
+
+### (c) File liên quan
+`slides/slides.md`, `slides/speaker_notes.md`, `docs/THEM_NGON_NGU_MOI.md`, `README.md`, `DEMO_CHECKLIST.md`, `CLAUDE.md`
+
+### (d) Lệnh tự chạy thử
+```bash
+npx @marp-team/marp-cli@latest --no-stdin slides/slides.md --allow-local-files -o slides/slides.html
+npx @marp-team/marp-cli@latest --no-stdin slides/slides.md --allow-local-files --pdf -o slides/slides.pdf
+```
+
+### (e) Câu hỏi giảng viên có thể hỏi
+1. **Adapter khác Strategy thế nào? Đồ án dùng cái nào?** → Adapter giải quyết *không khớp giao diện* (bọc công cụ
+   ngoài); Strategy giải quyết *chọn thuật toán lúc chạy*. Lớp `PythonAdapter` bọc pytest/mutmut (Adapter) và được agent
+   chọn theo đuôi file (Strategy) — hai pattern thường đi cùng nhau.
+2. **Nếu sau này có ngôn ngữ không có công cụ mutation?** → `run_mutation()` trả `available=False`, agent tự dừng sau
+   phase coverage — đã có test cho trường hợp này với Stryker bị gỡ.
+3. Xem thêm 13 câu hỏi trong `slides/speaker_notes.md` (câu 11–13 dành riêng cho phần đa ngôn ngữ).

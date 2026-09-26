@@ -9,6 +9,7 @@ style: |
   h2 { color: #1f4e9a; }
   code { font-size: 0.85em; }
   table { font-size: 0.8em; }
+  pre { font-size: 0.72em; }
   .small { font-size: 0.7em; color: #555; }
   .red { color: #c0392b; font-weight: bold; }
   .green { color: #1e8449; font-weight: bold; }
@@ -16,7 +17,7 @@ style: |
 
 <!-- _paginate: false -->
 
-# LLM Agent tự sinh unit test cho Python
+# LLM Agent tự sinh unit test đa ngôn ngữ
 
 ### Vòng lặp tự cải tiến dựa trên phản hồi coverage và mutation testing
 
@@ -38,7 +39,7 @@ Môn: ……………… · 2026
     ```python
     assert letter_grade(80) == "C"   # code sai, test viết theo code sai
     ```
-- ❓ Làm sao để LLM **tự kiểm tra và cải thiện** bộ test của nó?
+- ❓ Làm sao để LLM **tự kiểm tra và cải thiện** bộ test — cho **nhiều ngôn ngữ**, không viết lại từ đầu?
 
 ---
 
@@ -46,61 +47,68 @@ Môn: ……………… · 2026
 
 | Hướng | Ví dụ | Ưu | Nhược |
 |---|---|---|---|
-| Tìm kiếm / tiến hoá | **EvoSuite** (Java), **Pynguin** (Python) | coverage cao, có hệ thống | assert "chụp" hành vi hiện tại, test khó đọc |
+| Tìm kiếm / tiến hoá | **EvoSuite** (Java), **Pynguin** (Python) | coverage cao, có hệ thống | assert "chụp" hành vi hiện tại; **mỗi công cụ một ngôn ngữ** |
 | LLM sinh một lần | ChatGPT, Copilot | test dễ đọc, hiểu docstring | không kiểm chứng, hay lỗi |
-| **LLM + phản hồi** | CoverUp, MuTAP, TestPilot… | kết hợp cả hai | tốn nhiều lần gọi LLM |
+| **LLM + phản hồi** | CoverUp, MuTAP, TestPilot… | kết hợp cả hai | tốn nhiều lần gọi LLM; thường gắn 1 ngôn ngữ |
 
-➡️ Đồ án đi theo hướng **LLM + vòng lặp phản hồi**, tự cài đặt đơn giản để hiểu rõ từng bước.
+➡️ Đồ án: **LLM + vòng lặp phản hồi**, tự cài đặt đơn giản, tách phần phụ thuộc ngôn ngữ ra **Adapter**.
 
 ---
 
 ## 3. Mục tiêu và phạm vi
 
 **Mục tiêu**
-- Agent sinh test pytest → **chạy, đo** → dùng kết quả đo để **tự sửa / bổ sung**
+- Agent sinh test → **chạy, đo** → dùng kết quả đo để **tự sửa / bổ sung**
 - Xử lý **oracle problem**: test fail là do *test sai* hay *code sai*?
-- So sánh định lượng 4 cấu hình
+- **Một vòng lặp, nhiều ngôn ngữ** (kiến trúc Adapter); so sánh định lượng 4 cấu hình
 
 **Phạm vi**
-- Python, 5 module nhỏ (dễ → khó), **2 bug cài sẵn**
+- **2 ngôn ngữ**: Python (5 module) và JavaScript/TypeScript (4 module); **4 bug cài sẵn**
 - Không dùng LangChain / framework agent — vòng lặp tự viết
 - LLM qua API (OpenRouter / DeepSeek / OpenAI / Claude / Ollama)
 
 ---
 
-## 4. Kiến trúc
+## 4. Kiến trúc Adapter
 
 ```
-            ┌──────────────┐   prompt    ┌─────────┐
- module ──► │    AGENT     │ ──────────► │   LLM   │
- (.py)      │ (vòng for +  │ ◄────────── │         │
-            │   if/else)   │   code test └─────────┘
-            └──────┬───────┘
-     code test     │  ▲  RunResult / MutationResult
-                   ▼  │
-            ┌───────────────┐   ┌──────────────┐   ┌──────────────┐
-            │ Runner        │   │ Mutation     │   │ Memory       │
-            │ pytest+cov    │   │ mutmut ops   │   │ JSON bài học │
-            │ (subprocess)  │   │ (song song)  │   │ + mẫu test   │
-            └───────────────┘   └──────────────┘   └──────────────┘
-      logs/*.json  ──►  Streamlit (chạy trực tiếp / REPLAY)
+                  prompt = common template + language hints
+ +-----------------+  ------------------------------------>  +-------+
+ |  AGENT (for+if) |                                         |  LLM  |
+ | language-blind  |  <------------------------------------  +-------+
+ +--------+--------+               test code
+          |  run_tests() get_coverage() run_mutation() merge_tests() add_suspected_marker()
+          v
+ +-----------------------+          registry: file extension -> adapter
+ |  LanguageAdapter (ABC)|
+ +-----+-----------+-----+
+       |           |                      .  (future work)
+       v           v                      v
+ +-----------+ +----------------+ +--------------+
+ | Python    | | JavaScript/TS  | | Java         |
+ | pytest    | | Jest           | | JUnit 5      |
+ | coverage  | | Istanbul       | | JaCoCo       |
+ | mutmut    | | StrykerJS      | | PIT          |
+ +-----------+ +----------------+ +--------------+
 ```
+
+<span class="small">Thêm ngôn ngữ = viết 1 lớp con + 1 dòng đăng ký. Vòng lặp, oracle, bộ nhớ, thực nghiệm, giao diện dùng lại nguyên vẹn.</span>
 
 ---
 
 ## 5. Vòng lặp tự cải tiến
 
 1. LLM **sinh** bộ test ban đầu
-2. **Chạy** pytest + đo coverage
+2. **Chạy** test + đo coverage (qua adapter)
 3. File lỗi cú pháp/import → LLM **sửa cả file**
 4. Test fail → LLM **phân loại**:
    - `TEST_WRONG` → sửa test đó
-   - `SUSPECTED_BUG` → <span class="red">GIỮ test</span>, gắn nhãn `xfail` — không sửa cho khớp code
+   - `SUSPECTED_BUG` → <span class="red">GIỮ test</span>, gắn nhãn `xfail` (Python) / `test.failing` (Jest)
 5. Coverage < ngưỡng → gửi **dòng/nhánh chưa phủ** → LLM viết thêm
 6. Mutation score < ngưỡng → gửi **mutant còn sống** → LLM viết thêm
 7. Dừng: đạt ngưỡng · không cải thiện 2 lần · hết số vòng
 
-<span class="small">LLM chỉ trả về hàm mới/đã sửa; chương trình tự ghép bằng `ast` → LLM không thể xoá test cũ.</span>
+<span class="small">LLM chỉ trả về test mới/đã sửa; chương trình tự ghép (Python: `ast`; JS: bộ quét ngoặc) → LLM không thể xoá test cũ.</span>
 
 ---
 
@@ -115,10 +123,10 @@ def pass_status(score, attendance_rate):
     ...
 ```
 
-- Test `pass_status(80, 0.9)` → chạy qua dòng 2, 4, 5
-- **Line coverage**: bao nhiêu % dòng được chạy
-- **Branch coverage**: bao nhiêu % *nhánh* (True/False) được đi qua
-- Agent gửi cho LLM: *"Nhánh từ dòng 2 sang `return "CẤM THI"` chưa được đi qua"*
+- **Line coverage**: bao nhiêu % dòng được chạy · **Branch coverage**: bao nhiêu % *nhánh* được đi qua
+- Agent gửi cho LLM đúng chỗ chưa phủ, **mô tả theo công cụ của từng ngôn ngữ**:
+  - Python: *"Nhánh từ dòng 2 sang `return "CẤM THI"` chưa được đi qua"*
+  - JS: *"case thứ 2 của switch ở dòng 33 (`switch (zone) {`) chưa được đi qua"*
 
 ---
 
@@ -137,23 +145,40 @@ if score >= 90: return "A"     ─►     if score > 90: return "A"     # mutant
 
 **Mutation score** = mutant bị giết / tổng mutant
 
-<span class="small">Dùng toán tử đột biến của mutmut 2.5.1 (mutmut 3 không chạy trên Windows); chỉ 1 module, tối đa 20 mutant, chạy song song 4 tiến trình.</span>
+<span class="small">Python: toán tử mutmut 2.5.1 + runner tự viết (mutmut 3 không chạy trên Windows). JS/TS: StrykerJS. Chưa cài / lỗi → "không khả dụng", agent vẫn chạy phần coverage.</span>
 
 ---
 
-## 8. Bộ nhớ "tự học"
+## 8. Bộ nhớ "tự học" — theo từng ngôn ngữ
 
-- File **JSON**, không dùng vector database
-- Lưu **bài học sửa lỗi** (chỉ khi vòng sau xác nhận lỗi đã hết)
-  và **mẫu test tốt** (làm tăng coverage / giết mutant)
-- Chọn kinh nghiệm liên quan theo **nhãn AST** của module (`class`, `exception`, `branches`…) → chèn vào prompt
+- File **JSON**: **bài học sửa lỗi** (chỉ lưu khi vòng sau xác nhận lỗi đã hết) + **mẫu test tốt**
+- Chọn kinh nghiệm liên quan theo **nhãn** của module (`class`, `exception`, `branches`…)
+- **Chia theo ngôn ngữ**: prompt Jest không nhận bài học "dùng `pytest.approx`"
+  → tránh *chuyển giao tiêu cực*; dữ liệu cũ (chỉ Python) được **tự chuyển đổi**, không mất
 
 ⚠️ "Học" = **học trong ngữ cảnh** (in-context learning):
 trọng số LLM **không đổi**, chỉ có thêm "sổ tay kinh nghiệm" trong prompt.
 
 ---
 
-## 9. Thiết lập thực nghiệm
+## 9. Refactor an toàn: chứng minh phần Python không hỏng
+
+Chụp hành vi **trước** refactor → so sánh **sau mỗi bước**:
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Mã băm 8 prompt Python | **giống từng ký tự** |
+| Chạy lại 4 bộ test đã lưu: pass/fail, coverage, dòng chưa phủ | **giống hệt** |
+| Trạng thái **từng mutant** (160 mutant) | **giống hệt** |
+| Agent + LLM giả lập (7 hành động, có mutation) | **giống hệt** |
+| Chấm lại thực nghiệm cũ (`evaluate --measure-only`) | `results.csv` **giống từng byte** |
+| Agent + **LLM thật** (`grading`, không tất định) | tương đương: cùng hành động, 97,5/96,9 %, mutation 95 % |
+
+<span class="small">`scripts/snapshot_python.py` · 102 test của công cụ (64 cũ + 38 mới).</span>
+
+---
+
+## 10. Thiết lập thực nghiệm
 
 | Cấu hình | Mô tả |
 |---|---|
@@ -162,17 +187,16 @@ trọng số LLM **không đổi**, chỉ có thêm "sổ tay kinh nghiệm" tro
 | **C** | B + mutation testing |
 | **D** | C + bộ nhớ |
 
-- 5 module · 2 bug cài sẵn · ngưỡng: line 95%, branch 90%, mutation 80%
-- **Chấm lại công bằng**: cùng runner; mutation chấm trên mutant **LLM chưa thấy** (held-out)
+- Python 5 module (bug 1–2) · JS/TS 4 module (bug 3–4, cùng loại: 1 lỗi biên + 1 lỗi trạng thái)
+- **Chấm lại công bằng** qua adapter; mutation chấm trên mutant **LLM chưa thấy** (held-out)
 - **Phát hiện bug** = test fail trên code lỗi **và** pass trên bản đã sửa
-- Thiết kế ghép cặp: A, B lấy từ các mốc của lần chạy C (cùng prompt) → tiết kiệm lần gọi LLM
-- LLM: `nemotron-3-super-120b` (miễn phí, OpenRouter) · **1 lần chạy** (giới hạn 50 request/ngày)
+- LLM: `nemotron-3-super-120b` (miễn phí, OpenRouter, **50 request/ngày**)
 
 ---
 
 <style scoped>table { font-size: 0.68em; } li { font-size: 0.85em; }</style>
 
-## 10. Kết quả
+## 11. Kết quả — Python (lượt 1)
 
 | Cấu hình | Line / branch | Mutation held-out | Test fail còn lại | Bug gắn nhãn đúng | Gọi LLM |
 |---|---|---|---|---|---|
@@ -188,47 +212,66 @@ trọng số LLM **không đổi**, chỉ có thêm "sổ tay kinh nghiệm" tro
 
 ---
 
-## 10. Kết quả (biểu đồ)
+## 11. Kết quả — Python (biểu đồ)
 
-![h:560](../results/summary.png)
+![h:560](../results/summary_python.png)
 
 ---
 
-## 11. Demo
+<style scoped>table { font-size: 0.7em; } li { font-size: 0.85em; }</style>
+
+## 12. Kết quả — JavaScript/TypeScript (chạy thử agent thật)
+
+| Module | Hành động | Line / branch | Mutation | Nhãn nghi bug đúng / sai |
+|---|---|---|---|---|
+| `shipping.ts` (bug 3, biên) | sửa test → tăng coverage → dừng | **100 / 100 %** | 90 % | **3 / 0** |
+| `bank_account.js` (bug 4, trạng thái) | … → **hết quota, dừng êm** | 96.6 / 95 % | — | 8 / **1** |
+
+- Cùng một vòng lặp chạy được trên **TypeScript**: bắt đúng bug `shippingFee(500)`
+- `bank_account`: nhiều test "bắt bug" bằng cách đọc thuộc tính nội bộ `withdrawnToday` → **bám chi tiết cài đặt**
+- **Thực nghiệm A/B/C/D cho JS: chưa có số liệu** (hết hạn mức 50 request/ngày) → `python evaluate.py --languages javascript`
+
+<span class="small">Chỉ số "đúng" = test fail trên code lỗi nhưng pass trên bản đã sửa bug. Không có số nào được điền tay.</span>
+
+---
+
+## 13. Demo
 
 **Streamlit** — `streamlit run app.py`
 
-1. Chọn `grading.py` → **Chạy agent** → xem từng vòng
-2. LLM phân loại test fail là **SUSPECTED_BUG**: *"80 phải là B nhưng code dùng `> 80`"*
-3. Tab **Code test**: test nghi bug được <span class="red">tô đỏ</span>, xem diff giữa các vòng
-4. Biểu đồ coverage / mutation score qua các vòng
+1. Chọn ngôn ngữ **JavaScript/TypeScript** → `shipping.ts` → thanh bên hiện *Jest + Istanbul + StrykerJS*
+2. **Chạy agent** → LLM phân loại test fail là **SUSPECTED_BUG** → `test.failing`, <span class="red">tô đỏ</span>
+3. Chọn **Python** → `grading.py`: cùng vòng lặp, công cụ khác
+4. **Dán code** bất kỳ → tự nhận diện Python / JavaScript / TypeScript
 
-<span class="small">Dự phòng: chế độ **REPLAY** phát lại từ log JSON — không cần mạng.</span>
+<span class="small">Dự phòng: chế độ **REPLAY** phát lại từ log JSON của cả hai ngôn ngữ — không cần mạng.</span>
 
 ---
 
-## 12. Hạn chế & hướng phát triển
+<style scoped>li { font-size: 0.82em; } p { margin: 0.3em 0; }</style>
+
+## 14. Hạn chế & hướng phát triển
 
 **Hạn chế**
-- **Thực nghiệm nhỏ**: 5 module tự viết, 1 model miễn phí (50 request/ngày), ít lần chạy
-- LLM có thể **phân loại sai** → nhãn chỉ là *"nghi ngờ"*, cần người review
-- Tối ưu mutation score có thể sinh test **bám chi tiết cài đặt** (`assert result is value`)
-- Phụ thuộc **docstring**; bộ nhớ đơn giản; mutation score là **ước lượng** trên mẫu
+- **Mới hiện thực 2 ngôn ngữ**; thực nghiệm nhỏ (Python 1 lượt, JS chưa có lượt A/B/C/D), 1 model miễn phí
+- Công cụ đo khác nhau giữa ngôn ngữ (coverage.py vs Istanbul, mutmut vs Stryker) → so sánh chéo chỉ **tương đối**
+- JS không có parser trong Python → bộ quét ngoặc: không gắn nhãn được test trong `describe`
+- LLM có thể **phân loại sai**; test tối ưu mutation có thể **bám chi tiết cài đặt**
 
 **Hướng phát triển**
-- Benchmark dự án thật, so sánh trực tiếp với **Pynguin**
-- Bộ nhớ dùng **embedding**; lọc **mutant tương đương**; tích hợp **CI**
+- **Java** (JUnit 5 + JaCoCo + PIT) — đã phác thảo adapter, ước lượng 5–6 ngày; **Go** (`go test -cover`, go-mutesting)
+- Benchmark dự án thật, so sánh với Pynguin / EvoSuite; bộ nhớ dùng embedding; tích hợp CI
 
 ---
 
-## 13. Kết luận
+## 15. Kết luận
 
-- Đã xây dựng agent **sinh → chạy → đo → sửa/bổ sung** hoàn chỉnh, không framework
-- **Phản hồi thực thi** đưa test fail về 0, và **giữ lại test phát hiện bug** (gắn nhãn đúng 2/2)
-  thay vì sửa cho khớp code sai
-- **Mutation testing** lộ ra assert yếu mà coverage không thấy — nhưng test sinh để "giết" mutant
-  **chưa** cải thiện trên mutant mới: phải chấm trên tập held-out mới thấy
-- Đổi lại: **2.4–3.2× số lần gọi LLM** — và vẫn cần con người review nhãn SUSPECTED_BUG
+- Agent **sinh → chạy → đo → sửa/bổ sung** hoàn chỉnh, không framework, chạy được cho **Python và JS/TS**
+- **Kiến trúc Adapter**: vòng lặp không biết ngôn ngữ; phần Python được **chứng minh không đổi hành vi**
+- **Phản hồi thực thi** đưa test fail về 0 và **giữ lại test phát hiện bug** thay vì sửa cho khớp code sai
+  (Python 2/2 bug; TypeScript bắt đúng bug biên)
+- Mutation feedback **chưa** cải thiện trên mutant mới — phải chấm held-out mới thấy
+- Đổi lại: nhiều lần gọi LLM hơn, và vẫn cần con người review nhãn SUSPECTED_BUG
 
 <br>
 
