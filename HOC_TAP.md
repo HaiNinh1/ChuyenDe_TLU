@@ -225,3 +225,74 @@ pytest tests/test_runner.py -v
    kéo theo 100% line (với code thông thường) nhưng ngược lại thì không (`if` không có `else`). Agent dùng cả hai.
 3. **Làm sao runner biết test lỗi import hay test sai?** → Mã thoát 2 + lỗi trong phase thu thập ⇒ lỗi import/syntax
    (cả file hỏng); mã thoát 1 + `<failure>` trong XML ⇒ từng test sai. Hai loại được agent xử lý khác nhau.
+
+---
+
+## GĐ4 — Vòng lặp tự cải tiến (`agent.py`) — PHẦN CỐT LÕI
+
+### (a) Đã làm gì và tại sao
+`testgen/agent.py`, lớp `TestGenAgent`, hàm `run()` là **một vòng `for` + các `if/else`** (không framework):
+
+```
+code = LLM sinh test ban đầu
+for vòng in 0..max_iterations:
+    kết_quả = runner.run_tests(code)            # đo
+    ghi log vòng này
+    if file test hỏng (syntax/import):  code = LLM sửa cả file
+    elif có test fail:                  LLM phân loại -> TEST_WRONG: sửa | SUSPECTED_BUG: giữ + gắn nhãn
+    elif coverage < ngưỡng và còn tăng: code += LLM viết thêm test cho dòng/nhánh chưa phủ
+    else: DỪNG
+```
+
+Các quyết định thiết kế quan trọng:
+1. **Thứ tự ưu tiên:** sửa file hỏng → xử lý test fail → tăng coverage. Không tăng coverage khi bộ test còn "đỏ".
+2. **LLM chỉ trả về hàm mới/hàm đã sửa; chương trình tự ghép** (`code_utils.merge_tests`). Nhờ vậy LLM không thể
+   vô tình xoá test cũ hoặc gỡ nhãn SUSPECTED_BUG.
+3. **Xử lý oracle problem:** khi test fail, LLM được hỏi *"test viết sai hay code có bug?"* (trả về JSON).
+   - `TEST_WRONG` → sửa đúng hàm đó (tối đa `max_fix_attempts` lần, quá thì xoá test).
+   - `SUSPECTED_BUG` → **giữ nguyên test**, gắn `@pytest.mark.xfail(reason="SUSPECTED_BUG: ...")`.
+     Bộ test vẫn "xanh" để vòng lặp đi tiếp, nhưng test được giữ lại làm bằng chứng cho con người xem.
+4. **Điều kiện dừng:** đạt ngưỡng (mặc định line 95%, branch 90%), **không cải thiện** sau `patience=2` lần thử,
+   hết `max_iterations`, hoặc lỗi LLM (dừng êm, giữ bộ test tốt nhất). Có **quay lui** về phiên bản chạy được
+   gần nhất nếu file test hỏng mãi không sửa được.
+5. **Log JSON từng vòng** (`logs/<module>_<cấu hình>_<thời gian>.json`): code test, số pass/fail, coverage,
+   dòng chưa phủ, phân loại của LLM, số lần gọi LLM... → dùng để phân tích và **REPLAY** trên giao diện.
+6. Sơ đồ luồng: `docs/agent_flow.md` (mermaid).
+
+**Kết quả chạy thật** (`shopping_cart.py`, model nemotron miễn phí): vòng 0 có 1 test fail → LLM phân loại
+**SUSPECTED_BUG** với lý do *"docstring nói số lượng về 0 thì xoá sản phẩm, nhưng code chỉ xoá khi < 0"* → đúng
+**bug 2**. Test được giữ nguyên (`assert "apple" not in cart.items`) và gắn nhãn. Vòng 1: line 97.7%, branch 95%
+→ đạt ngưỡng, dừng. Tổng 2 lần gọi LLM, ~55 giây. (Một lần chạy, chưa phải thống kê — xem GĐ7.)
+
+### (b) Khái niệm quan trọng
+- **Agent (tác tử) theo nghĩa của đồ án:** chương trình lặp *quan sát → quyết định → hành động*. Quan sát = kết quả
+  runner; quyết định = các `if` trong `_step()`; hành động = gọi LLM với prompt phù hợp. "Tự cải tiến" = kết quả
+  đo được dùng làm đầu vào cho lần sinh tiếp theo (vòng phản hồi, feedback loop).
+- **Oracle problem:** test fail có 2 khả năng: test sai hoặc code sai. Nếu agent cứ "sửa test cho pass" thì sẽ
+  hợp thức hoá bug (test `assert letter_grade(80) == "C"`). Ví dụ trong đồ án: test biên của `remove_item`
+  fail → LLM đọc docstring → kết luận code sai → giữ test.
+- **xfail trong pytest:** "dự kiến fail". Test xfail mà fail → báo `x` (không tính lỗi); nếu sau này sửa bug và test
+  pass → báo `X` (XPASS). Dùng `strict=False` để test tham số hoá không bị tính lỗi khi một số trường hợp pass.
+- **Early stopping (dừng sớm) với patience:** giống khi train mô hình học máy: chỉ số không tăng sau `patience`
+  lần thì dừng để tiết kiệm lần gọi LLM (= tiền + thời gian).
+
+### (c) File liên quan
+`testgen/agent.py` (đọc `run()` và `_step()` trước), `testgen/code_utils.py` (`merge_tests`, `add_suspected_marker`),
+`docs/agent_flow.md`, `tests/test_agent.py` (kịch bản mock đi qua đủ các nhánh), `logs/*.json`
+
+### (d) Lệnh tự chạy thử
+```bash
+python -m testgen.agent targets/shopping_cart.py --max-iters 6
+python -m testgen.agent targets/grading.py --line 100 --branch 100      # ngưỡng khắt khe hơn -> nhiều vòng hơn
+pytest tests/test_agent.py -v                                          # kiểm tra vòng lặp bằng LLM giả lập
+```
+
+### (e) Câu hỏi giảng viên có thể hỏi
+1. **Nếu LLM phân loại sai (test sai mà bảo là bug) thì sao?** → Đó là hạn chế có thật: agent có thể giữ lại một
+   test sai và gắn nhãn nghi bug (false positive). Vì vậy nhãn chỉ là *"nghi ngờ"*, cần người kiểm tra. GĐ7 đo tỉ lệ
+   này bằng cách chạy lại test trên bản code đã sửa: test SUSPECTED_BUG pass trên bản sửa = nghi đúng.
+2. **Vì sao không để LLM tự quyết định mọi thứ (ví dụ kiểu ReAct/tool-calling)?** → Luồng điều khiển cố định bằng
+   code thì dễ hiểu, dễ kiểm thử (test bằng mock), dự đoán được chi phí; LLM chỉ làm phần nó giỏi: viết/sửa test,
+   đọc hiểu docstring.
+3. **Làm sao biết vòng lặp không chạy mãi?** → Ba chốt chặn: `max_iterations`, `patience` (không cải thiện thì dừng),
+   giới hạn số lần sửa mỗi test (`max_fix_attempts`), cộng timeout cho mỗi lần chạy pytest.

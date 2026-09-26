@@ -25,6 +25,7 @@ from pathlib import Path
 
 @dataclass
 class TestCaseResult:
+    __test__ = False  # báo pytest: đây không phải class test
     name: str        # tên test, ví dụ "test_letter_grade_b_range" hoặc "test_x[1-2]"
     outcome: str     # passed | failed | error | skipped | xfailed
     message: str = ""
