@@ -19,3 +19,4 @@ workspace/
 .vscode/
 .idea/
 .omc/
+.playwright-mcp/
