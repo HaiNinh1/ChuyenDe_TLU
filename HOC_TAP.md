@@ -1261,8 +1261,8 @@ streamlit run app.py
   ưu tiên ICSE/FSE/ISSTA/TSE/NeurIPS/ICLR và bài công nghiệp (Meta, Google); bài kinh điển cho phần nền tảng.
 - Kết quả: **37 tài liệu** (31 bài báo, 4 sách, 2 hướng dẫn/tài liệu công cụ), chia 5 nhóm; tất cả kiểm tra có thật
   qua DOI/arXiv. Ghi chú đọc + DOI: `docs/TAI_LIEU_THAM_KHAO.md`.
-- Slide (27 trang, có lời thoại): đề tài → cách tìm tài liệu → nền tảng → các công trình LLM (bảng so sánh, đọc kỹ
-  TestPilot, TestGen-LLM/ACH, CoverUp/MuTAP) → agent & thiết kế → mỗi bước của vòng lặp dựa trên tài liệu nào →
+- Slide (15 trang, có lời thoại; tập trung nghiên cứu, không đi sâu code): đề tài → tìm tài liệu → nền tảng → các công trình LLM (bảng so sánh, đọc kỹ
+  TestGen-LLM/ACH, CoverUp/MuTAP) → agent & thiết kế → mỗi bước của vòng lặp dựa trên tài liệu nào →
   tiến độ, kết quả, khoảng cách với tài liệu, kế hoạch. Slide nằm trên claude.ai (tải được PDF/PPTX), không nằm trong repo.
 
 ### (b) Khái niệm quan trọng
