@@ -296,7 +296,13 @@ def run_mutation_testing(module_path, test_code: str, max_mutants: int = 20, see
         result.error = "Bộ test chưa pass trên code gốc nên không thể chạy mutation testing"
         return result
 
-    mutants = [m for m in generate_mutants(source) if m.id not in set(exclude_ids or [])]
+    try:
+        all_mutants = generate_mutants(source)
+    except Exception as exc:  # mutmut sai phiên bản / thiếu thư viện phụ thuộc
+        result.available = False
+        result.error = f"Không sinh được mutant bằng mutmut ({type(exc).__name__}: {exc})"
+        return result
+    mutants = [m for m in all_mutants if m.id not in set(exclude_ids or [])]
     result.sampled_from = len(mutants)
     if max_mutants is not None and len(mutants) > max_mutants:
         # Lấy mẫu ngẫu nhiên nhưng CỐ ĐỊNH (seed) -> các cấu hình khác nhau được đo trên cùng tập mutant
@@ -350,6 +356,15 @@ def module_tags(source: str) -> list:
 
 
 # ============================================================================ ADAPTER
+def _mutmut_importable() -> bool:
+    """Có đúng phiên bản vẫn chưa đủ: thư viện phụ thuộc hỏng thì import cũng lỗi."""
+    try:
+        from mutmut import Context, list_mutations, mutate  # noqa: F401
+        return True
+    except Exception:
+        return False
+
+
 def _version(package: str) -> str:
     try:
         return metadata.version(package)
@@ -370,7 +385,7 @@ class PythonAdapter(LanguageAdapter):
     def check_environment(self) -> EnvironmentStatus:
         tools = {p: _version(p) for p in ("pytest", "pytest-cov", "coverage", "mutmut")}
         problems = [f"thiếu gói Python `{p}`" for p in ("pytest", "pytest-cov", "coverage") if not tools[p]]
-        mutation_ok = tools["mutmut"].startswith("2.")
+        mutation_ok = tools["mutmut"].startswith("2.") and _mutmut_importable()
         if not tools["mutmut"]:
             problems.append("thiếu `mutmut` -> không chạy được mutation testing")
         elif not mutation_ok:

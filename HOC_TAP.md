@@ -1136,3 +1136,115 @@ npx @marp-team/marp-cli@latest --no-stdin slides/slides.md --allow-local-files -
 2. **Nếu sau này có ngôn ngữ không có công cụ mutation?** → `run_mutation()` trả `available=False`, agent tự dừng sau
    phase coverage — đã có test cho trường hợp này với Stryker bị gỡ.
 3. Xem thêm 13 câu hỏi trong `slides/speaker_notes.md` (câu 11–13 dành riêng cho phần đa ngôn ngữ).
+
+---
+
+## RF9 — Kiểm tra cuối + review độc lập + sửa lỗi
+
+### (a) Đã làm gì và tại sao
+- **Chạy lại từ đầu trên bản clone sạch** (thư mục mới, `python -m venv`, `pip install -r requirements.txt`,
+  `npm ci`): `.env` không có trong repo ✔; `pytest` 102/102 ✔; phần Python tất định **giống hệt** baseline ✔.
+- **Giao diện trên trình duyệt thật** (Streamlit + Playwright): thanh bên hiện đúng công cụ của Python; REPLAY log
+  `[javascript] shipping_agent_js_*` chạy hết các vòng; tab *Code test* tô đỏ 3 test `test.failing` ✔.
+- **`evaluate.py` bản chạy nhanh (`--quick`) chưa chạy được**: cần ~15 request LLM mà hạn mức miễn phí trong ngày đã
+  hết. Thay vào đó đã kiểm tra: `--measure-only` trên log thật (Python giống hệt số cũ) + pipeline 2 ngôn ngữ đầu-cuối
+  với LLM giả lập (`tests/test_evaluate.py`).
+- **Review độc lập** (một agent khác đọc toàn bộ diff `main...multi-language`): kết luận phần Python **không đổi hành vi**
+  (so từng prompt, từng hàm được chuyển), nhưng tìm ra **3 lỗi HIGH, 6 MEDIUM, 8 LOW** ở phần JS và phần chấm. Đã sửa:
+
+| # | Lỗi | Hậu quả nếu không sửa | Cách sửa |
+|---|---|---|---|
+| H1 | `unmark_suspected` ném lỗi khi file test JS hỏng | `evaluate.py` chết giữa chừng khi LLM trả lời bị cắt | trả lại code nguyên văn |
+| H2 | Gộp import khi câu cũ có dấu phẩy cuối → `b,, c` | file test hỏng, tốn thêm lần gọi LLM để sửa | dựng lại câu import từ danh sách tên |
+| H3 | Tiêu đề `'doesn\'t ...'`: tên trong file còn `\`, Jest báo không có | không gắn nhãn/sửa/xoá được test, số liệu nghi bug sai | giải mã escape khi đọc tiêu đề, escape lại khi đổi tên |
+| M1 | Windows: quá timeout chỉ dừng tiến trình con, tiến trình cháu (worker Stryker) giữ pipe | chương trình treo tới khi mutant vòng lặp vô hạn tự thoát | `taskkill /T` dừng cả cây tiến trình |
+| M2 | Mutation "không khả dụng" ghi thành 0% và cộng vào trung bình | một lần Stryker lỗi kéo tụt điểm trung bình | để TRỐNG, trung bình bỏ qua ô trống, thêm cột `n_mutation` |
+| M3 | mutmut hỏng/sai phiên bản vẫn làm sập chương trình | vi phạm yêu cầu "không crash" | bắt lỗi → `available=False`; kiểm tra import thật trong `check_environment` |
+| M4 | Máy không có Node: `evaluate.py` mặc định chạy cả JS → dừng luôn phần Python | hồi quy quy trình Python | bỏ qua ngôn ngữ thiếu công cụ, in cảnh báo |
+| M5 | `import * as m` / `import m, { a }` trùng tên khi ghép | "Identifier has already been declared" | chỉ thêm những TÊN chưa được khai báo |
+| M6 | LLM giữ comment nhãn nhưng bỏ `.failing` → không gắn lại | test đỏ còn lại trong bộ test cuối | vẫn đổi lại thành `test.failing` |
+| L1 | Test trong `describe` được ghi "nghi bug" dù không gắn được nhãn | bộ test đỏ mãi, phase mutation không chạy | agent kiểm tra nhãn đã gắn; không được → xử lý như test sai |
+| L2–L4 | Bộ quét: `//` trong chuỗi URL, comment cuối dòng, regex sau `return`, `x++ / 2`, alias `require` | nuốt mất test / báo code hỏng oan | bộ quét ghi nhận dòng nào có code thật, ký tự cuối dòng, từ khoá trước `/` |
+| L5–L8 | cache Stryker bỏ qua timeout; `test.failing` không comment vẫn giết mutant; báo cáo Stryker hỏng làm crash; `x.test.js` bị nhận là module | sai lệch nhỏ / crash hiếm | sửa từng chỗ |
+
+  Mỗi lỗi có **test hồi quy** (`tests/test_js_edit.py`, `tests/test_robustness.py`, `tests/test_javascript_adapter.py`):
+  117 test, tất cả pass; phần Python tất định vẫn **giống hệt** baseline; chấm lại log Python lượt 1 ra đúng số cũ.
+
+### (b) Khái niệm quan trọng
+- **Review độc lập**: người viết code thường "mù" với lỗi của chính mình — cả lần này và lần GĐ7, lỗi quan trọng
+  nhất đều do lượt review tìm ra. Viết test hồi quy cho từng lỗi để lỗi không quay lại.
+- **Cây tiến trình (process tree)**: một chương trình có thể sinh tiến trình con, con sinh cháu. Dừng "cha" chưa chắc
+  dừng được "cháu" (nhất là trên Windows) → phải dừng cả cây.
+- **"Không đo được" khác "đo được 0"**: dữ liệu thiếu phải để trống và báo số mẫu (`n_mutation`), không được coi là 0.
+
+### (c) File liên quan
+`adapters/js_edit.py`, `adapters/common.py`, `adapters/javascript_adapter.py`, `adapters/python_adapter.py`,
+`testgen/agent.py`, `evaluate.py`, `testgen/generator.py`, `tests/test_robustness.py`, `tests/test_js_edit.py`
+
+### (d) Lệnh tự chạy thử
+```bash
+pytest                                        # 117 test (~8 phút; test JS tự bỏ qua nếu chưa cài Node)
+python scripts/snapshot_python.py --out docs/thu.json --compare docs/baseline_truoc_refactor.json
+python evaluate.py --measure-only
+streamlit run app.py
+```
+
+### (e) Câu hỏi giảng viên có thể hỏi
+1. **Refactor xong em có tự tin là đúng không?** → Phần Python: có bằng chứng (so ảnh chụp hành vi giống hệt, review
+   độc lập so từng hàm). Phần JS mới: review tìm ra 17 lỗi, em đã sửa và viết test cho từng lỗi — nhưng JS mới chạy
+   thử ít với LLM thật nên có thể còn lỗi chưa gặp.
+2. **Sao lỗi Windows (M1) không lộ ra khi em chạy thử?** → Chỉ xảy ra khi một mutant gây vòng lặp vô hạn trong tiến
+   trình con của Stryker; các module mục tiêu không có vòng lặp như vậy. Review đọc code + dựng lại tình huống mới thấy.
+
+---
+
+# TỔNG KẾT REFACTOR ĐA NGÔN NGỮ (nhánh `multi-language`)
+
+## Những gì đã đổi
+- **Kiến trúc Adapter**: `adapters/` (lớp trừu tượng `LanguageAdapter`, registry theo đuôi file, `PythonAdapter`,
+  `JavaScriptAdapter`). Agent, generator, prompt, bộ nhớ, evaluate, giao diện chỉ làm việc qua adapter.
+- **Python**: toàn bộ logic pytest / coverage.py / mutmut / `ast` được **chuyển nguyên** vào adapter; hành vi được chứng
+  minh không đổi (prompt giống từng ký tự, runner/mutation/agent-mock giống hệt, `results.csv` cũ tái lập được).
+- **JavaScript/TypeScript**: Jest + Istanbul + StrykerJS; bộ quét ngoặc thay `ast`; `test.failing` thay `xfail`;
+  4 module mục tiêu, 2 bug (1 lỗi biên trong `.ts`, 1 lỗi trạng thái).
+- **Bộ nhớ** chia theo ngôn ngữ (tự chuyển dữ liệu cũ); **evaluate** chạy 2 ngôn ngữ, biểu đồ theo ngôn ngữ + biểu đồ
+  so sánh; **giao diện** chọn/tự nhận diện ngôn ngữ, REPLAY log JS; **slide/tài liệu** cập nhật; hướng dẫn thêm ngôn
+  ngữ mới (phác thảo Java).
+- Test của công cụ: 64 → **117**.
+
+## File mới / file bị xoá / file chuyển chỗ
+- **Mới**: `adapters/` (`__init__.py`, `base.py`, `registry.py`, `common.py`, `python_adapter.py`, `python_edit.py`,
+  `javascript_adapter.py`, `js_edit.py`), `targets/javascript/*` (4 file), `evaluation/fixed_targets/javascript/*`,
+  `package.json`, `package-lock.json`, `scripts/snapshot_python.py`, `docs/KE_HOACH_REFACTOR.md`,
+  `docs/THEM_NGON_NGU_MOI.md`, `docs/baseline_truoc_refactor.json`, `docs/sau_refactor_python.json`,
+  `tests/test_adapters_base.py`, `tests/test_js_edit.py`, `tests/test_javascript_adapter.py`, `tests/test_robustness.py`,
+  log mẫu JS `logs/shipping_agent_js_*.json`, `logs/bank_account_agent_js_*.json`.
+- **Chuyển chỗ**: `targets/*.py` → `targets/python/`, `evaluation/fixed_targets/*.py` → `evaluation/fixed_targets/python/`.
+- **Xoá**: `results/summary.png`, `results/mutation_by_module.png` (thay bằng `summary_python.png`,
+  `mutation_by_module_python.png`; `language_comparison.png` sẽ có khi đủ số liệu 2 ngôn ngữ).
+- `testgen/runner.py`, `testgen/mutation.py` còn lại là "cổng chung" nhỏ (logic đã chuyển vào adapter);
+  `testgen/code_utils.py` chỉ còn các hàm dùng chung.
+
+## Hạn chế còn lại (nói thẳng)
+1. **Thực nghiệm JS chưa có lượt A/B/C/D nào** (hết hạn mức 50 request/ngày của model miễn phí). Slide kết quả JS hiện
+   chỉ có 2 lần chạy thử agent thật. Python vẫn mới 1 lượt (đề yêu cầu 3). Cần chạy:
+   `python evaluate.py --languages javascript --runs 1` (~30 request), sau đó `python evaluate.py --runs 3`
+   (nạp 10 USD vào OpenRouter → 1000 request/ngày miễn phí), rồi cập nhật slide 12, bảng RF6, lời thoại slide 12.
+2. Mới hiện thực 2 ngôn ngữ; Java/Go là hướng phát triển (đã phác thảo Java).
+3. Công cụ đo khác nhau giữa ngôn ngữ → so sánh chéo chỉ tương đối.
+4. Bộ quét ngoặc JS không hiểu hết cú pháp; test trong `describe`/`test.each` không gắn nhãn được (prompt cấm dùng).
+5. Các hạn chế cũ vẫn còn: LLM có thể phân loại sai, test tối ưu mutation có thể bám chi tiết cài đặt (thấy lại ở
+   `bank_account`: đọc thuộc tính nội bộ `withdrawnToday`), không phải sandbox bảo mật.
+
+## Thứ tự đọc code để hiểu phần refactor nhanh nhất
+1. `docs/KE_HOACH_REFACTOR.md` — sơ đồ trước/sau + bảng 16 chỗ gắn chặt với Python (10 phút)
+2. `adapters/base.py` — hợp đồng `LanguageAdapter` + dataclass dùng chung (10 phút)
+3. `adapters/registry.py` — đuôi file → adapter (3 phút)
+4. `testgen/agent.py` — `__init__` (chọn adapter), `_step`, `_handle_failures`: tìm các chỗ `self.adapter.` (15 phút)
+5. `testgen/prompts.py` + `PYTHON_HINTS` / `JS_HINTS` — khung prompt chung + phần riêng (10 phút)
+6. `adapters/python_adapter.py` — code cũ được chuyển nguyên, đọc lướt (10 phút)
+7. `adapters/javascript_adapter.py` — `run_tests`, `_parse_report`, `_parse_coverage`, `run_mutation_testing` (20 phút)
+8. `adapters/js_edit.py` — `scan`, `parse_items`, `merge_tests`, `add_suspected_marker` (20 phút)
+9. `testgen/memory.py` (phần đầu + `select_language`), `evaluate.py` (`measure`, `summarize`) (15 phút)
+10. `tests/test_adapters_base.py` (adapter giả `.fake`) và `tests/test_javascript_adapter.py` (agent chạy trên `.ts`)
+11. `scripts/snapshot_python.py` — cách chứng minh không làm hỏng Python

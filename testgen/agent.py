@@ -259,10 +259,15 @@ class TestGenAgent:
             verdict, reason = verdicts.get(name, ("TEST_WRONG", "LLM không phân loại -> coi là test sai"))
             if verdict == "SUSPECTED_BUG":
                 # GIỮ NGUYÊN test, chỉ gắn nhãn -> không "sửa test cho khớp code"
-                self.suspected[name] = reason
-                self.code = self.adapter.add_suspected_marker(self.code, name, reason)
-                self._message(f"SUSPECTED_BUG: {name} — {reason}")
-            elif self.fix_attempts.get(name, 0) >= self.config.max_fix_attempts:
+                marked = self.adapter.add_suspected_marker(self.code, name, reason)
+                if name in self.adapter.suspected_tests(marked):
+                    self.suspected[name] = reason
+                    self.code = marked
+                    self._message(f"SUSPECTED_BUG: {name} — {reason}")
+                    continue
+                # Không gắn nhãn được (vd. test JS nằm trong describe) -> xử lý như test sai để bộ test không đỏ mãi
+                self._message(f"Không gắn được nhãn nghi bug cho {name} -> xử lý như test sai")
+            if self.fix_attempts.get(name, 0) >= self.config.max_fix_attempts:
                 to_remove.append(name)
             else:
                 self.fix_attempts[name] = self.fix_attempts.get(name, 0) + 1

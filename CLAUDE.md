@@ -42,7 +42,7 @@ Hiện thực 2 ngôn ngữ theo kiến trúc **Adapter**: Python và JavaScript
 
 ## Tiến độ
 - GĐ0–GĐ10 (bản chỉ-Python) xong trên nhánh `main`.
-- Refactor đa ngôn ngữ trên nhánh `multi-language`: RF1–RF7 xong (xem `HOC_TAP.md` PHẦN 2). Việc còn lại:
+- Refactor đa ngôn ngữ trên nhánh `multi-language`: RF1–RF9 xong (xem `HOC_TAP.md` PHẦN 2). Việc còn lại:
   - Thực nghiệm JS cần LLM thật: `python evaluate.py --languages javascript --runs 1` (~30 request/lượt), rồi Python
     lượt 2–3 và JS lượt 2–3 (`python evaluate.py --runs 3`). Model miễn phí giới hạn 50 request/ngày
     (nạp 10 USD vào OpenRouter → 1000 request/ngày). Sau đó cập nhật bảng RF6 trong HOC_TAP, slide kết quả, lời thoại.

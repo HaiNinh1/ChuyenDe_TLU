@@ -77,6 +77,7 @@ def _jest_config(module_file: str, with_coverage: bool) -> dict:
         "rootDir": ".",
         "testEnvironment": "node",
         "testMatch": ["**/*.test.[jt]s"],
+        "cacheDirectory": str(WORK_ROOT / ".jest-cache"),
         # babel-jest: chuyển mã ES module / TypeScript về dạng Node chạy được (không kiểm tra kiểu)
         "transform": {r"\.[jt]sx?$": ["babel-jest", {
             "presets": [["@babel/preset-env", {"targets": {"node": "current"}}], "@babel/preset-typescript"],
@@ -112,13 +113,13 @@ def run_tests(source_file, test_code: str, timeout: int = 60, with_coverage: boo
               deselect=None) -> TestResult:
     source_file = Path(source_file)
     result = TestResult()
-    if deselect:
-        test_code = js_edit.remove_tests(test_code, list(deselect))
     if not js_edit.is_valid(test_code):
         result.collection_error = ("SyntaxError: ngoặc, chuỗi hoặc comment không cân bằng — file test "
                                    "JavaScript/TypeScript bị hỏng (có thể câu trả lời của LLM bị cắt giữa chừng).")
         result.output = result.collection_error
         return result
+    if deselect:
+        test_code = js_edit.remove_tests(test_code, list(deselect))
 
     work_dir = _prepare_dir(source_file, test_code, with_coverage)
     try:
@@ -267,7 +268,7 @@ def _mutated_line(source_lines: list, loc: dict, replacement: str) -> str:
 
 def _run_stryker(source_file: Path, test_code: str, timeout: int):
     """Chạy Stryker trên toàn bộ mutant. Trả về (danh sách Mutant, lỗi)."""
-    key = (source_file.read_text(encoding="utf-8"), test_code)
+    key = (source_file.read_text(encoding="utf-8"), test_code, timeout)
     if key in _STRYKER_CACHE:
         return _STRYKER_CACHE[key], ""
     work_dir = _prepare_dir(source_file, test_code, with_coverage=False)
@@ -288,10 +289,14 @@ def _run_stryker(source_file: Path, test_code: str, timeout: int):
             return None, f"Stryker chạy quá {STRYKER_TIMEOUT} giây"
         if not report.exists():
             return None, "Stryker lỗi: " + tail(ANSI.sub("", proc.stdout + proc.stderr), 800)
-        data = json.loads(report.read_text(encoding="utf-8"))
+        try:
+            data = json.loads(report.read_text(encoding="utf-8"))
+            report_mutants = next(iter(data["files"].values()))["mutants"]
+        except (ValueError, KeyError, StopIteration) as exc:
+            return None, f"Không đọc được báo cáo Stryker: {exc}"
         source_lines = key[0].splitlines()
         mutants = []
-        for m in next(iter(data["files"].values()))["mutants"]:
+        for m in report_mutants:
             status = STRYKER_STATUS.get(m["status"])
             if status is None:
                 continue
@@ -322,10 +327,13 @@ def run_mutation_testing(source_file, test_code: str, max_mutants: int = 20, see
         result.error = "Chưa cài StrykerJS (chạy `npm install` ở thư mục gốc dự án)"
         return result
 
-    drop = list(deselect or []) + js_edit.suspected_tests(test_code)
+    drop = list(deselect or []) + js_edit.suspected_tests(test_code) + js_edit.failing_marked(test_code)
     if skip_failing:
         first = run_tests(source_file, test_code, with_coverage=False, deselect=drop)
         drop += [t.name for t in first.failing_tests()]
+    if not js_edit.is_valid(test_code):
+        result.error = "File test hỏng (ngoặc/chuỗi không cân bằng) nên không thể chạy mutation testing"
+        return result
     code = js_edit.remove_tests(test_code, drop) if drop else test_code
 
     baseline = run_tests(source_file, code, with_coverage=False)

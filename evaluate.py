@@ -74,7 +74,7 @@ def module_file(language: str, module: str, fixed: bool = False) -> Path:
     """Đường dẫn file mã nguồn của module (đuôi .py / .js / .ts tuỳ file thật có trong thư mục)."""
     folder = (FIXED_DIR if fixed else TARGETS_DIR) / language
     for path in sorted(folder.glob(f"{module}.*")):
-        if path.suffix in supported_extensions():
+        if path.suffix in supported_extensions() and ".test." not in path.name:
             return path
     raise FileNotFoundError(f"Không tìm thấy module {module} trong {folder}")
 
@@ -97,10 +97,18 @@ def eval_logs(module: str, label: str, language: str = None) -> list:
     return logs
 
 
+def language_ready(language: str) -> bool:
+    """Máy đã cài công cụ của ngôn ngữ chưa. Chưa -> cảnh báo và BỎ QUA ngôn ngữ đó (không làm hỏng ngôn ngữ khác)."""
+    env = get_adapter(language).check_environment()
+    if not env.ok:
+        print(f"!! Bỏ qua {LANGUAGE_NAMES[language]}: {env.message()}", flush=True)
+    return env.ok
+
+
 def selected(args) -> list:
     """Danh sách (ngôn ngữ, module) cần SINH theo tham số dòng lệnh."""
     pairs = []
-    for language in args.languages:
+    for language in [lang for lang in args.languages if language_ready(lang)]:
         for module in LANGUAGES[language]:
             if module in args.modules:
                 pairs.append((language, module))
@@ -162,11 +170,18 @@ def measure(module: str, test_code: str, exclude: set, measure_mutants: int, lan
                 if o in ("failed", "error", "xfailed") and outcomes_fixed.get(n) == "passed"}
     suspected = adapter.suspected_tests(test_code)
     suspected_tp = [n for n in suspected if n in catching]
+    def mutation_value(m):
+        # Công cụ mutation không khả dụng -> để TRỐNG (không phải 0%), không tính vào trung bình.
+        # Bộ test hỏng / không pass trên code gốc -> 0% (lỗi của bộ test, vẫn tính).
+        if not m.available:
+            return None
+        return 0.0 if m.error else m.score
+
     return {
         "line_coverage": 0.0 if res.collection_error else res.line_coverage,
         "branch_coverage": 0.0 if res.collection_error else res.branch_coverage,
-        "mutation_score": 0.0 if held.error else held.score,
-        "mutation_all": 0.0 if full.error else full.score,
+        "mutation_score": mutation_value(held),
+        "mutation_all": mutation_value(full),
         "mutants_heldout": held.total,
         "tests_total": res.total,
         "tests_failing": res.failed + res.errors,
@@ -182,6 +197,10 @@ def measure_all(args) -> list:
     """Chấm MỌI log thực nghiệm đang có (mọi ngôn ngữ, mọi module), không phụ thuộc lần sinh vừa rồi."""
     rows = []
     for language, modules in LANGUAGES.items():
+        if not any(eval_logs(m, "eval_C", language) or eval_logs(m, "eval_D", language) for m in modules):
+            continue
+        if not language_ready(language):
+            continue
         for module in modules:
             logs_c, logs_d = eval_logs(module, "eval_C", language), eval_logs(module, "eval_D", language)
             for run in range(1, max(len(logs_c), len(logs_d)) + 1):
@@ -230,8 +249,14 @@ def measure_run(args, language, module, run, path_c, path_d) -> list:
 
 # ============================================================================ TỔNG HỢP & BIỂU ĐỒ
 def mean(values):
-    values = [float(v) for v in values]
-    return round(sum(values) / len(values), 2) if values else 0.0
+    """Trung bình, BỎ QUA ô trống (None / ""), ví dụ mutation không đo được. Không có giá trị nào -> None."""
+    values = [float(v) for v in values if v not in (None, "")]
+    return round(sum(values) / len(values), 2) if values else None
+
+
+def num(value) -> float:
+    """Giá trị để vẽ biểu đồ (ô trống vẽ thành 0)."""
+    return 0.0 if value in (None, "") else float(value)
 
 
 def summarize(rows: list) -> list:
@@ -253,6 +278,7 @@ def summarize(rows: list) -> list:
                 "branch_coverage": mean(r["branch_coverage"] for r in group),
                 "mutation_score": mean(r["mutation_score"] for r in group),
                 "mutation_all": mean(r["mutation_all"] for r in group),
+                "n_mutation": sum(1 for r in group if r["mutation_score"] not in (None, "")),  # số dòng đo được
                 "iterations": mean(r["iterations"] for r in group),
                 "llm_calls": mean(r["llm_calls"] for r in group),
                 "seconds": mean(r["seconds"] for r in group),
@@ -261,7 +287,8 @@ def summarize(rows: list) -> list:
                 "tests_failing": mean(r["tests_failing"] for r in group),
                 "suspected_tp": sum(int(r["suspected_tp"]) for r in group),
                 "suspected_fp": sum(int(r["suspected_fp"]) for r in group),
-                "bug_detection_rate": round(mean(r["bug_detected"] for r in bug_rows) * 100, 1) if bug_rows else 0.0,
+                "bug_detection_rate": round(mean(r["bug_detected"] for r in bug_rows) * 100, 1)
+                if bug_rows else 0.0,
                 # Bug được agent GẮN NHÃN đúng (có test SUSPECTED_BUG pass trên bản sửa) — không chỉ "có test fail"
                 "bug_flagged_rate": round(mean(int(r["suspected_tp"]) > 0 for r in bug_rows) * 100, 1)
                 if bug_rows else 0.0,
@@ -329,9 +356,9 @@ def plot_language(language: str, summary: list, by_module: list):
     ax.legend(loc="lower right")
 
     ax = axes[0][1]
-    ax.bar([x - width / 2 for x in xs], [s["mutation_score"] for s in summary], width, color=colors,
+    ax.bar([x - width / 2 for x in xs], [num(s["mutation_score"]) for s in summary], width, color=colors,
            label="Mutant LLM chưa thấy (held-out)")
-    ax.bar([x + width / 2 for x in xs], [s["mutation_all"] for s in summary], width, color=colors, alpha=0.45,
+    ax.bar([x + width / 2 for x in xs], [num(s["mutation_all"]) for s in summary], width, color=colors, alpha=0.45,
            hatch="//", label="Tất cả mutant")
     ax.set_xticks(xs, labels)
     ax.set_ylim(0, 110)
@@ -370,8 +397,8 @@ def plot_language(language: str, summary: list, by_module: list):
     fig, ax = plt.subplots(figsize=(11, 4.5))
     w = 0.8 / max(1, len(configs))
     for i, config in enumerate(configs):
-        values = [next((r["mutation_score"] for r in by_module if r["module"] == m and r["config"] == config), 0)
-                  for m in modules]
+        values = [num(next((r["mutation_score"] for r in by_module if r["module"] == m and r["config"] == config),
+                           0)) for m in modules]
         ax.bar([x + i * w for x in range(len(modules))], values, w, label=CONFIG_NAMES[config],
                color=PALETTE[config])
     ax.set_xticks([x + w * (len(configs) - 1) / 2 for x in range(len(modules))], modules)
@@ -399,8 +426,8 @@ def plot_comparison(summary: list):
     w = 0.8 / max(1, len(languages))
     for ax, (key, title, ylim) in zip(axes.flat, metrics):
         for i, language in enumerate(languages):
-            values = [next((s[key] for s in summary if s["language"] == language and s["config"] == CONFIG_NAMES[c]),
-                           0) for c in configs]
+            values = [num(next((s[key] for s in summary if s["language"] == language
+                                and s["config"] == CONFIG_NAMES[c]), 0)) for c in configs]
             ax.bar([x + i * w for x in range(len(configs))], values, w, label=LANGUAGE_NAMES[language],
                    color=LANG_COLORS[language])
         ax.set_xticks([x + w * (len(languages) - 1) / 2 for x in range(len(configs))], configs)

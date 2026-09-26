@@ -174,7 +174,7 @@ Chụp hành vi **trước** refactor → so sánh **sau mỗi bước**:
 | Chấm lại thực nghiệm cũ (`evaluate --measure-only`) | `results.csv` **giống từng byte** |
 | Agent + **LLM thật** (`grading`, không tất định) | tương đương: cùng hành động, 97,5/96,9 %, mutation 95 % |
 
-<span class="small">`scripts/snapshot_python.py` · 102 test của công cụ (64 cũ + 38 mới).</span>
+<span class="small">`scripts/snapshot_python.py` · 117 test của công cụ (64 cũ + 53 mới) · review độc lập: 17 lỗi ở phần JS/chấm đã sửa.</span>
 
 ---
 

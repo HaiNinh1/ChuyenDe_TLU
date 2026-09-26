@@ -44,7 +44,8 @@ def save_tests(test_code: str, module_path, out_dir: Path = BASELINE_DIR) -> Pat
 
 def all_targets() -> list:
     """Mọi file mã nguồn mục tiêu trong targets/ (mọi ngôn ngữ được hỗ trợ)."""
-    return sorted(p for p in TARGETS_DIR.rglob("*") if p.suffix in supported_extensions())
+    return sorted(p for p in TARGETS_DIR.rglob("*")
+                  if p.suffix in supported_extensions() and ".test." not in p.name and not p.name.startswith("test_"))
 
 
 def main():

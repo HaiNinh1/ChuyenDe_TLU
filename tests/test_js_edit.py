@@ -90,3 +90,58 @@ def test_suspected_marker_roundtrip():
     unmarked = je.unmark_suspected(code)
     assert "test.failing" not in unmarked and 'test("chia"' in unmarked
     assert je.failing_marked(unmarked) == [] and je.suspected_tests(unmarked) == ["chia"]  # comment vẫn giữ
+
+
+# ------------------------------------------------------------------ hồi quy theo review độc lập (RF9)
+def test_unmark_on_broken_code_does_not_crash():                         # H1
+    assert je.unmark_suspected("test('a', () => {") == "test('a', () => {"
+
+
+def test_import_merge_with_trailing_comma_stays_valid():                  # H2
+    base = "import {\n  a,\n  b,\n} from './m';\n\ntest('x', () => {\n  expect(a).toBe(b);\n});\n"
+    merged = je.merge_tests(base, "import { a, c } from './m';\n\ntest('y', () => {\n  expect(c).toBe(1);\n});\n")
+    assert ",," not in merged and je.is_valid(merged)
+    info = je.parse_import(next(it.name for it in je.parse_items(merged) if it.kind == "import"))
+    assert set(info.named) == {"a", "b", "c"}
+
+
+def test_escaped_quotes_in_titles_match_jest_names():                    # H3
+    code = "test('doesn\\'t charge at 500', () => {\n  expect(1).toBe(1);\n});\n"
+    assert je.test_names(code) == ["doesn't charge at 500"]               # giống tên Jest báo cáo
+    marked = je.add_suspected_marker(code, "doesn't charge at 500", "biên 500")
+    assert je.failing_marked(marked) == ["doesn't charge at 500"]
+    renamed = je.merge_tests(code, code.replace("toBe(1)", "toBe(2)"))
+    assert je.test_names(renamed) == ["doesn't charge at 500", "doesn't charge at 500 (v2)"]
+    assert je.is_valid(renamed)
+
+
+def test_import_merge_never_declares_a_name_twice():                     # M5, L4
+    base = "import * as m from './m';\nimport { a } from './n';\n"
+    merged = je.merge_tests(base, 'import * as m from "./m";\nimport n, { a, z } from "./n";\n')
+    assert merged.count("* as m") == 1
+    locals_seen = []
+    for it in je.parse_items(merged):
+        if it.kind == "import":
+            locals_seen += sorted(je.parse_import(it.name).local_names())
+    assert sorted(locals_seen) == ["a", "m", "n", "z"]                   # mỗi tên đúng một lần
+    req = je.merge_tests("const { a } = require('./m');\n", "const { a, b: bb } = require('./m');\n")
+    assert "b: bb" in req and "as" not in req
+
+
+def test_marker_restores_failing_when_llm_drops_it():                    # M6
+    code = "// SUSPECTED_BUG: lý do\ntest('x', () => {\n  expect(1).toBe(2);\n});\n"
+    fixed = je.add_suspected_marker(code, "x", "lý do")
+    assert je.failing_marked(fixed) == ["x"] and fixed.count("SUSPECTED_BUG") == 1
+
+
+def test_scanner_comments_and_strings_do_not_swallow_tests():            # L2
+    code = ("const URL = 'http://x.com';\n\ntest('a', () => {\n  expect(URL).toBeTruthy();\n});\n\n"
+            "const K = 1; /* n */\n\ntest('b', () => {\n  expect(K).toBe(1);\n});\n\n"
+            "/* c */ test('c', () => {\n  expect(1).toBe(1);\n});\n")
+    assert je.test_names(code) == ["a", "b", "c"]
+
+
+def test_regex_after_keyword_and_division_after_increment():             # L3
+    code = ("function f(s) {\n  return /[)]/.test(s);\n}\n\n"
+            "test('chia', () => {\n  let x = 4;\n  x++ / 2;\n  expect(f(')')).toBe(true);\n});\n")
+    assert je.is_valid(code) and je.test_names(code) == ["chia"]

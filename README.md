@@ -97,7 +97,7 @@ Mở `.env`, chọn nhà cung cấp và điền key:
 Ngôn ngữ được **tự nhận diện theo đuôi file** — cùng một lệnh cho Python và JS/TS.
 
 ```bash
-# 0) Kiểm tra công cụ (không tốn API, ~5 phút; test JS tự bỏ qua nếu chưa cài Node)
+# 0) Kiểm tra công cụ (117 test, không tốn API, ~8 phút; test JS tự bỏ qua nếu chưa cài Node)
 pytest
 
 # 1) Baseline: sinh test một lần

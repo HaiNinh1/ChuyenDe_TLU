@@ -112,3 +112,15 @@ def test_agent_on_javascript_with_mock_llm(tmp_path, monkeypatch):
     assert "import { shippingFee, deliveryDays } from './shipping';" in summary["final_test_code"]
     assert summary["final"]["failed"] == 0 and summary["final"]["xfailed"] == 1
     assert (tmp_path / "out" / "agent" / "shipping.test.ts").exists()
+
+
+@needs_node
+def test_escaped_title_matches_between_file_and_jest_report():
+    """Tiêu đề 'doesn\\'t ...': tên trong file và tên Jest báo cáo phải trùng thì mới gắn nhãn / sửa / xoá được."""
+    code = ("import { shippingFee } from './shipping';\n\n"
+            "test('doesn\\'t charge at 500', () => {\n  expect(shippingFee(500)).toBe(0);\n});\n")
+    res = JS.run_tests(SHIPPING, code, with_coverage=False)
+    failing = [t.name for t in res.failing_tests()]
+    assert failing == JS.test_names(code) == ["doesn't charge at 500"]
+    marked = JS.add_suspected_marker(code, failing[0], "500 phải miễn phí")
+    assert JS.run_tests(SHIPPING, marked, with_coverage=False).xfailed == 1
