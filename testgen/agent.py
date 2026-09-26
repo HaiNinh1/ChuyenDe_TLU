@@ -113,6 +113,7 @@ class TestGenAgent:
         self.pending_good = None                # test mới chờ xác nhận là "tốt" (GĐ6)
         self.lessons_used = ""
         self.iterations = []
+        self.snapshots = {}                     # trạng thái tại các mốc (dùng cho thực nghiệm GĐ7)
         self.stop_reason = ""
         self.start_time = 0.0
 
@@ -124,6 +125,7 @@ class TestGenAgent:
             # Bước 1: sinh test ban đầu (giống hệt baseline, có thể kèm bài học từ bộ nhớ)
             self.lessons_used = self._lessons_for_initial()
             self.code = generate_tests(self.module_path, self.client, self.lessons_used)
+            self._snapshot("initial")  # = đúng kết quả của baseline (cùng prompt sinh một lần)
 
             for it in range(self.config.max_iterations + 1):
                 # Bước 2: chạy test và đo
@@ -185,6 +187,7 @@ class TestGenAgent:
             if not self.config.use_mutation:
                 self._finish(entry, "stop", why)
                 return False
+            self._snapshot("coverage_done")  # = kết quả nếu chỉ dùng phản hồi coverage (cấu hình B)
             self._message(f"{why} -> chuyển sang mutation testing")
             self.phase, self.no_improve, self.best_score = "mutation", 0, -1.0
 
@@ -372,6 +375,16 @@ class TestGenAgent:
         entry.elapsed = round(time.time() - self.start_time, 1)
         self.progress("iteration", asdict(entry))
 
+    def _snapshot(self, name: str):
+        """Lưu trạng thái tại một mốc: code test, số lần gọi LLM, thời gian, số vòng đã làm."""
+        self.snapshots[name] = {
+            "code": self.code,
+            "llm_calls": self.client.call_count,
+            "cost_usd": self.client.stats()["cost_usd"],
+            "seconds": round(time.time() - self.start_time, 1),
+            "iterations": max(0, len(self.iterations) - 1),
+        }
+
     def _message(self, text: str):
         print(f"[agent] {text}")
         self.progress("message", text)
@@ -439,6 +452,7 @@ class TestGenAgent:
             "iterations": [asdict(e) for e in self.iterations],
             "final_test_code": self.code,
             "suspected_bugs": dict(self.suspected),
+            "snapshots": self.snapshots,
             "lessons_used": self.lessons_used,
             "final": {
                 "line_coverage": final.line_coverage if final else 0.0,
