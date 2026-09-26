@@ -851,3 +851,90 @@ python -m testgen.runner targets/grading.py generated_tests/eval_C/test_grading.
    là registry. (Các chữ "pytest" còn lại trong `agent.py` chỉ nằm trong comment.)
 3. **Nếu máy thiếu mutmut thì sao?** → `check_environment()` báo thiếu, agent tự tắt phase mutation và vẫn chạy phần
    coverage; nếu thiếu pytest thì báo lỗi rõ ràng kèm lệnh `pip install -r requirements.txt`.
+
+---
+
+## RF4 — Adapter JavaScript/TypeScript (Jest + Istanbul + StrykerJS)
+
+### (a) Đã làm gì và tại sao
+- `package.json` (+ `package-lock.json`): Jest 30, babel-jest + @babel/preset-env + @babel/preset-typescript,
+  StrykerJS 10 (`@stryker-mutator/core`, `@stryker-mutator/jest-runner`). Cài bằng `npm install`.
+- `adapters/javascript_adapter.py` (hỗ trợ `.js` và `.ts`):
+  - **Chạy test**: thư mục tạm riêng trong `workspace/js_runs/` (để Node tìm thấy `node_modules/` của dự án), chỉ chứa
+    module + file test + `jest.config.json`; `jest --runInBand --json --coverage` qua tiến trình con có timeout.
+  - **TypeScript**: babel chỉ *bỏ phần khai báo kiểu* rồi chạy → một cấu hình dùng chung cho `.js`/`.ts`.
+  - **Coverage**: đọc `coverage-final.json` (Istanbul): `s` = số lần chạy từng câu lệnh, `b` = số lần đi qua từng nhánh.
+  - **Mutation**: StrykerJS, đọc `mutation.json`. Chưa cài / lỗi → `MutationResult(available=False)` → agent dừng phase
+    mutation, giữ kết quả coverage (đã có test kiểm tra trường hợp này).
+- `adapters/js_edit.py`: **bộ quét ngoặc** thay cho `ast` (Python không có sẵn parser JS): bỏ qua chuỗi, template
+  literal `${}`, comment, regex; tách file thành các khối `import` / `test('...')` / hàm phụ để ghép, sửa, xoá, gắn nhãn
+  từng test. Ghép import cùng nguồn (JS báo lỗi nếu khai báo trùng tên, Python thì không).
+- **Nhãn nghi bug** trong Jest: `// SUSPECTED_BUG: lý do` + `test.failing(...)` (tương đương `@pytest.mark.xfail`).
+- `prompt_hints()` riêng cho JS và TS (Jest, `import { } from './module'`, `toThrow`, `toBeCloseTo`, cấm `describe`
+  để agent thao tác được từng test).
+- **Chuyển target Python** vào `targets/python/` (và `evaluation/fixed_targets/python/`), cập nhật mọi đường dẫn.
+  Tạo `targets/javascript/`: `string_tools.js` (dễ), `shipping.ts` (TypeScript, **bug 3**: biên `> 500`),
+  `duration_parser.js` (trung bình), `bank_account.js` (class, **bug 4**: quên cộng dồn tiền đã rút trong ngày).
+  Ghi vào `BUGS.md`; bản đã sửa ở `evaluation/fixed_targets/javascript/`.
+- LLM giả lập (`mock`) trả test Jest khi prompt là của JS. 20 test mới (`tests/test_js_edit.py`,
+  `tests/test_javascript_adapter.py` — chạy Jest/Stryker thật, tự bỏ qua nếu máy chưa cài Node).
+
+### Vấn đề phát hiện khi làm và cách sửa (ghi trung thực)
+1. **`test.failing` giết được mutant, `xfail` thì không:** mutant vô tình *sửa đúng bug* làm thân test nghi bug PASS →
+   Jest báo `test.failing` là FAIL → mutant bị tính là "bị giết". pytest `xfail(strict=False)` thì coi là XPASS (không
+   fail). Để hai ngôn ngữ đo giống nhau: khi chạy mutation, adapter JS **bỏ các test nghi bug ra** (Python: xfail tự
+   động không giết được mutant).
+2. **Comment vs nhãn thật:** khi chấm trên bản đã sửa bug, nhãn `.failing` được bỏ nhưng comment còn → bản đầu đếm
+   nhầm là "xfailed". Sửa: chỉ test viết bằng `test.failing` mới bị coi là "dự kiến fail" (`failing_marked()`).
+3. **OpenRouter trả HTTP 200 nhưng không có `choices`** (nhà cung cấp model quá tải) → trước báo lỗi khó hiểu
+   `'NoneType' object is not subscriptable`; giờ báo rõ "Phản hồi không có 'choices'..." (vẫn được thử lại).
+4. **LLM chép lại test cũ nhưng đổi kiểu dấu nháy** `"` ↔ `'` → bản đầu nhân đôi test; giờ so sánh bỏ qua khác biệt này.
+
+### Chạy agent thật trên module JS (model `nemotron-3-super-120b-a12b:free`)
+| Module | Hành động | Line / branch | Mutation | Nhãn nghi bug (đúng/sai)* | LLM | Ghi chú |
+|---|---|---|---|---|---|---|
+| `shipping.ts` (bug 3) | fix_tests → improve_coverage → stop | 100% / 100% | 90% (18/20) | 3 / 0 | 3 lần, 109 s | cả 3 test nghi bug đều xoay quanh `shippingFee(500)` |
+| `bank_account.js` (bug 4) | fix_tests → … → **dừng vì hết quota** | 96,6% / 95% | chưa đo | 8 / **1** | 3 lần, 201 s | LLM chỉ đúng nguyên nhân "withdrawnToday not updated"; còn 1 test fail |
+| `string_tools.js`, `duration_parser.js` | **chưa chạy với LLM thật** | | | | | hết 50 request miễn phí/ngày — chạy tiếp ở Bước 6 |
+
+\* "đúng" = test fail trên code lỗi nhưng PASS trên bản đã sửa bug (cùng tiêu chí với phần Python).
+
+Nhận xét trung thực: ở `bank_account`, nhiều test "bắt bug" bằng cách đọc thẳng thuộc tính nội bộ `withdrawnToday`
+(JSDoc chỉ mô tả hành vi "tổng tiền đã rút trong ngày", không hứa có thuộc tính này) — tức là dựa vào **chi tiết cài
+đặt**, giống hiện tượng `is` bên Python ở GĐ5. Lần chạy bị dừng giữa chừng vì hết quota nhưng agent **không crash**:
+giữ bộ test tốt nhất và vẫn lưu log (dùng được cho REPLAY).
+
+### (b) Khái niệm quan trọng
+- **Jest**: framework test phổ biến nhất của JS. `test('tiêu đề', () => { expect(x).toBe(1); })`.
+  `test.failing` = test "dự kiến fail" (Jest ≥ 28).
+- **Istanbul**: công cụ coverage của Jest; đo *câu lệnh* rồi quy ra *dòng*, và *nhánh* (if, `?:`, `&&`/`||`, switch,
+  tham số mặc định). Khác coverage.py (đo dòng + cặp nhánh "từ dòng → tới dòng"), nên mỗi adapter tự viết
+  `describe_missing()` để mô tả cho LLM bằng lời.
+- **StrykerJS**: công cụ mutation của JS. Chạy mọi mutant, trạng thái `Killed / Survived / NoCoverage / Timeout /
+  CompileError`. Mutant không biên dịch được bị bỏ (giống mutant sai cú pháp bên Python).
+- **Bộ quét ngoặc (bracket scanner)**: cách "phân tích cú pháp nghèo": không hiểu hết JS, nhưng đủ tìm ranh giới
+  từng khối cấp cao nhất nếu biết bỏ qua chuỗi/comment/regex.
+
+### (c) File liên quan
+`adapters/javascript_adapter.py`, `adapters/js_edit.py`, `package.json`, `targets/javascript/`,
+`evaluation/fixed_targets/javascript/`, `BUGS.md`, `tests/test_js_edit.py`, `tests/test_javascript_adapter.py`,
+`logs/shipping_agent_js_*.json`, `logs/bank_account_agent_js_*.json`
+
+### (d) Lệnh tự chạy thử
+```bash
+npm install                                                       # một lần
+pytest tests/test_js_edit.py tests/test_javascript_adapter.py -v  # không tốn API
+python -m testgen.runner targets/javascript/shipping.ts generated_tests/agent_js/shipping.test.ts
+python -m testgen.mutation targets/javascript/shipping.ts generated_tests/agent_js/shipping.test.ts
+python -m testgen.agent targets/javascript/shipping.ts --mutation   # LLM thật (~3 request)
+```
+Kiểm tra hồi quy Python sau bước này: phần tất định vẫn **giống hệt** baseline; `pytest` 93/93.
+
+### (e) Câu hỏi giảng viên có thể hỏi
+1. **Vì sao không dùng một parser JS thật (Babel, TypeScript compiler)?** → Phải gọi sang Node.js cho mỗi lần ghép
+   test, phức tạp hơn nhiều; file test Jest có cấu trúc đơn giản (dãy `test(...)` cấp cao nhất) nên bộ quét ngoặc ~100
+   dòng là đủ. Đổi lại có giới hạn: không gắn nhãn được test nằm trong `describe` (prompt cấm `describe`).
+2. **`test.failing` có giống hệt `xfail` không?** → Không hẳn: `test.failing` là "strict" (thân test pass → báo lỗi).
+   Adapter xử lý 2 chỗ khác biệt: coi "failing mà pass" như XPASS khi đếm, và bỏ test nghi bug khi chạy mutation.
+3. **Vì sao cần thư mục tạm nằm TRONG dự án?** → Node tìm thư viện bằng cách đi ngược lên các thư mục cha để tìm
+   `node_modules/`; thư mục tạm của hệ điều hành không có `node_modules` phía trên nên Jest/Babel không chạy được.

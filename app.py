@@ -29,7 +29,7 @@ from testgen.agent import AgentConfig, TestGenAgent  # noqa: E402
 from testgen.config import DEFAULT_MODELS, ROOT_DIR, load_settings  # noqa: E402
 from testgen.llm_client import LLMClient  # noqa: E402
 
-TARGETS_DIR = ROOT_DIR / "targets"
+TARGETS_DIR = ROOT_DIR / "targets" / "python"
 LOGS_DIR = ROOT_DIR / "logs"
 RESULTS_DIR = ROOT_DIR / "results"
 USER_DIR = ROOT_DIR / "workspace" / "user_code"

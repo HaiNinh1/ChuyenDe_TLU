@@ -21,19 +21,19 @@ def load(path: Path):
 
 @pytest.mark.parametrize("name", TARGETS)
 def test_target_and_fixed_version_exist(name):
-    load(ROOT / "targets" / f"{name}.py")
-    load(ROOT / "evaluation" / "fixed_targets" / f"{name}.py")
+    load(ROOT / "targets" / "python" / f"{name}.py")
+    load(ROOT / "evaluation" / "fixed_targets" / "python" / f"{name}.py")
 
 
 def test_bug1_letter_grade_boundary():
-    buggy = load(ROOT / "targets" / "grading.py")
-    fixed = load(ROOT / "evaluation" / "fixed_targets" / "grading.py")
+    buggy = load(ROOT / "targets" / "python" / "grading.py")
+    fixed = load(ROOT / "evaluation" / "fixed_targets" / "python" / "grading.py")
     assert buggy.letter_grade(80) == "C"   # hành vi sai
     assert fixed.letter_grade(80) == "B"   # hành vi đúng theo docstring
 
 
 def test_bug2_remove_item_keeps_empty_item():
-    for folder, expected in (("targets", 1), ("evaluation/fixed_targets", 0)):
+    for folder, expected in (("targets/python", 1), ("evaluation/fixed_targets/python", 0)):
         module = load(ROOT / folder / "shopping_cart.py")
         cart = module.ShoppingCart()
         cart.add_item("tao", 5, 2)
@@ -42,9 +42,9 @@ def test_bug2_remove_item_keeps_empty_item():
 
 
 def test_non_buggy_behaviour_matches():
-    calc = load(ROOT / "targets" / "calculator.py")
-    text = load(ROOT / "targets" / "text_utils.py")
-    parser = load(ROOT / "targets" / "safe_parser.py")
+    calc = load(ROOT / "targets" / "python" / "calculator.py")
+    text = load(ROOT / "targets" / "python" / "text_utils.py")
+    parser = load(ROOT / "targets" / "python" / "safe_parser.py")
     assert calc.factorial(5) == 120
     assert text.truncate("hello world", 8) == "hello..."
     assert text.slugify("  Hello, World!! 2024 ") == "hello-world-2024"

@@ -13,8 +13,8 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 def test_module_tags_reflect_code_features():
-    grading = module_tags((ROOT / "targets" / "grading.py").read_text(encoding="utf-8"))
-    cart = module_tags((ROOT / "targets" / "shopping_cart.py").read_text(encoding="utf-8"))
+    grading = module_tags((ROOT / "targets" / "python" / "grading.py").read_text(encoding="utf-8"))
+    cart = module_tags((ROOT / "targets" / "python" / "shopping_cart.py").read_text(encoding="utf-8"))
     assert {"branches", "exception", "compound_condition"} <= set(grading)
     assert {"class", "state", "dict"} <= set(cart)
 

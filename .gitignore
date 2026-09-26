@@ -20,3 +20,6 @@ workspace/
 .idea/
 .omc/
 .playwright-mcp/
+node_modules/
+.stryker-tmp/
+reports/

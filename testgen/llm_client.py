@@ -130,6 +130,10 @@ class LLMClient:
             temperature=self.settings.temperature,
             max_tokens=self.settings.max_tokens,
         )
+        if not getattr(response, "choices", None):
+            # OpenRouter đôi khi trả HTTP 200 nhưng nội dung là lỗi (ví dụ nhà cung cấp model quá tải / bị giới hạn)
+            detail = (getattr(response, "model_extra", None) or {}).get("error") or "không có nội dung trả về"
+            raise LLMError(f"Phản hồi không có 'choices' (nhà cung cấp model lỗi hoặc quá tải): {detail}")
         usage = response.usage
         cost = 0.0
         if usage is not None and getattr(usage, "model_extra", None):
@@ -196,6 +200,13 @@ class LLMClient:
         module = match.group(1) if match else "module"
         if task == "classify":
             return LLMReply(text=json.dumps({"verdicts": []}))
+        if "Jest" in system:  # prompt cho JavaScript/TypeScript (xem JS_HINTS trong adapters/javascript_adapter.py)
+            return LLMReply(text=(
+                "```javascript\n"
+                f"import * as mod from './{module}';\n\n"
+                "test('mock module imports', () => {\n  expect(mod).toBeDefined();\n});\n"
+                "```\nLESSON: (mock) không có bài học.\n"
+            ))
         return LLMReply(text=(
             "```python\n"
             f"import {module}\n\n\n"

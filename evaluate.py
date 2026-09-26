@@ -46,8 +46,8 @@ from testgen.memory import Memory
 from testgen.mutation import run_mutation_testing
 from testgen.runner import run_tests
 
-TARGETS_DIR = ROOT_DIR / "targets"
-FIXED_DIR = ROOT_DIR / "evaluation" / "fixed_targets"
+TARGETS_DIR = ROOT_DIR / "targets" / "python"
+FIXED_DIR = ROOT_DIR / "evaluation" / "fixed_targets" / "python"
 RESULTS_DIR = ROOT_DIR / "results"
 MODULES = ["calculator", "text_utils", "grading", "safe_parser", "shopping_cart"]  # dễ -> khó
 CONFIG_NAMES = {
