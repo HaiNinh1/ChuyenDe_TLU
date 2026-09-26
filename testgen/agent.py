@@ -109,6 +109,8 @@ class TestGenAgent:
         self.use_mutation = self.config.use_mutation  # có thể bị tắt nếu công cụ mutation chưa cài
         # Bộ nhớ "tự học" (GĐ6): chỉ dùng khi bật use_memory
         self.memory = (memory or Memory()) if self.config.use_memory else None
+        if self.memory is not None:
+            self.memory.select_language(self.adapter.name)  # chỉ đọc/ghi kinh nghiệm của đúng ngôn ngữ này
         self.tags = self.adapter.module_tags(self.source)  # nhãn đặc điểm module, vd. ["branches", "exception"]
         self.progress = progress or (lambda kind, payload: None)  # callback cho giao diện
 

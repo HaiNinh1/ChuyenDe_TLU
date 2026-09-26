@@ -938,3 +938,42 @@ Kiểm tra hồi quy Python sau bước này: phần tất định vẫn **giố
    Adapter xử lý 2 chỗ khác biệt: coi "failing mà pass" như XPASS khi đếm, và bỏ test nghi bug khi chạy mutation.
 3. **Vì sao cần thư mục tạm nằm TRONG dự án?** → Node tìm thư viện bằng cách đi ngược lên các thư mục cha để tìm
    `node_modules/`; thư mục tạm của hệ điều hành không có `node_modules` phía trên nên Jest/Babel không chạy được.
+
+---
+
+## RF5 — Bộ nhớ "tự học" theo từng ngôn ngữ
+
+### (a) Đã làm gì và tại sao
+- `testgen/memory.py`: kinh nghiệm (bài học sửa lỗi + mẫu test tốt) được lưu **riêng theo ngôn ngữ**:
+  `{"version": 2, "languages": {"python": {...}, "javascript": {...}}}`. Agent gọi
+  `memory.select_language(adapter.name)` nên **chỉ bài học đúng ngôn ngữ** được đưa vào prompt.
+  Lý do: bài học "so sánh số thực phải dùng `pytest.approx`" hay mẫu test pytest là **nhiễu** (thậm chí gây hại) khi
+  LLM đang viết test Jest.
+- **Giữ dữ liệu cũ**: file định dạng cũ `{"lessons", "good_tests"}` (chỉ có Python) được tự chuyển đổi khi đọc — toàn bộ
+  xếp vào `"python"`. Đã chuyển hẳn `results/memory/memory_run1.json` (2 bài học, 5 mẫu test của lượt thực nghiệm 1)
+  bằng `python -m testgen.memory --migrate`. Nội dung không đổi, chỉ đổi cấu trúc.
+- API cũ giữ nguyên (`Memory(path)`, `lessons`, `good_tests`, `stats()` → ngôn ngữ đang chọn); thêm `stats_all()`.
+- +3 test: chuyển đổi định dạng cũ, cách ly giữa 2 ngôn ngữ, agent tự chọn ngôn ngữ theo adapter.
+
+### (b) Khái niệm quan trọng
+- **Chuyển đổi dữ liệu (data migration):** khi đổi cấu trúc lưu trữ, phải đọc được dữ liệu cũ và chuyển sang cấu trúc
+  mới mà không mất thông tin. Ở đây: có trường `"languages"` → định dạng mới; không có → định dạng cũ → bọc vào `"python"`.
+- **Negative transfer (chuyển giao tiêu cực):** kinh nghiệm từ ngữ cảnh khác có thể làm kết quả TỆ đi. Chia bộ nhớ theo
+  ngôn ngữ là cách đơn giản nhất để tránh. (Hướng mở: một số bài học *chung* như "viết assert theo đặc tả" có thể dùng
+  cho mọi ngôn ngữ — chưa làm.)
+
+### (c) File liên quan
+`testgen/memory.py`, `testgen/agent.py` (`select_language`), `tests/test_memory.py`, `results/memory/memory_run1.json`
+
+### (d) Lệnh tự chạy thử
+```bash
+python -m testgen.memory results/memory/memory_run1.json      # xem số kinh nghiệm theo ngôn ngữ
+pytest tests/test_memory.py -v
+```
+Kiểm tra hồi quy: phần Python tất định vẫn **giống hệt** baseline; `pytest` 96/96.
+
+### (e) Câu hỏi giảng viên có thể hỏi
+1. **Sao không dùng chung bộ nhớ cho mọi ngôn ngữ?** → Bài học/mẫu test gắn với cú pháp và framework cụ thể; đưa mẫu
+   pytest vào prompt Jest dễ làm LLM viết lẫn cú pháp. Tách theo ngôn ngữ là lựa chọn an toàn, đơn giản.
+2. **Dữ liệu bộ nhớ cũ có bị mất không?** → Không: đọc định dạng cũ vẫn được (tự chuyển), và đã chuyển hẳn file của
+   lượt thực nghiệm 1; có test kiểm tra.

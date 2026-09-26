@@ -1,112 +1,117 @@
 {
-  "lessons": [
-    {
-      "error_type": "ValueError",
-      "text": "Always derive expected results from the function's docstring (specifications), not from the current implementation; test both valid and invalid inputs, verify exact rounding, and confirm each conditional branch returns the value dictated by the spec.",
-      "module": "grading",
-      "tags": [
-        "branches",
-        "compound_condition",
-        "exception",
-        "float",
-        "loop"
+  "version": 2,
+  "languages": {
+    "python": {
+      "lessons": [
+        {
+          "error_type": "ValueError",
+          "text": "Always derive expected results from the function's docstring (specifications), not from the current implementation; test both valid and invalid inputs, verify exact rounding, and confirm each conditional branch returns the value dictated by the spec.",
+          "module": "grading",
+          "tags": [
+            "branches",
+            "compound_condition",
+            "exception",
+            "float",
+            "loop"
+          ],
+          "times_seen": 1,
+          "times_used": 3,
+          "created": "2026-09-26T19:12:22"
+        },
+        {
+          "error_type": "AssertionError",
+          "text": "Luôn tính toán kết quả mong đợi dựa trên mô tả trong docstring (ví dụ: sau `clear()` giỏ hàng trống, tổng tiền phải là 0) thay vì suy ra từ triển khai hiện tại.",
+          "module": "shopping_cart",
+          "tags": [
+            "branches",
+            "class",
+            "dict",
+            "exception",
+            "float",
+            "state"
+          ],
+          "times_seen": 1,
+          "times_used": 0,
+          "created": "2026-09-26T19:20:02"
+        }
       ],
-      "times_seen": 1,
-      "times_used": 3,
-      "created": "2026-09-26T19:12:22"
-    },
-    {
-      "error_type": "AssertionError",
-      "text": "Luôn tính toán kết quả mong đợi dựa trên mô tả trong docstring (ví dụ: sau `clear()` giỏ hàng trống, tổng tiền phải là 0) thay vì suy ra từ triển khai hiện tại.",
-      "module": "shopping_cart",
-      "tags": [
-        "branches",
-        "class",
-        "dict",
-        "exception",
-        "float",
-        "state"
-      ],
-      "times_seen": 1,
-      "times_used": 0,
-      "created": "2026-09-26T19:20:02"
+      "good_tests": [
+        {
+          "module": "calculator",
+          "tags": [
+            "branches",
+            "exception",
+            "float",
+            "loop"
+          ],
+          "reason": "giết được mutant",
+          "code": "def test_clamp_low_eq_high_no_error():\n    \"\"\"Khi low == high, hàm clamp không ném lỗi và trả về giá trị đó (hoặc low).\"\"\"\n    assert calculator.clamp(value=0, low=5, high=5) == 5\n    assert calculator.clamp(value=5, low=5, high=5) == 5\n    assert calculator.clamp(value=10, low=5, high=5) == 5",
+          "created": "2026-09-26T19:04:47"
+        },
+        {
+          "module": "calculator",
+          "tags": [
+            "branches",
+            "exception",
+            "float",
+            "loop"
+          ],
+          "reason": "giết được mutant",
+          "code": "def test_clamp_low_gt_high_exact_message():\n    \"\"\"Kiểm tra thông báo lỗi ValueError khi low > high chính xác.\"\"\"\n    with pytest.raises(ValueError) as excinfo:\n        calculator.clamp(value=0, low=5, high=3)\n    assert str(excinfo.value) == \"low phải nhỏ hơn hoặc bằng high\"",
+          "created": "2026-09-26T19:04:47"
+        },
+        {
+          "module": "safe_parser",
+          "tags": [
+            "branches",
+            "class",
+            "compound_condition",
+            "dict",
+            "exception",
+            "float",
+            "loop",
+            "state",
+            "string"
+          ],
+          "reason": "giết được mutant",
+          "code": "def test_parse_config_value_contains_equal_sign():\n    \"\"\"Giá trị có chứa dấu '=' được giữ lại như là phần giá trị.\"\"\"\n    # Một dấu '=' trong giá trị không được phân tách lại\n    assert safe_parser.parse_config(\"a=b=c\") == {\"a\": \"b=c\"}\n    # Khoảng trắng quanh key/value vẫn được bỏ qua, nhưng '=' trong giá trị không bị ảnh hưởng\n    assert safe_parser.parse_config(\"key = val=ue; other=thing\") == {\"key\": \"val=ue\", \"other\": \"thing\"}\n    # Nhiều dấu '=' liên tiếp trong giá trị cũng được giữ nguyên\n    assert safe_parser.parse_config(\"x==y\") == {\"x\": \"=y\"}\n    assert safe_parser.parse_config(\"a===b\") == {\"a\": \"==b\"}",
+          "created": "2026-09-26T19:16:20"
+        },
+        {
+          "module": "safe_parser",
+          "tags": [
+            "branches",
+            "class",
+            "compound_condition",
+            "dict",
+            "exception",
+            "float",
+            "loop",
+            "state",
+            "string"
+          ],
+          "reason": "giết được mutant",
+          "code": "def test_get_port_non_string_exact_message():\n    \"\"\"ConfigError message phải exactamente như trong source khi port không phải chuỗi.\"\"\"\n    with pytest.raises(safe_parser.ConfigError) as exc:\n        safe_parser.get_port({\"port\": 8080})\n    assert exc.value.args[0] == \"Port phải là số nguyên\"",
+          "created": "2026-09-26T19:17:05"
+        },
+        {
+          "module": "safe_parser",
+          "tags": [
+            "branches",
+            "class",
+            "compound_condition",
+            "dict",
+            "exception",
+            "float",
+            "loop",
+            "state",
+            "string"
+          ],
+          "reason": "giết được mutant",
+          "code": "def test_parse_config_duplicate_key_exact_message():\n    \"\"\"ConfigError message phải exactamente như trong source khi key trùng lặp.\"\"\"\n    with pytest.raises(safe_parser.ConfigError) as exc:\n        safe_parser.parse_config(\"a=1;a=2\")\n    assert exc.value.args[0] == \"Key bị trùng: 'a'\"",
+          "created": "2026-09-26T19:17:05"
+        }
+      ]
     }
-  ],
-  "good_tests": [
-    {
-      "module": "calculator",
-      "tags": [
-        "branches",
-        "exception",
-        "float",
-        "loop"
-      ],
-      "reason": "giết được mutant",
-      "code": "def test_clamp_low_eq_high_no_error():\n    \"\"\"Khi low == high, hàm clamp không ném lỗi và trả về giá trị đó (hoặc low).\"\"\"\n    assert calculator.clamp(value=0, low=5, high=5) == 5\n    assert calculator.clamp(value=5, low=5, high=5) == 5\n    assert calculator.clamp(value=10, low=5, high=5) == 5",
-      "created": "2026-09-26T19:04:47"
-    },
-    {
-      "module": "calculator",
-      "tags": [
-        "branches",
-        "exception",
-        "float",
-        "loop"
-      ],
-      "reason": "giết được mutant",
-      "code": "def test_clamp_low_gt_high_exact_message():\n    \"\"\"Kiểm tra thông báo lỗi ValueError khi low > high chính xác.\"\"\"\n    with pytest.raises(ValueError) as excinfo:\n        calculator.clamp(value=0, low=5, high=3)\n    assert str(excinfo.value) == \"low phải nhỏ hơn hoặc bằng high\"",
-      "created": "2026-09-26T19:04:47"
-    },
-    {
-      "module": "safe_parser",
-      "tags": [
-        "branches",
-        "class",
-        "compound_condition",
-        "dict",
-        "exception",
-        "float",
-        "loop",
-        "state",
-        "string"
-      ],
-      "reason": "giết được mutant",
-      "code": "def test_parse_config_value_contains_equal_sign():\n    \"\"\"Giá trị có chứa dấu '=' được giữ lại như là phần giá trị.\"\"\"\n    # Một dấu '=' trong giá trị không được phân tách lại\n    assert safe_parser.parse_config(\"a=b=c\") == {\"a\": \"b=c\"}\n    # Khoảng trắng quanh key/value vẫn được bỏ qua, nhưng '=' trong giá trị không bị ảnh hưởng\n    assert safe_parser.parse_config(\"key = val=ue; other=thing\") == {\"key\": \"val=ue\", \"other\": \"thing\"}\n    # Nhiều dấu '=' liên tiếp trong giá trị cũng được giữ nguyên\n    assert safe_parser.parse_config(\"x==y\") == {\"x\": \"=y\"}\n    assert safe_parser.parse_config(\"a===b\") == {\"a\": \"==b\"}",
-      "created": "2026-09-26T19:16:20"
-    },
-    {
-      "module": "safe_parser",
-      "tags": [
-        "branches",
-        "class",
-        "compound_condition",
-        "dict",
-        "exception",
-        "float",
-        "loop",
-        "state",
-        "string"
-      ],
-      "reason": "giết được mutant",
-      "code": "def test_get_port_non_string_exact_message():\n    \"\"\"ConfigError message phải exactamente như trong source khi port không phải chuỗi.\"\"\"\n    with pytest.raises(safe_parser.ConfigError) as exc:\n        safe_parser.get_port({\"port\": 8080})\n    assert exc.value.args[0] == \"Port phải là số nguyên\"",
-      "created": "2026-09-26T19:17:05"
-    },
-    {
-      "module": "safe_parser",
-      "tags": [
-        "branches",
-        "class",
-        "compound_condition",
-        "dict",
-        "exception",
-        "float",
-        "loop",
-        "state",
-        "string"
-      ],
-      "reason": "giết được mutant",
-      "code": "def test_parse_config_duplicate_key_exact_message():\n    \"\"\"ConfigError message phải exactamente như trong source khi key trùng lặp.\"\"\"\n    with pytest.raises(safe_parser.ConfigError) as exc:\n        safe_parser.parse_config(\"a=1;a=2\")\n    assert exc.value.args[0] == \"Key bị trùng: 'a'\"",
-      "created": "2026-09-26T19:17:05"
-    }
-  ]
+  }
 }

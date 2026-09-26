@@ -11,6 +11,13 @@ và chèn vào prompt.
 
 "Học" ở đây là HỌC TRONG NGỮ CẢNH (in-context learning): mô hình LLM KHÔNG thay đổi trọng số,
 chỉ nhận thêm kinh nghiệm cũ trong prompt. Xem giải thích và giới hạn trong HOC_TAP.md (GĐ6).
+
+ĐA NGÔN NGỮ (RF5): kinh nghiệm được lưu RIÊNG theo ngôn ngữ và chỉ kinh nghiệm ĐÚNG ngôn ngữ mới được đưa vào
+prompt (bài học "dùng pytest.approx" vô nghĩa khi viết test Jest). Định dạng file:
+    {"version": 2, "languages": {"python": {"lessons": [...], "good_tests": [...]},
+                                 "javascript": {"lessons": [...], "good_tests": [...]}}}
+File định dạng cũ {"lessons": [...], "good_tests": [...]} (trước refactor, chỉ có Python) được tự chuyển đổi khi đọc:
+toàn bộ kinh nghiệm cũ được xếp vào "python". Chuyển hẳn file trên đĩa: python -m testgen.memory --migrate <file>
 """
 import json
 import re
@@ -34,12 +41,28 @@ def _words(text: str) -> set:
     return set(re.findall(r"\w+", text.lower()))
 
 
+def convert_old_format(data: dict) -> dict:
+    """Định dạng cũ (chỉ Python, không chia ngôn ngữ) -> định dạng mới chia theo ngôn ngữ."""
+    if "languages" in data:
+        return data
+    return {"version": 2, "languages": {"python": {"lessons": data.get("lessons", []),
+                                                   "good_tests": data.get("good_tests", [])}}}
+
+
 class Memory:
-    def __init__(self, path: Path = MEMORY_FILE):
+    def __init__(self, path: Path = MEMORY_FILE, language: str = "python"):
         self.path = Path(path)
-        self.data = {"lessons": [], "good_tests": []}
+        self.data = {"version": 2, "languages": {}}
         if self.path.exists():
-            self.data = json.loads(self.path.read_text(encoding="utf-8"))
+            self.data = convert_old_format(json.loads(self.path.read_text(encoding="utf-8")))
+        self.language = language
+
+    def select_language(self, language: str):
+        """Chọn ngôn ngữ đang làm việc: mọi thao tác đọc/ghi sau đó chỉ chạm vào kinh nghiệm của ngôn ngữ này."""
+        self.language = language
+
+    def _bucket(self) -> dict:
+        return self.data["languages"].setdefault(self.language, {"lessons": [], "good_tests": []})
 
     def save(self):
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -47,11 +70,11 @@ class Memory:
 
     @property
     def lessons(self) -> list:
-        return self.data["lessons"]
+        return self._bucket()["lessons"]
 
     @property
     def good_tests(self) -> list:
-        return self.data["good_tests"]
+        return self._bucket()["good_tests"]
 
     # ------------------------------------------------------------------ GHI
     def add_lesson(self, error_text: str, lesson: str, module: str, tags: list):
@@ -105,7 +128,7 @@ class Memory:
         return candidates[:k]
 
     def format_for_prompt(self, module: str, tags: list, error_text: str = "", with_examples: bool = True,
-                          fence: str = "python") -> str:
+                          fence: str = "") -> str:
         """Tạo đoạn văn bản chèn vào prompt. Rỗng nếu bộ nhớ chưa có gì liên quan."""
         lessons = self.relevant_lessons(tags, error_text)
         parts = []
@@ -119,4 +142,24 @@ class Memory:
         return "\n".join(parts)
 
     def stats(self) -> dict:
+        """Số kinh nghiệm của ngôn ngữ đang chọn."""
         return {"lessons": len(self.lessons), "good_tests": len(self.good_tests)}
+
+    def stats_all(self) -> dict:
+        """Số kinh nghiệm của từng ngôn ngữ, ví dụ {"python": {"lessons": 2, ...}, "javascript": {...}}."""
+        return {lang: {"lessons": len(b["lessons"]), "good_tests": len(b["good_tests"])}
+                for lang, b in self.data["languages"].items()}
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Xem / chuyển đổi file bộ nhớ")
+    parser.add_argument("files", nargs="+")
+    parser.add_argument("--migrate", action="store_true", help="ghi lại file theo định dạng mới (chia theo ngôn ngữ)")
+    args = parser.parse_args()
+    for file in args.files:
+        memory = Memory(file)
+        if args.migrate:
+            memory.save()
+        print(file, memory.stats_all())
