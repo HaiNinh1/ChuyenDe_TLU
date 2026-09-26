@@ -723,3 +723,54 @@ python scripts/snapshot_python.py --out docs/thu.json --llm         # + 1 lần 
    "tương đương": chạy đủ bước, chỉ số cùng mức. Phần có thể so chính xác thì so chính xác.
 3. **Vì sao phải so cả mã băm prompt?** → Chỉ cần đổi một dấu cách/xuống dòng, LLM đã có thể cư xử khác; khi đó số liệu
    thực nghiệm cũ không còn so sánh công bằng với số liệu mới.
+
+---
+
+## RF2 — Lớp trừu tượng `LanguageAdapter` + registry
+
+### (a) Đã làm gì và tại sao
+- Tạo thư mục `adapters/`:
+  - `base.py`: lớp trừu tượng **`LanguageAdapter`** (ABC) với các phương thức `check_environment()`,
+    `test_file_path()`, `prompt_hints()`, `run_tests() -> TestResult`, `get_coverage() -> CoverageResult`,
+    `run_mutation() -> MutationResult`, và nhóm thao tác sửa file test (`merge_tests`, `add_suspected_marker`,
+    `remove_tests`, `suspected_tests`...). Agent sẽ chỉ gọi các phương thức này.
+  - **Dataclass dùng chung** cho mọi ngôn ngữ: `TestResult` (chính là `RunResult` cũ, giữ tên cũ làm bí danh),
+    `TestCaseResult`, `CoverageResult`, `Mutant`, `MutationResult` (thêm cờ `available` cho trường hợp công cụ mutation
+    chưa cài), `EnvironmentStatus`.
+  - `registry.py`: `adapter_for_file()` chọn adapter theo đuôi file; `detect_language()` đoán ngôn ngữ của code dán vào.
+- `testgen/runner.py`, `testgen/mutation.py` **không định nghĩa dataclass nữa** mà import từ `adapters/base.py`
+  (di chuyển, không viết lại). Hàm đếm điểm mutation chuyển thành `finish_mutation_result()` dùng chung.
+- Chưa đổi hành vi nào: Bước 3 mới chuyển logic Python vào adapter.
+
+### (b) Khái niệm quan trọng
+- **Lớp trừu tượng (Abstract Base Class):** khai báo "hợp đồng" — các phương thức mọi lớp con BẮT BUỘC phải có.
+  `LanguageAdapter()` không tạo được đối tượng (ném `TypeError`); lớp con thiếu phương thức cũng không tạo được.
+  ```python
+  class LanguageAdapter(ABC):
+      @abstractmethod
+      def run_tests(self, source_file, test_code, ...) -> TestResult: ...
+  ```
+- **Registry (sổ đăng ký):** một từ điển `{tên ngôn ngữ: adapter}`. Chỗ duy nhất biết "đuôi `.js` thì dùng adapter
+  nào". Thêm ngôn ngữ = thêm một dòng `register(...)`.
+- **Dataclass dùng chung = "ngôn ngữ chung" giữa các module:** dù pytest hay Jest, kết quả đều là
+  `TestResult(passed, failed, line_coverage, ...)` → agent, `evaluate.py`, giao diện không cần biết công cụ nào đã chạy.
+
+### (c) File liên quan
+`adapters/base.py`, `adapters/registry.py`, `adapters/__init__.py`, `tests/test_adapters_base.py` (adapter giả `.fake`
+chứng minh giao diện đủ để cắm một ngôn ngữ mới), `testgen/runner.py`, `testgen/mutation.py`
+
+### (d) Lệnh tự chạy thử
+```bash
+pytest tests/test_adapters_base.py -v
+python scripts/snapshot_python.py --out docs/thu.json --compare docs/baseline_truoc_refactor.json
+# -> "Phần tất định GIỐNG HỆT"
+```
+Kết quả kiểm tra bước này: phần tất định **giống hệt** baseline; `pytest` 73/73 pass (64 cũ + 9 mới).
+
+### (e) Câu hỏi giảng viên có thể hỏi
+1. **Vì sao dùng lớp trừu tượng mà không chỉ viết vài hàm `if language == "python"`?** → `if/else` theo ngôn ngữ sẽ
+   rải khắp agent, thêm ngôn ngữ phải sửa mọi chỗ. Lớp trừu tượng gom mọi khác biệt vào một lớp con; Python kiểm tra
+   giúp lớp con có đủ phương thức.
+2. **`run_tests` đã trả coverage rồi, sao còn `get_coverage`?** → Với cả pytest và Jest, coverage được đo cùng lần chạy
+   test (rẻ hơn chạy 2 lần). `get_coverage` là phương thức tiện ích theo đúng giao diện, mặc định lấy từ `run_tests`.
+3. **Tại sao giữ tên `RunResult`?** → Để code và test cũ vẫn chạy trong lúc refactor từng bước (không "đập đi xây lại").

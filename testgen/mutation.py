@@ -22,49 +22,14 @@ import sys
 import tempfile
 import time
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass, field
 from pathlib import Path
 
 from mutmut import Context, list_mutations, mutate
 
+# Dataclass kết quả dùng chung cho mọi ngôn ngữ (xem adapters/base.py)
+from adapters.base import Mutant, MutationResult, finish_mutation_result
+
 from .runner import run_subprocess, run_tests
-
-
-@dataclass
-class Mutant:
-    id: int
-    line: int                 # số dòng (tính từ 1) bị đột biến
-    original: str             # dòng code gốc
-    mutated: str              # dòng code sau đột biến
-    status: str = "pending"   # killed | survived | timeout
-    source: str = field(default="", repr=False)  # toàn bộ mã nguồn mutant (không ghi vào log)
-
-    def describe(self) -> str:
-        return f"Mutant #{self.id}, dòng {self.line}: `{self.original.strip()}`  ->  `{self.mutated.strip()}`"
-
-
-@dataclass
-class MutationResult:
-    total: int = 0
-    killed: int = 0
-    survived: int = 0
-    timeout: int = 0
-    score: float = 0.0            # %
-    sampled_from: int = 0         # tổng số mutant sinh được trước khi lấy mẫu
-    duration: float = 0.0
-    error: str = ""
-    mutants: list = field(default_factory=list)
-
-    def survivors(self) -> list:
-        return [m for m in self.mutants if m.status == "survived"]
-
-    def to_dict(self) -> dict:
-        return {
-            "total": self.total, "killed": self.killed, "survived": self.survived, "timeout": self.timeout,
-            "score": self.score, "sampled_from": self.sampled_from, "duration": self.duration, "error": self.error,
-            "mutants": [{"id": m.id, "line": m.line, "original": m.original, "mutated": m.mutated,
-                         "status": m.status} for m in self.mutants],
-        }
 
 
 def _strip_docstrings(tree):
@@ -163,12 +128,7 @@ def run_mutation_testing(module_path, test_code: str, max_mutants: int = 20, see
     for mutant, status in zip(mutants, statuses):
         mutant.status = status
 
-    result.mutants = mutants
-    result.total = len(mutants)
-    result.killed = sum(1 for m in mutants if m.status == "killed")
-    result.timeout = sum(1 for m in mutants if m.status == "timeout")
-    result.survived = sum(1 for m in mutants if m.status == "survived")
-    result.score = round(100.0 * (result.killed + result.timeout) / result.total, 1) if result.total else 100.0
+    finish_mutation_result(result, mutants)
     result.duration = round(time.time() - start, 1)
     return result
 

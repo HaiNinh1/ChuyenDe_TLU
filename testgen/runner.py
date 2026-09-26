@@ -19,51 +19,10 @@ import sys
 import tempfile
 import time
 import xml.etree.ElementTree as ET
-from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-
-@dataclass
-class TestCaseResult:
-    __test__ = False  # báo pytest: đây không phải class test
-    name: str        # tên test, ví dụ "test_letter_grade_b_range" hoặc "test_x[1-2]"
-    outcome: str     # passed | failed | error | skipped | xfailed
-    message: str = ""
-
-
-@dataclass
-class RunResult:
-    passed: int = 0
-    failed: int = 0
-    errors: int = 0
-    skipped: int = 0
-    xfailed: int = 0
-    collection_error: str = ""      # khác rỗng nếu file test không chạy được (syntax/import/không có test)
-    timed_out: bool = False
-    line_coverage: float = 0.0      # %
-    branch_coverage: float = 0.0    # %
-    missing_lines: list = field(default_factory=list)      # [12, 15, ...]
-    missing_branches: list = field(default_factory=list)   # [[17, 19], [30, -28], ...]  (-N: thoát khỏi hàm)
-    tests: list = field(default_factory=list)              # list[TestCaseResult]
-    output: str = ""                # phần cuối output của pytest (để gửi cho LLM khi cần)
-    duration: float = 0.0
-
-    @property
-    def total(self) -> int:
-        return self.passed + self.failed + self.errors + self.skipped + self.xfailed
-
-    @property
-    def ok(self) -> bool:
-        """Bộ test chạy được và không có test nào fail/error."""
-        return not self.collection_error and self.failed == 0 and self.errors == 0 and self.total > 0
-
-    def failing_tests(self) -> list:
-        return [t for t in self.tests if t.outcome in ("failed", "error")]
-
-    def to_dict(self) -> dict:
-        data = asdict(self)
-        data["total"] = self.total
-        return data
+# Dataclass kết quả dùng chung cho mọi ngôn ngữ (xem adapters/base.py)
+from adapters.base import RunResult, TestCaseResult, TestResult  # noqa: F401
 
 
 def run_tests(module_path, test_code: str, timeout: int = 60, with_coverage: bool = True,
