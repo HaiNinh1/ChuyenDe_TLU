@@ -1,13 +1,14 @@
-"""Giao diện demo (Streamlit).
+"""Giao diện demo (Streamlit) — đa ngôn ngữ (Python, JavaScript/TypeScript).
 
 Chạy:  streamlit run app.py
 
 Chức năng:
-- Chọn module mẫu trong targets/ hoặc dán code Python của bạn
+- Chọn ngôn ngữ + module mẫu trong targets/<ngôn ngữ>/, hoặc dán code (tự nhận diện ngôn ngữ, có thể chọn lại)
+- Hiển thị ngôn ngữ và công cụ đang dùng (pytest/Jest, coverage.py/Istanbul, mutmut/StrykerJS), kiểm tra đã cài chưa
 - Chạy agent, xem tiến trình TỪNG VÒNG ngay khi đang chạy
 - Biểu đồ coverage / mutation score qua các vòng
 - Xem code test ở mỗi vòng, test SUSPECTED_BUG được tô đỏ
-- Tab kết quả thực nghiệm (results/)
+- Tab kết quả thực nghiệm theo từng ngôn ngữ + so sánh hai ngôn ngữ (results/)
 - Chế độ REPLAY: phát lại từ log JSON đã lưu (phòng mất mạng / API lỗi khi demo)
 """
 import difflib
@@ -24,15 +25,16 @@ import streamlit as st
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-from adapters import get_adapter  # noqa: E402
+from adapters import adapter_for_file, all_adapters, detect_language, get_adapter  # noqa: E402
 from testgen.agent import AgentConfig, TestGenAgent  # noqa: E402
 from testgen.config import DEFAULT_MODELS, ROOT_DIR, load_settings  # noqa: E402
 from testgen.llm_client import LLMClient  # noqa: E402
 
-TARGETS_DIR = ROOT_DIR / "targets" / "python"
+TARGETS_DIR = ROOT_DIR / "targets"
 LOGS_DIR = ROOT_DIR / "logs"
 RESULTS_DIR = ROOT_DIR / "results"
 USER_DIR = ROOT_DIR / "workspace" / "user_code"
+EXT_NAMES = {".py": "Python", ".js": "JavaScript", ".ts": "TypeScript"}
 
 ACTION_LABELS = {
     "fix_collection": "🔧 Sửa file test hỏng",
@@ -107,17 +109,8 @@ def progress_chart(iterations: list):
     return fig
 
 
-def highlight_code(code: str, suspected: list) -> str:
-    """HTML của code test, tô đỏ các hàm test SUSPECTED_BUG."""
-    spans = []
-    try:
-        import ast
-        for node in ast.parse(code).body:
-            if isinstance(node, ast.FunctionDef) and node.name in suspected:
-                start = min([node.lineno] + [d.lineno for d in node.decorator_list])
-                spans.append((start, node.end_lineno))
-    except SyntaxError:
-        pass
+def highlight_code(code: str, spans: list) -> str:
+    """HTML của code test, tô đỏ các dòng thuộc test SUSPECTED_BUG (spans: [(dòng đầu, dòng cuối)])."""
     rows = []
     for i, line in enumerate(code.splitlines(), start=1):
         bad = any(a <= i <= b for a, b in spans)
@@ -127,6 +120,16 @@ def highlight_code(code: str, suspected: list) -> str:
     return ('<div style="font-family:Consolas,Menlo,monospace;font-size:13px;line-height:1.45;'
             'background:#f7f7f9;color:#222;padding:10px;border-radius:6px;overflow-x:auto">'
             + "".join(rows) + "</div>")
+
+
+def summary_adapter(summary: dict):
+    """Adapter của một lần chạy (log trước refactor không có "language" -> Python)."""
+    return get_adapter(summary.get("language", "python"))
+
+
+def code_language(adapter, path) -> str:
+    """Tên ngôn ngữ cho st.code (tô màu cú pháp)."""
+    return adapter.prompt_hints(path)["fence"]
 
 
 def summary_box(summary: dict):
@@ -144,8 +147,18 @@ def summary_box(summary: dict):
         st.error("🐞 **Nghi phát hiện bug trong code** (cần người kiểm tra):")
         for name, reason in summary["suspected_bugs"].items():
             st.markdown(f"- `{name}`: {reason}")
-    st.caption(f"LLM: {summary['llm']['provider']} / {summary['llm']['model']}"
+    st.caption(f"Ngôn ngữ: {summary_adapter(summary).describe_tools()} · "
+               f"LLM: {summary['llm']['provider']} / {summary['llm']['model']}"
                + (f" · Log: `{Path(summary['log_path']).name}`" if summary.get("log_path") else ""))
+
+
+def log_label(path: Path) -> str:
+    """Tên log hiển thị trong REPLAY, kèm ngôn ngữ."""
+    try:
+        language = json.loads(path.read_text(encoding="utf-8")).get("language", "python")
+    except (OSError, ValueError):
+        language = "?"
+    return f"[{language}] {path.name}"
 
 
 # ============================================================ THANH BÊN
@@ -154,24 +167,41 @@ mode = st.sidebar.radio("Chế độ", ["Chạy mới", "REPLAY từ log"])
 
 run_clicked = replay_clicked = False
 module_path = None
+adapter = None
 if mode == "Chạy mới":
-    source_kind = st.sidebar.radio("Mã nguồn", ["Module mẫu", "Dán code Python"])
+    source_kind = st.sidebar.radio("Mã nguồn", ["Module mẫu", "Dán code"])
     if source_kind == "Module mẫu":
-        names = sorted(p.stem for p in TARGETS_DIR.glob("*.py"))
-        chosen = st.sidebar.selectbox("Module", names, index=names.index("grading") if "grading" in names else 0)
-        module_path = TARGETS_DIR / f"{chosen}.py"
+        languages = [a for a in all_adapters() if (TARGETS_DIR / a.name).is_dir()]
+        adapter = st.sidebar.selectbox("Ngôn ngữ", languages, format_func=lambda a: a.display_name)
+        files = sorted(p for p in (TARGETS_DIR / adapter.name).iterdir() if p.suffix in adapter.file_extensions)
+        default = next((i for i, p in enumerate(files) if p.stem in ("grading", "shipping")), 0)
+        module_path = st.sidebar.selectbox("Module", files, index=default, format_func=lambda p: p.name)
     else:
+        pasted = st.sidebar.text_area("Dán code (nên có docstring / JSDoc mô tả hành vi đúng)", height=220)
+        detected = detect_language(pasted) if pasted.strip() else ".py"
+        options = [".py", ".js", ".ts"]
+        ext = st.sidebar.selectbox("Ngôn ngữ", options, index=options.index(detected),
+                                   format_func=lambda e: EXT_NAMES[e] + (" (tự nhận diện)" if e == detected else ""))
         module_name = st.sidebar.text_input("Tên module (chữ thường, không dấu)", "user_module")
-        pasted = st.sidebar.text_area("Dán code Python (nên có docstring mô tả hành vi đúng)", height=220)
+        adapter = adapter_for_file(f"x{ext}")
         if pasted.strip() and re.fullmatch(r"[a-z_][a-z0-9_]*", module_name or ""):
             USER_DIR.mkdir(parents=True, exist_ok=True)
-            module_path = USER_DIR / f"{module_name}.py"
+            module_path = USER_DIR / f"{module_name}{ext}"
             module_path.write_text(pasted, encoding="utf-8")
         elif pasted.strip():
             st.sidebar.error("Tên module không hợp lệ")
 
+    # Công cụ của ngôn ngữ + kiểm tra đã cài chưa
+    env = adapter.check_environment()
+    st.sidebar.info(f"🔧 {adapter.describe_tools()}")
+    if not env.ok:
+        st.sidebar.error(env.message())
+    elif not env.mutation_available:
+        st.sidebar.warning(f"{adapter.mutation_tool} chưa cài → chỉ chạy phần coverage. {env.install_hint}")
+
     st.sidebar.subheader("Cấu hình agent")
-    use_mutation = st.sidebar.checkbox("Mutation testing", value=True)
+    use_mutation = st.sidebar.checkbox("Mutation testing", value=env.mutation_available,
+                                       disabled=not env.mutation_available)
     use_memory = st.sidebar.checkbox("Bộ nhớ tự học", value=False)
     max_iters = st.sidebar.slider("Số vòng tối đa", 1, 10, 6)
     line_th = st.sidebar.slider("Ngưỡng line coverage (%)", 50, 100, 95)
@@ -185,11 +215,11 @@ if mode == "Chạy mới":
     provider = st.sidebar.selectbox("Nhà cung cấp", providers, index=providers.index(env_settings.provider))
     model = st.sidebar.text_input("Model", env_settings.model if provider == env_settings.provider
                                   else DEFAULT_MODELS[provider])
-    run_clicked = st.sidebar.button("▶️ Chạy agent", type="primary", disabled=module_path is None)
+    run_clicked = st.sidebar.button("▶️ Chạy agent", type="primary", disabled=module_path is None or not env.ok)
 else:
     logs = sorted(LOGS_DIR.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
     if logs:
-        log_file = st.sidebar.selectbox("Chọn log", logs, format_func=lambda p: p.name)
+        log_file = st.sidebar.selectbox("Chọn log", logs, format_func=log_label)
         speed = st.sidebar.slider("Tốc độ phát lại (giây/vòng)", 0.0, 3.0, 1.0, 0.5)
         replay_clicked = st.sidebar.button("▶️ Phát lại", type="primary")
     else:
@@ -202,6 +232,7 @@ tab_run, tab_chart, tab_code, tab_exp, tab_src = st.tabs(
 with tab_run:
     if run_clicked and module_path is not None:
         st.subheader(f"Đang chạy agent cho `{module_path.name}`")
+        st.caption(f"Ngôn ngữ: **{adapter.describe_tools()}**")
         status = st.status("Agent đang làm việc...", expanded=True)
         chart_slot = st.empty()
         live = []
@@ -232,7 +263,8 @@ with tab_run:
         summary = json.loads(log_file.read_text(encoding="utf-8"))
         summary["log_path"] = str(log_file)
         st.subheader(f"REPLAY: `{log_file.name}`")
-        st.info("Đang phát lại từ log đã lưu — không gọi LLM, không cần mạng.")
+        st.info(f"Đang phát lại từ log đã lưu — không gọi LLM, không cần mạng. "
+                f"Ngôn ngữ: {summary_adapter(summary).describe_tools()}")
         chart_slot = st.empty()
         shown = []
         for it in summary["iterations"]:
@@ -246,8 +278,8 @@ with tab_run:
     if summary:
         summary_box(summary)
     elif not (run_clicked or replay_clicked):
-        st.info("Chọn module ở thanh bên rồi bấm **Chạy agent**, hoặc chọn **REPLAY từ log** để phát lại một lần "
-                "chạy đã lưu.")
+        st.info("Chọn ngôn ngữ và module ở thanh bên rồi bấm **Chạy agent**, hoặc chọn **REPLAY từ log** để phát lại "
+                "một lần chạy đã lưu.")
 
 summary = st.session_state.get("summary")
 
@@ -261,12 +293,13 @@ with tab_chart:
 with tab_code:
     if summary and summary["iterations"]:
         its = summary["iterations"]
+        run_adapter = summary_adapter(summary)
         idx = st.select_slider("Xem code test tại vòng", options=list(range(len(its))), value=len(its) - 1)
         code = its[idx]["test_code"] if idx < len(its) - 1 else summary["final_test_code"]
-        adapter = get_adapter(summary.get("language", "python"))  # log cũ (trước refactor) không có "language"
-        suspected = adapter.suspected_tests(code)
+        suspected = run_adapter.suspected_tests(code)
+        spans = [span for name, span in run_adapter.test_line_spans(code).items() if name in suspected]
         c1, c2, c3 = st.columns(3)
-        c1.metric("Số test", len(adapter.test_names(code)) if adapter.is_valid(code) else "lỗi cú pháp")
+        c1.metric("Số test", len(run_adapter.test_names(code)) if run_adapter.is_valid(code) else "lỗi cú pháp")
         c2.metric("SUSPECTED_BUG", len(suspected))
         c3.metric("Số dòng", len(code.splitlines()))
         if suspected:
@@ -278,19 +311,28 @@ with tab_code:
                                                   f"vòng {idx - 1}", f"vòng {idx}", lineterm=""))
             st.code(diff or "(không đổi)", language="diff")
         else:
-            st.html(highlight_code(code, suspected))
-        st.download_button("⬇️ Tải file test", code, file_name=f"test_{summary['module']}.py")
+            st.html(highlight_code(code, spans))
+        test_name = run_adapter.test_file_path(summary.get("module_path") or f"{summary['module']}.py").name
+        st.download_button("⬇️ Tải file test", code, file_name=test_name)
     else:
         st.info("Chưa có dữ liệu.")
 
 with tab_exp:
     results_csv = RESULTS_DIR / "results.csv"
     if results_csv.exists():
-        st.subheader("Trung bình theo cấu hình")
-        st.dataframe(pd.read_csv(results_csv), hide_index=True)
-        for image in ("summary.png", "mutation_by_module.png"):
-            if (RESULTS_DIR / image).exists():
-                st.image(str(RESULTS_DIR / image))
+        table = pd.read_csv(results_csv)
+        languages = list(table["language"].unique()) if "language" in table else ["python"]
+        if (RESULTS_DIR / "language_comparison.png").exists() and len(languages) > 1:
+            st.subheader("So sánh hai ngôn ngữ")
+            st.image(str(RESULTS_DIR / "language_comparison.png"))
+        for language, lang_tab in zip(languages, st.tabs([get_adapter(lang).display_name for lang in languages])):
+            with lang_tab:
+                part = table[table["language"] == language] if "language" in table else table
+                st.subheader(f"Trung bình theo cấu hình — {get_adapter(language).describe_tools()}")
+                st.dataframe(part, hide_index=True)
+                for image in (f"summary_{language}.png", f"mutation_by_module_{language}.png"):
+                    if (RESULTS_DIR / image).exists():
+                        st.image(str(RESULTS_DIR / image))
         by_module = RESULTS_DIR / "results_by_module.csv"
         if by_module.exists():
             with st.expander("Chi tiết theo module"):
@@ -299,16 +341,17 @@ with tab_exp:
         if runs.exists():
             with st.expander("Dữ liệu thô (từng lần chạy)"):
                 st.dataframe(pd.read_csv(runs), hide_index=True)
-        st.caption("Nguồn: `python evaluate.py`. Xem phần hạn chế trong HOC_TAP.md (GĐ7).")
+        st.caption("Nguồn: `python evaluate.py`. Xem phần hạn chế trong HOC_TAP.md.")
     else:
         st.info("Chưa có kết quả. Chạy `python evaluate.py --quick` hoặc `python evaluate.py --runs 3`.")
 
 with tab_src:
-    src_path = module_path if mode == "Chạy mới" and module_path else (
-        Path(summary["module_path"]) if summary else None)
     if summary and mode != "Chạy mới":
-        st.code(summary.get("source_code", ""), language="python", line_numbers=True)
-    elif src_path and src_path.exists():
-        st.code(src_path.read_text(encoding="utf-8"), language="python", line_numbers=True)
+        st.code(summary.get("source_code", ""), language=code_language(summary_adapter(summary),
+                                                                       summary.get("module_path")),
+                line_numbers=True)
+    elif mode == "Chạy mới" and module_path and module_path.exists():
+        st.code(module_path.read_text(encoding="utf-8"), language=code_language(adapter, module_path),
+                line_numbers=True)
     else:
         st.info("Chưa chọn module.")

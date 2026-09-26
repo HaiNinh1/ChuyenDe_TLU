@@ -223,6 +223,10 @@ class LanguageAdapter(ABC):
     def suspected_tests(self, code: str) -> list:
         """Tên các test đang mang nhãn SUSPECTED_BUG."""
 
+    def test_line_spans(self, code: str) -> dict:
+        """{tên test: (dòng đầu, dòng cuối)} tính từ 1 — giao diện dùng để tô màu test. Mặc định: không biết."""
+        return {}
+
     def base_test_name(self, name: str) -> str:
         """Tên test trong báo cáo -> tên test trong file (Python: bỏ phần tham số "[...]")."""
         return name

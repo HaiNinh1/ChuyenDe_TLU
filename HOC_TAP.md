@@ -1035,3 +1035,45 @@ python evaluate.py --runs 3                           # đầy đủ (chạy ti�
    giữa ngôn ngữ chỉ để xem xu hướng có giống nhau không.
 2. **Sao có tham số `--quick`?** → Model miễn phí giới hạn 50 request/ngày; `--quick` chạy 1 module có bug mỗi ngôn ngữ
    để kiểm tra toàn bộ pipeline với ~15 request.
+
+---
+
+## RF7 — Giao diện đa ngôn ngữ (`app.py`)
+
+### (a) Đã làm gì và tại sao
+- **Chọn ngôn ngữ** (Python / JavaScript-TypeScript) rồi chọn module mẫu trong `targets/<ngôn ngữ>/`.
+- **Dán code**: ngôn ngữ được **tự nhận diện** (`registry.detect_language`: đếm dấu hiệu `def`/`import x` vs
+  `function`/`const`/`=>`/`;` vs kiểu `: number`, `interface`), hiện "(tự nhận diện)" và **cho chọn lại** vì heuristic
+  có thể đoán sai với đoạn code ngắn. File được lưu với đuôi đúng (`.py/.js/.ts`) để registry chọn adapter.
+- Thanh bên hiện **ngôn ngữ + công cụ đang dùng** (`adapter.describe_tools()`) và kết quả `check_environment()`:
+  thiếu công cụ test → báo lỗi + lệnh cài, nút chạy bị khoá; thiếu công cụ mutation → cảnh báo, tắt ô mutation.
+- Tab **Code test** tô đỏ test SUSPECTED_BUG cho cả JS (thêm `test_line_spans()` vào adapter thay cho `ast` cứng);
+  tải file test đúng tên quy ước (`test_x.py` / `x.test.ts`).
+- Tab **Kết quả thực nghiệm**: biểu đồ so sánh hai ngôn ngữ (nếu có đủ 2) + một tab con cho mỗi ngôn ngữ (bảng +
+  biểu đồ riêng).
+- **REPLAY** vẫn hoạt động; danh sách log hiện ngôn ngữ `[python]` / `[javascript]`. Log mẫu JS có sẵn:
+  `shipping_agent_js_*` (bắt đúng bug TypeScript) và `bank_account_agent_js_*` (dừng êm khi hết quota).
+- `tests/test_app.py`: thêm test chạy module JS với LLM giả lập, test tự nhận diện TypeScript khi dán code, REPLAY log
+  thật của **cả hai** ngôn ngữ.
+
+### (b) Khái niệm quan trọng
+- **Heuristic vs chắc chắn**: đoán ngôn ngữ bằng đếm dấu hiệu nhanh, không cần parser, nhưng có thể sai → giao diện
+  luôn để người dùng quyết định cuối cùng.
+- **Giao diện cũng chỉ nói chuyện với adapter**: `app.py` không có `if language == ...` để chọn công cụ; nó hỏi adapter
+  (`describe_tools`, `check_environment`, `suspected_tests`, `test_line_spans`, `test_file_path`).
+
+### (c) File liên quan
+`app.py`, `adapters/registry.py` (`detect_language`), `adapters/base.py` (`test_line_spans`), `tests/test_app.py`
+
+### (d) Lệnh tự chạy thử
+```bash
+streamlit run app.py          # chọn JavaScript/TypeScript -> shipping.ts; hoặc REPLAY [javascript] shipping_agent_js_*
+pytest tests/test_app.py -v
+```
+Kiểm tra hồi quy: phần Python tất định vẫn **giống hệt** baseline; `pytest` 102/102.
+
+### (e) Câu hỏi giảng viên có thể hỏi
+1. **Nếu dán đoạn code mà app đoán sai ngôn ngữ?** → Ô chọn ngôn ngữ vẫn đổi được; ngoài ra khi chạy, file sai cú
+   pháp sẽ bị công cụ test báo lỗi thu thập ngay ở vòng 0.
+2. **Máy không có Node.js thì giao diện ra sao?** → Chọn JavaScript sẽ thấy báo "chưa cài Node.js" + lệnh cài, nút chạy
+   bị khoá; phần Python và REPLAY log JS vẫn dùng được (REPLAY không cần chạy công cụ).

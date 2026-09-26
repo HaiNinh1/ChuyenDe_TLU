@@ -422,5 +422,11 @@ class PythonAdapter(LanguageAdapter):
     def base_test_name(self, name):
         return python_edit.base_test_name(name)
 
+    def test_line_spans(self, code):
+        try:
+            return python_edit._function_spans(ast.parse(code))
+        except SyntaxError:
+            return {}
+
     def module_tags(self, source):
         return module_tags(source)

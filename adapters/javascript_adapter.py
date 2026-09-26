@@ -461,5 +461,11 @@ class JavaScriptAdapter(LanguageAdapter):
     def unmark_suspected(self, code):
         return js_edit.unmark_suspected(code)
 
+    def test_line_spans(self, code):
+        try:
+            return {it.name: (it.start + 1, it.end + 1) for it in js_edit.parse_items(code) if it.kind == "test"}
+        except SyntaxError:
+            return {}
+
     def module_tags(self, source):
         return module_tags(source)
