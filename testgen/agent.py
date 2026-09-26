@@ -31,6 +31,7 @@ from . import code_utils as cu
 from . import prompts
 from .config import ROOT_DIR
 from .generator import generate_tests
+from .memory import Memory, module_tags
 from .llm_client import LLMClient, LLMError
 from .mutation import describe_survivors, run_mutation_testing
 from .runner import RunResult, describe_missing, run_tests
@@ -93,7 +94,9 @@ class TestGenAgent:
         self.source = self.module_path.read_text(encoding="utf-8")
         self.client = client or LLMClient()
         self.config = config or AgentConfig()
-        self.memory = memory                    # đối tượng Memory (GĐ6) hoặc None
+        # Bộ nhớ "tự học" (GĐ6): chỉ dùng khi bật use_memory
+        self.memory = (memory or Memory()) if self.config.use_memory else None
+        self.tags = module_tags(self.source)    # nhãn đặc điểm module, vd. ["branches", "exception"]
         self.progress = progress or (lambda kind, payload: None)  # callback cho giao diện
 
         # --- trạng thái của agent ---
@@ -107,6 +110,7 @@ class TestGenAgent:
         self.best_score = -1.0
         self.last_mutation = None               # MutationResult gần nhất (GĐ5)
         self.pending_lessons = []               # bài học chờ xác nhận (GĐ6)
+        self.pending_good = None                # test mới chờ xác nhận là "tốt" (GĐ6)
         self.lessons_used = ""
         self.iterations = []
         self.stop_reason = ""
@@ -144,6 +148,8 @@ class TestGenAgent:
 
     def _step(self, entry: IterationLog, result: RunResult) -> bool:
         """Chọn và thực hiện MỘT hành động. Trả về False nếu cần dừng vòng lặp."""
+        self._confirm_lessons(result)  # các lần sửa lỗi trước có thành công không? -> lưu bài học (GĐ6)
+
         # (a) File test hỏng hoàn toàn -> sửa cả file
         if result.collection_error:
             self.collection_failures += 1
@@ -157,7 +163,6 @@ class TestGenAgent:
             self._fix_collection(entry, result)
             return True
         self.collection_failures = 0
-        self._confirm_lessons()  # các sửa lỗi trước đó đã thành công -> lưu bài học (GĐ6)
 
         # (b) Có test fail -> phân loại: test sai hay code có bug?
         failing = [t for t in result.failing_tests() if cu.base_test_name(t.name) not in self.suspected]
@@ -171,6 +176,7 @@ class TestGenAgent:
             reached = (result.line_coverage >= self.config.line_threshold
                        and result.branch_coverage >= self.config.branch_threshold)
             score = result.line_coverage + result.branch_coverage
+            self._confirm_good_tests("coverage", score)
             if not reached and self._improved(score):
                 self._improve_coverage(entry, result)
                 return True
@@ -206,7 +212,7 @@ class TestGenAgent:
                 if cu.is_valid_python(new_code):
                     new_code = cu.add_suspected_marker(new_code, name, reason)
             self.code = new_code
-            self._remember_fix(result.collection_error, entry.lesson)
+            self._remember_fix("collection", [], result.collection_error, entry.lesson)
         self._emit(entry)
 
     def _handle_failures(self, entry: IterationLog, failing):
@@ -257,7 +263,7 @@ class TestGenAgent:
             )
             entry.lesson = cu.extract_lesson(answer)
             self._merge(cu.extract_code(answer), on_conflict="replace")
-            self._remember_fix(fix_failures, entry.lesson)
+            self._remember_fix("tests", to_fix, fix_failures, entry.lesson)
 
         n_bug = sum(1 for c in entry.classifications if c["verdict"] == "SUSPECTED_BUG")
         entry.reason = (f"{len(names)} test fail -> LLM phân loại: {n_bug} nghi bug (giữ + gắn nhãn), "
@@ -275,7 +281,10 @@ class TestGenAgent:
                                          result.line_coverage, result.branch_coverage,
                                          describe_missing(self.source, result))
         answer = self.client.chat(prompts.SYSTEM_PROMPT, prompt, task="improve_coverage")
+        before = self._test_names()
         self._merge(cu.extract_code(answer), on_conflict="rename")
+        self.pending_good = ("coverage", self._test_names() - before,
+                             result.line_coverage + result.branch_coverage)
         self._emit(entry)
 
     def _mutation_step(self, entry: IterationLog) -> bool:
@@ -288,6 +297,7 @@ class TestGenAgent:
         entry.mutation_score, entry.mutants_total, entry.mutants_killed = (
             mres.score, mres.total, mres.killed + mres.timeout)
         entry.survived_mutants = [m.describe() for m in mres.survivors()]
+        self._confirm_good_tests("mutation", mres.score)
 
         if mres.error:
             self._finish(entry, "stop", f"Không chạy được mutation testing: {mres.error}")
@@ -307,7 +317,9 @@ class TestGenAgent:
         prompt = prompts.mutation_prompt(self.module_name, cu.number_lines(self.source), self.code,
                                          describe_survivors(mres))
         answer = self.client.chat(prompts.SYSTEM_PROMPT, prompt, task="kill_mutants")
+        before = self._test_names()
         self._merge(cu.extract_code(answer), on_conflict="rename")
+        self.pending_good = ("mutation", self._test_names() - before, mres.score)
         self._emit(entry)
         return True
 
@@ -364,18 +376,55 @@ class TestGenAgent:
         print(f"[agent] {text}")
         self.progress("message", text)
 
-    # ----------------------------------------------- bộ nhớ (được hoàn thiện ở GĐ6)
+    # ----------------------------------------------------------- bộ nhớ "tự học" (GĐ6)
     def _lessons_for_initial(self) -> str:
-        return ""
+        """Bài học + mẫu test liên quan để chèn vào prompt sinh ban đầu."""
+        if self.memory is None:
+            return ""
+        return self.memory.format_for_prompt(self.module_name, self.tags)
 
     def _lessons_for_error(self, error_text: str) -> str:
-        return ""
+        """Bài học liên quan tới loại lỗi đang gặp (không kèm mẫu test cho gọn)."""
+        if self.memory is None:
+            return ""
+        return self.memory.format_for_prompt(self.module_name, self.tags, error_text, with_examples=False)
 
-    def _remember_fix(self, error_text: str, lesson: str):
-        pass
+    def _remember_fix(self, kind: str, names: list, error_text: str, lesson: str):
+        """Ghi tạm bài học; chỉ lưu vào bộ nhớ nếu vòng sau xác nhận lỗi đã được sửa."""
+        if self.memory is not None and lesson:
+            self.pending_lessons.append({"kind": kind, "names": list(names), "error": error_text, "lesson": lesson})
 
-    def _confirm_lessons(self):
-        pass
+    def _confirm_lessons(self, result: RunResult):
+        """Sửa lỗi THÀNH CÔNG (lỗi không còn) -> lưu bài học. Sửa thất bại -> bỏ, không học điều sai."""
+        if self.memory is None:
+            self.pending_lessons = []
+            return
+        still_failing = {cu.base_test_name(t.name) for t in result.failing_tests()}
+        for item in self.pending_lessons:
+            fixed = (not result.collection_error) and (
+                item["kind"] == "collection" or not (set(item["names"]) & still_failing))
+            if fixed:
+                self.memory.add_lesson(item["error"], item["lesson"], self.module_name, self.tags)
+                self._message(f"Học được bài học: {item['lesson']}")
+        self.pending_lessons = []
+
+    def _confirm_good_tests(self, phase: str, value: float):
+        """Test mới làm TĂNG coverage / mutation score -> lưu làm mẫu test tốt."""
+        if self.memory is None or not self.pending_good or self.pending_good[0] != phase:
+            return
+        _, names, before = self.pending_good
+        self.pending_good = None
+        if value > before and names:
+            reason = "tăng coverage" if phase == "coverage" else "giết được mutant"
+            for name in sorted(names)[:2]:
+                self.memory.add_good_test(cu.get_functions_code(self.code, [name]), self.module_name,
+                                          self.tags, reason)
+
+    def _test_names(self) -> set:
+        try:
+            return set(cu.test_function_names(self.code))
+        except SyntaxError:
+            return set()
 
     # ================================================================ LƯU KẾT QUẢ
     def _save(self) -> dict:
@@ -403,6 +452,9 @@ class TestGenAgent:
             "stats": {**self.client.stats(), "total_seconds": round(time.time() - self.start_time, 1)},
             "source_code": self.source,
         }
+        if self.memory is not None:
+            self.memory.save()
+            summary["memory"] = self.memory.stats()
         # Log JSON (dùng cho REPLAY trên giao diện)
         LOGS_DIR.mkdir(parents=True, exist_ok=True)
         stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -425,12 +477,13 @@ def main():
     parser.add_argument("--branch", type=float, default=90.0, help="ngưỡng branch coverage")
     parser.add_argument("--mutation", action="store_true", help="bật mutation testing (GĐ5)")
     parser.add_argument("--max-mutants", type=int, default=20)
+    parser.add_argument("--memory", action="store_true", help="bật bộ nhớ tự học (GĐ6)")
     parser.add_argument("--label", default="agent")
     args = parser.parse_args()
 
     config = AgentConfig(max_iterations=args.max_iters, line_threshold=args.line,
                          branch_threshold=args.branch, use_mutation=args.mutation,
-                         max_mutants=args.max_mutants, label=args.label)
+                         max_mutants=args.max_mutants, use_memory=args.memory, label=args.label)
     summary = TestGenAgent(args.module, config=config).run()
     print("\n=== KẾT QUẢ ===")
     print(json.dumps({k: summary[k] for k in ("stop_reason", "final", "suspected_bugs", "stats")},

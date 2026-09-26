@@ -370,3 +370,57 @@ pytest tests/test_mutation.py -v
    cách cài đặt. Nên đặt ngưỡng hợp lý (80%) và người review cần xem các test sinh ra ở phase mutation.
 4. **Vì sao chạy mutation SAU khi đạt coverage?** → Mutant ở dòng chưa được test chạy tới chắc chắn sống sót — gửi cho
    LLM chỉ lặp lại việc tăng coverage mà tốn thêm thời gian. Tăng coverage trước (rẻ), rồi mới "mài" chất lượng assert.
+
+---
+
+## GĐ6 — Bộ nhớ "tự học" (`memory.py`)
+
+### (a) Đã làm gì và tại sao
+`testgen/memory.py`, lớp `Memory`, lưu trong **một file JSON** `memory/memory.json` (không dùng vector database):
+1. **Bài học sửa lỗi** (`lessons`): mỗi lần nhờ LLM sửa lỗi, prompt yêu cầu thêm một dòng `LESSON: ...` (quy tắc chung).
+   Bài học **chỉ được lưu khi vòng sau xác nhận lỗi đã hết** (`_confirm_lessons`) → không "học" điều sai.
+   Bài học gần trùng (cùng loại lỗi, >60% từ giống nhau) chỉ tăng bộ đếm `times_seen`.
+2. **Mẫu test tốt** (`good_tests`): test mới làm **tăng coverage** hoặc **giết được mutant** (đo ở vòng sau) được lưu
+   lại (≤ 25 dòng, tối đa 30 mẫu).
+3. **Truy xuất:** `module_tags()` phân tích AST để gắn nhãn module (`class`, `state`, `exception`, `branches`,
+   `compound_condition`, `string`, `float`, `dict`, `loop`). Chọn bài học có điểm cao nhất:
+   `điểm = số nhãn trùng + 3 (nếu cùng loại lỗi đang gặp) + 0.1 × số lần gặp`. Mẫu test chỉ lấy từ **module khác**.
+4. **Dùng ở đâu:** prompt sinh ban đầu (bài học + 2 mẫu test) và prompt sửa lỗi (bài học cùng loại lỗi).
+5. Bật bằng `AgentConfig(use_memory=True)` hoặc `python -m testgen.agent ... --memory`.
+
+### (b) "Học" ở đây theo nghĩa nào? (quan trọng — nói rõ khi thuyết trình)
+- **KHÔNG phải học máy theo nghĩa huấn luyện:** trọng số LLM **không thay đổi**. Không fine-tune, không gradient.
+- Đây là **học trong ngữ cảnh (in-context learning) + bộ nhớ kinh nghiệm (episodic memory)**: kinh nghiệm cũ được
+  *lưu ra ngoài* rồi *đưa lại vào prompt*. Giống sinh viên ghi sổ tay "lỗi hay mắc" rồi đọc lại trước khi làm bài —
+  bộ não không đổi, nhưng có thêm ghi chú.
+- Ví dụ: lần 1 LLM viết `from grading import calc_grade` (tên không tồn tại) → ImportError → sửa thành công, LESSON:
+  *"Chỉ import những tên thực sự có trong module"*. Lần 2 với module khác, câu này nằm sẵn trong prompt.
+
+**Giới hạn (trung thực):**
+1. Tìm kiếm theo **nhãn + từ khoá**, không hiểu ngữ nghĩa → có thể chọn bài học không liên quan hoặc bỏ sót.
+2. Bài học do chính LLM viết → có thể chung chung ("hãy viết test cẩn thận") hoặc sai; chỉ lọc bằng điều kiện
+   "lỗi đã hết ở vòng sau", không kiểm chứng được bài học có *đúng lý do* hay không.
+3. Với model mạnh, lỗi ít xảy ra → **ít bài học** → tác dụng nhỏ. Hiệu quả thật phải đo ở GĐ7 (cấu hình D vs C).
+4. Prompt dài thêm → tốn token; bộ nhớ có giới hạn kích thước và xoá bài ít dùng nhất.
+5. Không có cơ chế "quên" bài học sai ngoài giới hạn kích thước.
+
+### (c) File liên quan
+`testgen/memory.py`, `testgen/agent.py` (các hàm `_lessons_for_initial`, `_remember_fix`, `_confirm_lessons`,
+`_confirm_good_tests`), `testgen/prompts.py` (`_lessons_block`, yêu cầu `LESSON:`), `tests/test_memory.py`,
+`memory/memory.json` (sinh ra khi chạy)
+
+### (d) Lệnh tự chạy thử
+```bash
+pytest tests/test_memory.py -v
+python -m testgen.agent targets/safe_parser.py --memory
+python -m testgen.agent targets/text_utils.py --memory     # xem mục lessons_used trong log JSON
+python -c "import json; print(json.dumps(json.load(open('memory/memory.json', encoding='utf-8')), ensure_ascii=False, indent=2))"
+```
+
+### (e) Câu hỏi giảng viên có thể hỏi
+1. **Hệ thống có thực sự "tự học" không?** → Có theo nghĩa *tích luỹ kinh nghiệm và dùng lại qua prompt*
+   (in-context learning); không theo nghĩa cập nhật trọng số mô hình. Em nói rõ giới hạn này.
+2. **Vì sao không dùng vector database / embedding?** → Quy mô nhỏ (vài chục bài học), yêu cầu đề bài đơn giản dễ hiểu;
+   nhãn AST + khớp loại lỗi là đủ và giải thích được. Hướng phát triển: embedding để tìm theo ngữ nghĩa.
+3. **Làm sao tránh học điều sai?** → Chỉ lưu bài học khi lần chạy sau xác nhận lỗi đã hết; mẫu test chỉ lưu khi chỉ số
+   (coverage/mutation) thực sự tăng. Vẫn còn rủi ro (bài học đúng kết quả nhưng sai lý do) — là hạn chế.

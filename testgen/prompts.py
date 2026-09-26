@@ -168,6 +168,8 @@ nghĩa là bộ test hiện tại KHÔNG phát hiện được thay đổi:
 Hãy viết THÊM các test MỚI để phân biệt code gốc với từng mutant: test phải đúng theo docstring
 (pass với code đúng đặc tả) nhưng FAIL khi chạy với mutant. Thường cần kiểm tra đúng giá trị biên
 hoặc kiểm tra chính xác giá trị trả về.
-Nếu một mutant không thể phân biệt được (mutant tương đương) thì bỏ qua nó.
+Chỉ kiểm tra hành vi ĐƯỢC MÔ TẢ trong docstring. KHÔNG kiểm tra chi tiết cài đặt mà docstring không quy định
+(ví dụ so sánh danh tính object bằng `is`, kiểu dữ liệu trả về không được nêu, class giả tự chế để dò cách cài đặt).
+Nếu một mutant chỉ phân biệt được bằng chi tiết cài đặt như vậy, coi nó là mutant tương đương và bỏ qua.
 Không lặp lại test đã có, đặt tên test mới khác tên cũ.
 Chỉ trả về các hàm test MỚI (kèm import cần thiết) trong một khối ```python```."""
