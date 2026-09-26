@@ -173,3 +173,55 @@ pytest generated_tests/baseline/test_grading.py          # chạy test vừa sin
    báo ngay. Mỗi lần gọi được ghi lại nên số lần gọi thật được thống kê chính xác.
 3. **Mock LLM dùng để làm gì, có dùng để lấy kết quả không?** → Chỉ để kiểm thử pipeline (vòng lặp, ghép code,
    runner) một cách lặp lại được và miễn phí. Tuyệt đối không dùng làm kết quả thực nghiệm.
+
+---
+
+## GĐ3 — Runner: chạy test & đo coverage
+
+### (a) Đã làm gì và tại sao
+`testgen/runner.py` có hàm `run_tests(module_path, test_code, timeout)` trả về dataclass `RunResult`:
+số test pass/fail/error/xfail, thông báo lỗi từng test, **line coverage**, **branch coverage**, danh sách
+**dòng chưa chạy** và **nhánh chưa đi**, lỗi thu thập (syntax/import), có bị timeout không.
+
+Cách làm:
+1. Kiểm tra cú pháp bằng `ast.parse` trước — sai cú pháp thì báo ngay, không cần chạy pytest.
+2. Tạo **thư mục tạm** chỉ chứa `<module>.py` + `test_<module>.py`.
+3. Chạy `python -m pytest ... --junitxml=report.xml --cov=<module> --cov-branch --cov-report=json:cov.json`
+   bằng `subprocess.run(..., timeout=60)`.
+4. Đọc **file máy đọc được** (XML của pytest, JSON của coverage) thay vì "đọc chữ" trên màn hình → chắc chắn,
+   không phụ thuộc định dạng in ra.
+5. Dựa vào **mã thoát** của pytest: 0 pass hết, 1 có fail, 2 lỗi thu thập, 5 không có test.
+
+`describe_missing()` đổi danh sách số dòng thành câu mô tả kèm code, ví dụ
+`- Nhánh từ dòng 2 (if x > 0:) sang dòng 4 (if x < 0:) chưa được đi qua` → đưa vào prompt ở GĐ4.
+
+Thử với test baseline của `grading.py`: 17 pass, 1 fail (bug 1), line 100%, branch 100%, ~0.8 giây.
+
+### (b) Khái niệm quan trọng
+- **Subprocess + timeout (cô lập):** test do LLM viết có thể chứa `while True`. Nếu chạy chung tiến trình, chương
+  trình treo luôn. Chạy tiến trình con thì sau 60 giây ta "giết" nó và báo lỗi timeout.
+- **coverage.py đo thế nào?** Nó gắn "hàm theo dõi" (trace function) vào trình thông dịch Python; mỗi khi một dòng
+  được thực thi, nó ghi lại. Với `--cov-branch`, nó ghi thêm các **cặp (dòng nguồn → dòng đích)** đã đi qua.
+  Ví dụ `[2, 4]` trong `missing_branches` = "chưa có lần nào từ dòng 2 nhảy sang dòng 4" (tức điều kiện ở dòng 2
+  chưa bao giờ False). Số âm như `[5, -1]` = nhánh "thoát khỏi hàm".
+- **JUnit XML:** định dạng báo cáo test chuẩn công nghiệp (Jenkins, GitLab CI đều đọc được). Mỗi `<testcase>` có
+  thể chứa `<failure>`, `<error>`, `<skipped>`.
+- **failed vs error trong pytest:** *failed* = assert sai; *error* = lỗi ngoài assert, ví dụ fixture hỏng.
+- **Tại sao coverage vẫn đo khi test fail?** Coverage chỉ đo "dòng nào đã chạy", không quan tâm assert đúng hay sai.
+
+### (c) File liên quan
+`testgen/runner.py`, `tests/test_runner.py`
+
+### (d) Lệnh tự chạy thử
+```bash
+python -m testgen.runner targets/grading.py generated_tests/baseline/test_grading.py
+pytest tests/test_runner.py -v
+```
+
+### (e) Câu hỏi giảng viên có thể hỏi
+1. **Vì sao không import và chạy test trực tiếp trong chương trình?** → Không cô lập được: test lỗi/treo/sửa trạng
+   thái toàn cục sẽ phá chương trình chính; coverage cũng bị lẫn. Subprocess + thư mục tạm cho kết quả sạch.
+2. **Line coverage và branch coverage khác nhau thế nào? Chỉ số nào quan trọng hơn?** → Branch mạnh hơn: 100% branch
+   kéo theo 100% line (với code thông thường) nhưng ngược lại thì không (`if` không có `else`). Agent dùng cả hai.
+3. **Làm sao runner biết test lỗi import hay test sai?** → Mã thoát 2 + lỗi trong phase thu thập ⇒ lỗi import/syntax
+   (cả file hỏng); mã thoát 1 + `<failure>` trong XML ⇒ từng test sai. Hai loại được agent xử lý khác nhau.
