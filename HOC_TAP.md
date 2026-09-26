@@ -669,3 +669,57 @@ streamlit run app.py                # demo
 9. `evaluate.py` — `generate()`, `measure()`, `shown_mutants()` (15 phút)
 10. `app.py` — chỉ cần hiểu callback `on_progress` và chế độ REPLAY (10 phút)
 11. `tests/test_agent.py` — kịch bản mock cho thấy toàn bộ vòng lặp trong ~60 dòng (đọc cùng lúc với bước 5 rất dễ hiểu)
+
+---
+
+# PHẦN 2 — REFACTOR ĐA NGÔN NGỮ (nhánh `multi-language`)
+
+Đề tài mới: *"LLM Agent tự sinh unit test **đa ngôn ngữ** với vòng lặp tự cải tiến dựa trên phản hồi coverage và
+mutation testing"*. Kiến trúc Adapter, hiện thực Python + JavaScript/TypeScript. Ưu tiên số một: **không làm hỏng
+phần Python đang chạy tốt**.
+
+## RF1 — Phân tích & chụp baseline trước refactor (chưa sửa code)
+
+### (a) Đã làm gì và tại sao
+- Tạo nhánh `multi-language` (nhánh `main` giữ nguyên bản chỉ-Python đã hoàn chỉnh, có thể quay về bất kỳ lúc nào).
+- Đọc toàn bộ code, liệt kê **16 chỗ gắn chặt với Python** (gọi pytest, định dạng coverage.py, mutmut, `ast`,
+  prompt nhắc pytest, đường dẫn `targets/<module>.py`...) → `docs/KE_HOACH_REFACTOR.md` (bảng + sơ đồ mermaid
+  trước/sau + thứ tự làm + rủi ro).
+- Viết `scripts/snapshot_python.py` để **chụp hành vi phần Python** thành `docs/baseline_truoc_refactor.json`:
+  1. mã băm 8 prompt, 2. chạy lại bộ test trong log thực nghiệm (grading, shopping_cart) → pass/fail/coverage/dòng
+  chưa phủ + trạng thái **từng mutant**, 3. agent với LLM giả lập theo kịch bản, 4. agent với LLM thật trên `grading`.
+- Chạy script 2 lần liên tiếp: phần tất định (1-3) **giống hệt nhau** → dùng được làm mốc so sánh.
+- Kết quả LLM thật trước refactor (`grading`, bật mutation): 3 lần gọi LLM, hành động `fix_tests → stop`,
+  line 97,5% / branch 96,9%, mutation 95% (19/20), 2 test gắn nhãn nghi bug: `test_letter_grade_B` (đúng bug cài sẵn)
+  và `test_final_score_rounding` (**nhãn sai** — LLM hiểu nhầm cách làm tròn số thực, docstring không quy định).
+- Ghi nhận thêm: 64/64 test công cụ pass; mã băm `results/results.csv` để sau này kiểm tra `--measure-only` tái lập đúng.
+- Sự cố trung thực: script bản đầu quên trả lại thư mục log sau phần giả lập nên **file log của lần chạy LLM thật bị
+  mất** (số liệu tóm tắt vẫn được lưu). Đã sửa script.
+
+### (b) Khái niệm quan trọng
+- **Coupling (độ gắn kết):** module A "gắn chặt" với B khi A gọi thẳng chi tiết của B. Agent cũ gọi thẳng pytest,
+  mutmut, `ast` → muốn thêm ngôn ngữ phải sửa vòng lặp ở hàng chục chỗ.
+- **Regression test / "ảnh chụp" hành vi (snapshot/golden master):** trước khi sửa code cũ, ghi lại đầu ra của nó với
+  đầu vào cố định; sau khi sửa, chạy lại và so sánh. Refactor = đổi cấu trúc **mà không đổi hành vi**, nên đầu ra phải
+  giống hệt.
+- **Phần tất định vs không tất định:** LLM cho kết quả khác nhau mỗi lần → không so "giống hệt" được. Vì vậy tách
+  riêng: prompt, runner, mutation, agent + LLM giả lập (tất định, phải giống hệt) và agent + LLM thật (chỉ so tương đương).
+
+### (c) File liên quan
+`docs/KE_HOACH_REFACTOR.md`, `scripts/snapshot_python.py`, `docs/baseline_truoc_refactor.json`
+
+### (d) Lệnh tự chạy thử
+```bash
+git branch                                   # đang ở multi-language
+python scripts/snapshot_python.py --out docs/thu.json --compare docs/baseline_truoc_refactor.json   # không tốn API
+python scripts/snapshot_python.py --out docs/thu.json --llm         # + 1 lần agent LLM thật (~3 request)
+```
+
+### (e) Câu hỏi giảng viên có thể hỏi
+1. **Làm sao em chắc refactor không làm hỏng phần Python?** → Chụp hành vi trước refactor (prompt, kết quả chạy test,
+   trạng thái từng mutant, agent với LLM giả lập) rồi so **giống hệt** sau mỗi bước; cộng 64 test của công cụ và tái lập
+   đúng file kết quả thực nghiệm cũ.
+2. **Sao không so luôn kết quả agent với LLM thật?** → LLM không tất định (cùng prompt có thể trả lời khác), nên chỉ so
+   "tương đương": chạy đủ bước, chỉ số cùng mức. Phần có thể so chính xác thì so chính xác.
+3. **Vì sao phải so cả mã băm prompt?** → Chỉ cần đổi một dấu cách/xuống dòng, LLM đã có thể cư xử khác; khi đó số liệu
+   thực nghiệm cũ không còn so sánh công bằng với số liệu mới.

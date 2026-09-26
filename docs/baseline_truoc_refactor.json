@@ -1,0 +1,491 @@
+{
+  "created": "2026-09-26T20:13:45",
+  "python": "3.14.6",
+  "prompts": {
+    "SYSTEM_PROMPT": {
+      "sha256": "87a6ad256efcfe50",
+      "chars": 765
+    },
+    "initial": {
+      "sha256": "5f1010bb4eca9657",
+      "chars": 2788
+    },
+    "initial_lessons": {
+      "sha256": "e541c1526e599e31",
+      "chars": 2901
+    },
+    "fix_collection": {
+      "sha256": "7977f9d930855066",
+      "chars": 3117
+    },
+    "classify": {
+      "sha256": "05ec302c9175593a",
+      "chars": 3225
+    },
+    "fix_tests": {
+      "sha256": "03e37fc32fcd708a",
+      "chars": 3087
+    },
+    "coverage": {
+      "sha256": "be564b54f7d39abb",
+      "chars": 3699
+    },
+    "mutation": {
+      "sha256": "bf03064f05206ab0",
+      "chars": 4078
+    }
+  },
+  "deterministic": {
+    "grading/initial": {
+      "test_code_sha256": "97fdb45c56ebf99a",
+      "run": {
+        "passed": 18,
+        "failed": 2,
+        "errors": 0,
+        "xfailed": 0,
+        "skipped": 0,
+        "collection_error": false,
+        "line_coverage": 97.5,
+        "branch_coverage": 96.9,
+        "missing_lines": [
+          19
+        ],
+        "missing_branches": [
+          [
+            18,
+            19
+          ]
+        ],
+        "outcomes": [
+          "test_final_score_boundaries=passed",
+          "test_final_score_invalid_bonus=passed",
+          "test_final_score_invalid_component=passed",
+          "test_final_score_normal=passed",
+          "test_final_score_rounding=failed",
+          "test_letter_grade_A=passed",
+          "test_letter_grade_B=failed",
+          "test_letter_grade_C=passed",
+          "test_letter_grade_D=passed",
+          "test_letter_grade_F=passed",
+          "test_letter_grade_out_of_range=passed",
+          "test_pass_status_attendance_below_70=passed",
+          "test_pass_status_score_above_50=passed",
+          "test_pass_status_score_below_40=passed",
+          "test_pass_status_score_between_40_and_50=passed",
+          "test_scholarship_level_failed_course=passed",
+          "test_scholarship_level_gioi=passed",
+          "test_scholarship_level_kha=passed",
+          "test_scholarship_level_khong_default=passed",
+          "test_scholarship_level_xuat_sac=passed"
+        ]
+      },
+      "mutation": {
+        "total": 40,
+        "killed": 35,
+        "survived": 5,
+        "timeout": 0,
+        "score": 87.5,
+        "sampled_from": 77,
+        "error": "",
+        "mutants": [
+          "killed | Mutant #5, dòng 14: `if score < 0 or score > 100:`  ->  `if score < 0 and score > 100:`",
+          "survived | Mutant #6, dòng 15: `raise ValueError(\"Điểm phải trong khoảng 0-100\")`  ->  `raise ValueError(\"XXĐiểm phải trong khoảng 0-100XX\")`",
+          "killed | Mutant #7, dòng 16: `if score >= 90:`  ->  `if score > 90:`",
+          "killed | Mutant #9, dòng 17: `return \"A\"`  ->  `return \"XXAXX\"`",
+          "survived | Mutant #10, dòng 18: `elif score > 80:`  ->  `elif score >= 80:`",
+          "killed | Mutant #14, dòng 20: `elif score >= 65:`  ->  `elif score >= 66:`",
+          "killed | Mutant #17, dòng 22: `elif score >= 50:`  ->  `elif score >= 51:`",
+          "killed | Mutant #18, dòng 23: `return \"D\"`  ->  `return \"XXDXX\"`",
+          "survived | Mutant #20, dòng 28: `def final_score(midterm, final, homework, bonus=0):`  ->  `def final_score(midterm, final, homework, bonus=1):`",
+          "killed | Mutant #21, dòng 36: `if value < 0 or value > 100:`  ->  `if value <= 0 or value > 100:`",
+          "killed | Mutant #22, dòng 36: `if value < 0 or value > 100:`  ->  `if value < 1 or value > 100:`",
+          "killed | Mutant #23, dòng 36: `if value < 0 or value > 100:`  ->  `if value < 0 or value >= 100:`",
+          "killed | Mutant #28, dòng 38: `if bonus < 0 or bonus > 10:`  ->  `if bonus < 1 or bonus > 10:`",
+          "killed | Mutant #31, dòng 38: `if bonus < 0 or bonus > 10:`  ->  `if bonus < 0 and bonus > 10:`",
+          "killed | Mutant #34, dòng 40: `total = midterm * 0.3 + final * 0.5 + homework * 0.2 + bonus`  ->  `total = midterm * 1.3 + final * 0.5 + homework * 0.2 + bonus`",
+          "killed | Mutant #35, dòng 40: `total = midterm * 0.3 + final * 0.5 + homework * 0.2 + bonus`  ->  `total = midterm * 0.3 - final * 0.5 + homework * 0.2 + bonus`",
+          "killed | Mutant #36, dòng 40: `total = midterm * 0.3 + final * 0.5 + homework * 0.2 + bonus`  ->  `total = midterm * 0.3 + final / 0.5 + homework * 0.2 + bonus`",
+          "killed | Mutant #37, dòng 40: `total = midterm * 0.3 + final * 0.5 + homework * 0.2 + bonus`  ->  `total = midterm * 0.3 + final * 1.5 + homework * 0.2 + bonus`",
+          "killed | Mutant #39, dòng 40: `total = midterm * 0.3 + final * 0.5 + homework * 0.2 + bonus`  ->  `total = midterm * 0.3 + final * 0.5 + homework / 0.2 + bonus`",
+          "killed | Mutant #40, dòng 40: `total = midterm * 0.3 + final * 0.5 + homework * 0.2 + bonus`  ->  `total = midterm * 0.3 + final * 0.5 + homework * 1.2 + bonus`",
+          "survived | Mutant #44, dòng 41: `if total > 100:`  ->  `if total > 101:`",
+          "killed | Mutant #45, dòng 42: `total = 100`  ->  `total = 101`",
+          "killed | Mutant #46, dòng 42: `total = 100`  ->  `total = None`",
+          "survived | Mutant #47, dòng 43: `return round(total, 1)`  ->  `return round(total, 2)`",
+          "killed | Mutant #49, dòng 54: `if attendance_rate < 0.7:`  ->  `if attendance_rate < 1.7:`",
+          "killed | Mutant #50, dòng 55: `return \"CẤM THI\"`  ->  `return \"XXCẤM THIXX\"`",
+          "killed | Mutant #51, dòng 56: `if score >= 50:`  ->  `if score > 50:`",
+          "killed | Mutant #52, dòng 56: `if score >= 50:`  ->  `if score >= 51:`",
+          "killed | Mutant #54, dòng 58: `if score >= 40:`  ->  `if score > 40:`",
+          "killed | Mutant #59, dòng 74: `if gpa >= 3.6 and conduct_score >= 90:`  ->  `if gpa > 3.6 and conduct_score >= 90:`",
+          "killed | Mutant #60, dòng 74: `if gpa >= 3.6 and conduct_score >= 90:`  ->  `if gpa >= 4.6 and conduct_score >= 90:`",
+          "killed | Mutant #61, dòng 74: `if gpa >= 3.6 and conduct_score >= 90:`  ->  `if gpa >= 3.6 and conduct_score > 90:`",
+          "killed | Mutant #62, dòng 74: `if gpa >= 3.6 and conduct_score >= 90:`  ->  `if gpa >= 3.6 and conduct_score >= 91:`",
+          "killed | Mutant #63, dòng 74: `if gpa >= 3.6 and conduct_score >= 90:`  ->  `if gpa >= 3.6 or conduct_score >= 90:`",
+          "killed | Mutant #65, dòng 76: `if gpa >= 3.2 and conduct_score >= 80:`  ->  `if gpa > 3.2 and conduct_score >= 80:`",
+          "killed | Mutant #66, dòng 76: `if gpa >= 3.2 and conduct_score >= 80:`  ->  `if gpa >= 4.2 and conduct_score >= 80:`",
+          "killed | Mutant #67, dòng 76: `if gpa >= 3.2 and conduct_score >= 80:`  ->  `if gpa >= 3.2 and conduct_score > 80:`",
+          "killed | Mutant #68, dòng 76: `if gpa >= 3.2 and conduct_score >= 80:`  ->  `if gpa >= 3.2 and conduct_score >= 81:`",
+          "killed | Mutant #70, dòng 77: `return \"GIỎI\"`  ->  `return \"XXGIỎIXX\"`",
+          "killed | Mutant #71, dòng 78: `if gpa >= 2.5 and conduct_score >= 65:`  ->  `if gpa > 2.5 and conduct_score >= 65:`"
+        ]
+      }
+    },
+    "grading/final": {
+      "test_code_sha256": "cbb1aab0080fd992",
+      "run": {
+        "passed": 19,
+        "failed": 0,
+        "errors": 0,
+        "xfailed": 1,
+        "skipped": 0,
+        "collection_error": false,
+        "line_coverage": 97.5,
+        "branch_coverage": 96.9,
+        "missing_lines": [
+          19
+        ],
+        "missing_branches": [
+          [
+            18,
+            19
+          ]
+        ],
+        "outcomes": [
+          "test_final_score_boundaries=passed",
+          "test_final_score_invalid_bonus=passed",
+          "test_final_score_invalid_component=passed",
+          "test_final_score_normal=passed",
+          "test_final_score_rounding=passed",
+          "test_letter_grade_A=passed",
+          "test_letter_grade_B=xfailed",
+          "test_letter_grade_C=passed",
+          "test_letter_grade_D=passed",
+          "test_letter_grade_F=passed",
+          "test_letter_grade_out_of_range=passed",
+          "test_pass_status_attendance_below_70=passed",
+          "test_pass_status_score_above_50=passed",
+          "test_pass_status_score_below_40=passed",
+          "test_pass_status_score_between_40_and_50=passed",
+          "test_scholarship_level_failed_course=passed",
+          "test_scholarship_level_gioi=passed",
+          "test_scholarship_level_kha=passed",
+          "test_scholarship_level_khong_default=passed",
+          "test_scholarship_level_xuat_sac=passed"
+        ]
+      },
+      "mutation": {
+        "total": 40,
+        "killed": 36,
+        "survived": 4,
+        "timeout": 0,
+        "score": 90.0,
+        "sampled_from": 77,
+        "error": "",
+        "mutants": [
+          "killed | Mutant #5, dòng 14: `if score < 0 or score > 100:`  ->  `if score < 0 and score > 100:`",
+          "survived | Mutant #6, dòng 15: `raise ValueError(\"Điểm phải trong khoảng 0-100\")`  ->  `raise ValueError(\"XXĐiểm phải trong khoảng 0-100XX\")`",
+          "killed | Mutant #7, dòng 16: `if score >= 90:`  ->  `if score > 90:`",
+          "killed | Mutant #9, dòng 17: `return \"A\"`  ->  `return \"XXAXX\"`",
+          "survived | Mutant #10, dòng 18: `elif score > 80:`  ->  `elif score >= 80:`",
+          "killed | Mutant #14, dòng 20: `elif score >= 65:`  ->  `elif score >= 66:`",
+          "killed | Mutant #17, dòng 22: `elif score >= 50:`  ->  `elif score >= 51:`",
+          "killed | Mutant #18, dòng 23: `return \"D\"`  ->  `return \"XXDXX\"`",
+          "survived | Mutant #20, dòng 28: `def final_score(midterm, final, homework, bonus=0):`  ->  `def final_score(midterm, final, homework, bonus=1):`",
+          "killed | Mutant #21, dòng 36: `if value < 0 or value > 100:`  ->  `if value <= 0 or value > 100:`",
+          "killed | Mutant #22, dòng 36: `if value < 0 or value > 100:`  ->  `if value < 1 or value > 100:`",
+          "killed | Mutant #23, dòng 36: `if value < 0 or value > 100:`  ->  `if value < 0 or value >= 100:`",
+          "killed | Mutant #28, dòng 38: `if bonus < 0 or bonus > 10:`  ->  `if bonus < 1 or bonus > 10:`",
+          "killed | Mutant #31, dòng 38: `if bonus < 0 or bonus > 10:`  ->  `if bonus < 0 and bonus > 10:`",
+          "killed | Mutant #34, dòng 40: `total = midterm * 0.3 + final * 0.5 + homework * 0.2 + bonus`  ->  `total = midterm * 1.3 + final * 0.5 + homework * 0.2 + bonus`",
+          "killed | Mutant #35, dòng 40: `total = midterm * 0.3 + final * 0.5 + homework * 0.2 + bonus`  ->  `total = midterm * 0.3 - final * 0.5 + homework * 0.2 + bonus`",
+          "killed | Mutant #36, dòng 40: `total = midterm * 0.3 + final * 0.5 + homework * 0.2 + bonus`  ->  `total = midterm * 0.3 + final / 0.5 + homework * 0.2 + bonus`",
+          "killed | Mutant #37, dòng 40: `total = midterm * 0.3 + final * 0.5 + homework * 0.2 + bonus`  ->  `total = midterm * 0.3 + final * 1.5 + homework * 0.2 + bonus`",
+          "killed | Mutant #39, dòng 40: `total = midterm * 0.3 + final * 0.5 + homework * 0.2 + bonus`  ->  `total = midterm * 0.3 + final * 0.5 + homework / 0.2 + bonus`",
+          "killed | Mutant #40, dòng 40: `total = midterm * 0.3 + final * 0.5 + homework * 0.2 + bonus`  ->  `total = midterm * 0.3 + final * 0.5 + homework * 1.2 + bonus`",
+          "survived | Mutant #44, dòng 41: `if total > 100:`  ->  `if total > 101:`",
+          "killed | Mutant #45, dòng 42: `total = 100`  ->  `total = 101`",
+          "killed | Mutant #46, dòng 42: `total = 100`  ->  `total = None`",
+          "killed | Mutant #47, dòng 43: `return round(total, 1)`  ->  `return round(total, 2)`",
+          "killed | Mutant #49, dòng 54: `if attendance_rate < 0.7:`  ->  `if attendance_rate < 1.7:`",
+          "killed | Mutant #50, dòng 55: `return \"CẤM THI\"`  ->  `return \"XXCẤM THIXX\"`",
+          "killed | Mutant #51, dòng 56: `if score >= 50:`  ->  `if score > 50:`",
+          "killed | Mutant #52, dòng 56: `if score >= 50:`  ->  `if score >= 51:`",
+          "killed | Mutant #54, dòng 58: `if score >= 40:`  ->  `if score > 40:`",
+          "killed | Mutant #59, dòng 74: `if gpa >= 3.6 and conduct_score >= 90:`  ->  `if gpa > 3.6 and conduct_score >= 90:`",
+          "killed | Mutant #60, dòng 74: `if gpa >= 3.6 and conduct_score >= 90:`  ->  `if gpa >= 4.6 and conduct_score >= 90:`",
+          "killed | Mutant #61, dòng 74: `if gpa >= 3.6 and conduct_score >= 90:`  ->  `if gpa >= 3.6 and conduct_score > 90:`",
+          "killed | Mutant #62, dòng 74: `if gpa >= 3.6 and conduct_score >= 90:`  ->  `if gpa >= 3.6 and conduct_score >= 91:`",
+          "killed | Mutant #63, dòng 74: `if gpa >= 3.6 and conduct_score >= 90:`  ->  `if gpa >= 3.6 or conduct_score >= 90:`",
+          "killed | Mutant #65, dòng 76: `if gpa >= 3.2 and conduct_score >= 80:`  ->  `if gpa > 3.2 and conduct_score >= 80:`",
+          "killed | Mutant #66, dòng 76: `if gpa >= 3.2 and conduct_score >= 80:`  ->  `if gpa >= 4.2 and conduct_score >= 80:`",
+          "killed | Mutant #67, dòng 76: `if gpa >= 3.2 and conduct_score >= 80:`  ->  `if gpa >= 3.2 and conduct_score > 80:`",
+          "killed | Mutant #68, dòng 76: `if gpa >= 3.2 and conduct_score >= 80:`  ->  `if gpa >= 3.2 and conduct_score >= 81:`",
+          "killed | Mutant #70, dòng 77: `return \"GIỎI\"`  ->  `return \"XXGIỎIXX\"`",
+          "killed | Mutant #71, dòng 78: `if gpa >= 2.5 and conduct_score >= 65:`  ->  `if gpa > 2.5 and conduct_score >= 65:`"
+        ]
+      }
+    },
+    "shopping_cart/initial": {
+      "test_code_sha256": "e368ad27547957e1",
+      "run": {
+        "passed": 18,
+        "failed": 2,
+        "errors": 0,
+        "xfailed": 0,
+        "skipped": 0,
+        "collection_error": false,
+        "line_coverage": 97.7,
+        "branch_coverage": 95.0,
+        "missing_lines": [
+          50
+        ],
+        "missing_branches": [
+          [
+            49,
+            50
+          ]
+        ],
+        "outcomes": [
+          "test_add_item_duplicate_different_price=passed",
+          "test_add_item_duplicate_same_price=passed",
+          "test_add_item_price_nonpositive=passed",
+          "test_add_item_quantity_less_than_one=passed",
+          "test_add_item_valid=passed",
+          "test_apply_discount_already_applied=passed",
+          "test_apply_discount_invalid_code=passed",
+          "test_apply_discount_valid=passed",
+          "test_clear=passed",
+          "test_discount_only_one=passed",
+          "test_item_count=passed",
+          "test_remove_item_keyerror=passed",
+          "test_remove_item_partial=passed",
+          "test_remove_item_quantity_exceeds=passed",
+          "test_remove_item_to_zero_deletes=failed",
+          "test_subtotal=passed",
+          "test_total_empty=passed",
+          "test_total_rounding=passed",
+          "test_total_with_discount=passed",
+          "test_unique_items=failed"
+        ]
+      },
+      "mutation": {
+        "total": 40,
+        "killed": 33,
+        "survived": 7,
+        "timeout": 0,
+        "score": 82.5,
+        "sampled_from": 54,
+        "error": "",
+        "mutants": [
+          "killed | Mutant #3, dòng 12: `DISCOUNT_CODES = {\"SALE10\": 0.10, \"SALE20\": 0.20}`  ->  `DISCOUNT_CODES = {\"SALE10\": 0.10, \"XXSALE20XX\": 0.20}`",
+          "killed | Mutant #4, dòng 12: `DISCOUNT_CODES = {\"SALE10\": 0.10, \"SALE20\": 0.20}`  ->  `DISCOUNT_CODES = {\"SALE10\": 0.10, \"SALE20\": 1.2}`",
+          "killed | Mutant #7, dòng 16: `self.discount_code = None`  ->  `self.discount_code = \"\"`",
+          "killed | Mutant #9, dòng 25: `if price <= 0:`  ->  `if price < 0:`",
+          "killed | Mutant #10, dòng 25: `if price <= 0:`  ->  `if price <= 1:`",
+          "survived | Mutant #11, dòng 26: `raise ValueError(\"Giá phải lớn hơn 0\")`  ->  `raise ValueError(\"XXGiá phải lớn hơn 0XX\")`",
+          "killed | Mutant #12, dòng 27: `if quantity < 1:`  ->  `if quantity <= 1:`",
+          "survived | Mutant #14, dòng 28: `raise ValueError(\"Số lượng phải >= 1\")`  ->  `raise ValueError(\"XXSố lượng phải >= 1XX\")`",
+          "killed | Mutant #15, dòng 29: `if name in self.items:`  ->  `if name not in self.items:`",
+          "killed | Mutant #16, dòng 30: `if self.items[name][\"price\"] != price:`  ->  `if self.items[name][\"XXpriceXX\"] != price:`",
+          "killed | Mutant #17, dòng 30: `if self.items[name][\"price\"] != price:`  ->  `if self.items[name][\"price\"] == price:`",
+          "survived | Mutant #18, dòng 31: `raise ValueError(\"Đơn giá không khớp với sản phẩm đã có\")`  ->  `raise ValueError(\"XXĐơn giá không khớp với sản phẩm đã cóXX\")`",
+          "killed | Mutant #19, dòng 32: `self.items[name][\"quantity\"] += quantity`  ->  `self.items[name][\"XXquantityXX\"] += quantity`",
+          "killed | Mutant #20, dòng 32: `self.items[name][\"quantity\"] += quantity`  ->  `self.items[name][\"quantity\"] = quantity`",
+          "killed | Mutant #21, dòng 32: `self.items[name][\"quantity\"] += quantity`  ->  `self.items[name][\"quantity\"] -= quantity`",
+          "killed | Mutant #22, dòng 34: `self.items[name] = {\"price\": price, \"quantity\": quantity}`  ->  `self.items[name] = {\"XXpriceXX\": price, \"quantity\": quantity}`",
+          "killed | Mutant #23, dòng 34: `self.items[name] = {\"price\": price, \"quantity\": quantity}`  ->  `self.items[name] = {\"price\": price, \"XXquantityXX\": quantity}`",
+          "killed | Mutant #24, dòng 34: `self.items[name] = {\"price\": price, \"quantity\": quantity}`  ->  `self.items[name] = None`",
+          "survived | Mutant #25, dòng 36: `def remove_item(self, name, quantity=1):`  ->  `def remove_item(self, name, quantity=2):`",
+          "killed | Mutant #26, dòng 43: `if name not in self.items:`  ->  `if name  in self.items:`",
+          "killed | Mutant #27, dòng 45: `current = self.items[name][\"quantity\"]`  ->  `current = self.items[name][\"XXquantityXX\"]`",
+          "killed | Mutant #28, dòng 45: `current = self.items[name][\"quantity\"]`  ->  `current = None`",
+          "survived | Mutant #29, dòng 46: `if quantity > current:`  ->  `if quantity >= current:`",
+          "killed | Mutant #31, dòng 48: `self.items[name][\"quantity\"] = current - quantity`  ->  `self.items[name][\"XXquantityXX\"] = current - quantity`",
+          "killed | Mutant #32, dòng 48: `self.items[name][\"quantity\"] = current - quantity`  ->  `self.items[name][\"quantity\"] = current + quantity`",
+          "killed | Mutant #33, dòng 48: `self.items[name][\"quantity\"] = current - quantity`  ->  `self.items[name][\"quantity\"] = None`",
+          "survived | Mutant #35, dòng 49: `if self.items[name][\"quantity\"] < 0:`  ->  `if self.items[name][\"quantity\"] <= 0:`",
+          "killed | Mutant #37, dòng 54: `return sum(item[\"quantity\"] for item in self.items.values())`  ->  `return sum(item[\"XXquantityXX\"] for item in self.items.values())`",
+          "killed | Mutant #38, dòng 62: `return sum(item[\"price\"] * item[\"quantity\"] for item in self.items.values())`  ->  `return sum(item[\"XXpriceXX\"] * item[\"quantity\"] for item in self.items.values())`",
+          "killed | Mutant #40, dòng 62: `return sum(item[\"price\"] * item[\"quantity\"] for item in self.items.values())`  ->  `return sum(item[\"price\"] * item[\"XXquantityXX\"] for item in self.items.values())`",
+          "survived | Mutant #42, dòng 71: `raise ValueError(\"Mã giảm giá không hợp lệ\")`  ->  `raise ValueError(\"XXMã giảm giá không hợp lệXX\")`",
+          "killed | Mutant #45, dòng 74: `self.discount_code = code`  ->  `self.discount_code = None`",
+          "killed | Mutant #46, dòng 81: `amount = self.subtotal()`  ->  `amount = None`",
+          "killed | Mutant #47, dòng 82: `if self.discount_code is not None:`  ->  `if self.discount_code is  None:`",
+          "killed | Mutant #48, dòng 83: `amount = amount * (1 - self.DISCOUNT_CODES[self.discount_code])`  ->  `amount = amount / (1 - self.DISCOUNT_CODES[self.discount_code])`",
+          "killed | Mutant #49, dòng 83: `amount = amount * (1 - self.DISCOUNT_CODES[self.discount_code])`  ->  `amount = amount * (2 - self.DISCOUNT_CODES[self.discount_code])`",
+          "killed | Mutant #50, dòng 83: `amount = amount * (1 - self.DISCOUNT_CODES[self.discount_code])`  ->  `amount = amount * (1 + self.DISCOUNT_CODES[self.discount_code])`",
+          "killed | Mutant #51, dòng 83: `amount = amount * (1 - self.DISCOUNT_CODES[self.discount_code])`  ->  `amount = None`",
+          "killed | Mutant #53, dòng 88: `self.items = {}`  ->  `self.items = None`",
+          "killed | Mutant #54, dòng 89: `self.discount_code = None`  ->  `self.discount_code = \"\"`"
+        ]
+      }
+    },
+    "shopping_cart/final": {
+      "test_code_sha256": "1c108d86df49980a",
+      "run": {
+        "passed": 18,
+        "failed": 0,
+        "errors": 0,
+        "xfailed": 2,
+        "skipped": 0,
+        "collection_error": false,
+        "line_coverage": 97.7,
+        "branch_coverage": 95.0,
+        "missing_lines": [
+          50
+        ],
+        "missing_branches": [
+          [
+            49,
+            50
+          ]
+        ],
+        "outcomes": [
+          "test_add_item_duplicate_different_price=passed",
+          "test_add_item_duplicate_same_price=passed",
+          "test_add_item_price_nonpositive=passed",
+          "test_add_item_quantity_less_than_one=passed",
+          "test_add_item_valid=passed",
+          "test_apply_discount_already_applied=passed",
+          "test_apply_discount_invalid_code=passed",
+          "test_apply_discount_valid=passed",
+          "test_clear=passed",
+          "test_discount_only_one=passed",
+          "test_item_count=passed",
+          "test_remove_item_keyerror=passed",
+          "test_remove_item_partial=passed",
+          "test_remove_item_quantity_exceeds=passed",
+          "test_remove_item_to_zero_deletes=xfailed",
+          "test_subtotal=passed",
+          "test_total_empty=passed",
+          "test_total_rounding=passed",
+          "test_total_with_discount=passed",
+          "test_unique_items=xfailed"
+        ]
+      },
+      "mutation": {
+        "total": 40,
+        "killed": 33,
+        "survived": 7,
+        "timeout": 0,
+        "score": 82.5,
+        "sampled_from": 54,
+        "error": "",
+        "mutants": [
+          "killed | Mutant #3, dòng 12: `DISCOUNT_CODES = {\"SALE10\": 0.10, \"SALE20\": 0.20}`  ->  `DISCOUNT_CODES = {\"SALE10\": 0.10, \"XXSALE20XX\": 0.20}`",
+          "killed | Mutant #4, dòng 12: `DISCOUNT_CODES = {\"SALE10\": 0.10, \"SALE20\": 0.20}`  ->  `DISCOUNT_CODES = {\"SALE10\": 0.10, \"SALE20\": 1.2}`",
+          "killed | Mutant #7, dòng 16: `self.discount_code = None`  ->  `self.discount_code = \"\"`",
+          "killed | Mutant #9, dòng 25: `if price <= 0:`  ->  `if price < 0:`",
+          "killed | Mutant #10, dòng 25: `if price <= 0:`  ->  `if price <= 1:`",
+          "survived | Mutant #11, dòng 26: `raise ValueError(\"Giá phải lớn hơn 0\")`  ->  `raise ValueError(\"XXGiá phải lớn hơn 0XX\")`",
+          "killed | Mutant #12, dòng 27: `if quantity < 1:`  ->  `if quantity <= 1:`",
+          "survived | Mutant #14, dòng 28: `raise ValueError(\"Số lượng phải >= 1\")`  ->  `raise ValueError(\"XXSố lượng phải >= 1XX\")`",
+          "killed | Mutant #15, dòng 29: `if name in self.items:`  ->  `if name not in self.items:`",
+          "killed | Mutant #16, dòng 30: `if self.items[name][\"price\"] != price:`  ->  `if self.items[name][\"XXpriceXX\"] != price:`",
+          "killed | Mutant #17, dòng 30: `if self.items[name][\"price\"] != price:`  ->  `if self.items[name][\"price\"] == price:`",
+          "survived | Mutant #18, dòng 31: `raise ValueError(\"Đơn giá không khớp với sản phẩm đã có\")`  ->  `raise ValueError(\"XXĐơn giá không khớp với sản phẩm đã cóXX\")`",
+          "killed | Mutant #19, dòng 32: `self.items[name][\"quantity\"] += quantity`  ->  `self.items[name][\"XXquantityXX\"] += quantity`",
+          "killed | Mutant #20, dòng 32: `self.items[name][\"quantity\"] += quantity`  ->  `self.items[name][\"quantity\"] = quantity`",
+          "killed | Mutant #21, dòng 32: `self.items[name][\"quantity\"] += quantity`  ->  `self.items[name][\"quantity\"] -= quantity`",
+          "killed | Mutant #22, dòng 34: `self.items[name] = {\"price\": price, \"quantity\": quantity}`  ->  `self.items[name] = {\"XXpriceXX\": price, \"quantity\": quantity}`",
+          "killed | Mutant #23, dòng 34: `self.items[name] = {\"price\": price, \"quantity\": quantity}`  ->  `self.items[name] = {\"price\": price, \"XXquantityXX\": quantity}`",
+          "killed | Mutant #24, dòng 34: `self.items[name] = {\"price\": price, \"quantity\": quantity}`  ->  `self.items[name] = None`",
+          "survived | Mutant #25, dòng 36: `def remove_item(self, name, quantity=1):`  ->  `def remove_item(self, name, quantity=2):`",
+          "killed | Mutant #26, dòng 43: `if name not in self.items:`  ->  `if name  in self.items:`",
+          "killed | Mutant #27, dòng 45: `current = self.items[name][\"quantity\"]`  ->  `current = self.items[name][\"XXquantityXX\"]`",
+          "killed | Mutant #28, dòng 45: `current = self.items[name][\"quantity\"]`  ->  `current = None`",
+          "survived | Mutant #29, dòng 46: `if quantity > current:`  ->  `if quantity >= current:`",
+          "killed | Mutant #31, dòng 48: `self.items[name][\"quantity\"] = current - quantity`  ->  `self.items[name][\"XXquantityXX\"] = current - quantity`",
+          "killed | Mutant #32, dòng 48: `self.items[name][\"quantity\"] = current - quantity`  ->  `self.items[name][\"quantity\"] = current + quantity`",
+          "killed | Mutant #33, dòng 48: `self.items[name][\"quantity\"] = current - quantity`  ->  `self.items[name][\"quantity\"] = None`",
+          "survived | Mutant #35, dòng 49: `if self.items[name][\"quantity\"] < 0:`  ->  `if self.items[name][\"quantity\"] <= 0:`",
+          "killed | Mutant #37, dòng 54: `return sum(item[\"quantity\"] for item in self.items.values())`  ->  `return sum(item[\"XXquantityXX\"] for item in self.items.values())`",
+          "killed | Mutant #38, dòng 62: `return sum(item[\"price\"] * item[\"quantity\"] for item in self.items.values())`  ->  `return sum(item[\"XXpriceXX\"] * item[\"quantity\"] for item in self.items.values())`",
+          "killed | Mutant #40, dòng 62: `return sum(item[\"price\"] * item[\"quantity\"] for item in self.items.values())`  ->  `return sum(item[\"price\"] * item[\"XXquantityXX\"] for item in self.items.values())`",
+          "survived | Mutant #42, dòng 71: `raise ValueError(\"Mã giảm giá không hợp lệ\")`  ->  `raise ValueError(\"XXMã giảm giá không hợp lệXX\")`",
+          "killed | Mutant #45, dòng 74: `self.discount_code = code`  ->  `self.discount_code = None`",
+          "killed | Mutant #46, dòng 81: `amount = self.subtotal()`  ->  `amount = None`",
+          "killed | Mutant #47, dòng 82: `if self.discount_code is not None:`  ->  `if self.discount_code is  None:`",
+          "killed | Mutant #48, dòng 83: `amount = amount * (1 - self.DISCOUNT_CODES[self.discount_code])`  ->  `amount = amount / (1 - self.DISCOUNT_CODES[self.discount_code])`",
+          "killed | Mutant #49, dòng 83: `amount = amount * (1 - self.DISCOUNT_CODES[self.discount_code])`  ->  `amount = amount * (2 - self.DISCOUNT_CODES[self.discount_code])`",
+          "killed | Mutant #50, dòng 83: `amount = amount * (1 - self.DISCOUNT_CODES[self.discount_code])`  ->  `amount = amount * (1 + self.DISCOUNT_CODES[self.discount_code])`",
+          "killed | Mutant #51, dòng 83: `amount = amount * (1 - self.DISCOUNT_CODES[self.discount_code])`  ->  `amount = None`",
+          "killed | Mutant #53, dòng 88: `self.items = {}`  ->  `self.items = None`",
+          "killed | Mutant #54, dòng 89: `self.discount_code = None`  ->  `self.discount_code = \"\"`"
+        ]
+      }
+    }
+  },
+  "mock_agent": {
+    "actions": [
+      "fix_collection",
+      "fix_tests",
+      "improve_coverage",
+      "kill_mutants",
+      "kill_mutants",
+      "kill_mutants",
+      "stop"
+    ],
+    "stop_reason": "Mutation score không cải thiện sau 2 lần thử",
+    "final": {
+      "line_coverage": 100.0,
+      "branch_coverage": 100.0,
+      "passed": 6,
+      "failed": 0,
+      "xfailed": 1,
+      "mutation_score": 71.4,
+      "num_iterations": 6
+    },
+    "suspected_bugs": [
+      "test_boundary"
+    ],
+    "llm_calls": 8,
+    "final_test_code_sha256": "3ca500e278dce662",
+    "mutation_scores": [
+      null,
+      null,
+      null,
+      28.6,
+      71.4,
+      71.4,
+      71.4
+    ]
+  },
+  "real_llm": {
+    "module": "grading",
+    "llm": {
+      "provider": "openrouter",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free"
+    },
+    "actions": [
+      "fix_tests",
+      "stop"
+    ],
+    "stop_reason": "Đạt ngưỡng mutation score (95.0%)",
+    "final": {
+      "line_coverage": 97.5,
+      "branch_coverage": 96.9,
+      "passed": 21,
+      "failed": 0,
+      "xfailed": 2,
+      "mutation_score": 95.0,
+      "num_iterations": 1
+    },
+    "suspected_bugs": {
+      "test_final_score_rounding": "Docstring expects standard rounding to 1 decimal; 55.55 should round to 55.6, but code returns 55.5 due to floating‑point round‑half‑even.",
+      "test_letter_grade_B": "Docstring says 80 <= score < 90 => 'B', but code returns 'C' for score == 80."
+    },
+    "llm_calls": 3,
+    "seconds": 82.7,
+    "log": "grading_refactor_check_20260926-201555.json",
+    "ghi_chu": "File log của lần chạy này bị mất do lỗi script (LOGS_DIR chưa được trả lại sau phần giả lập) — đã sửa script; số liệu tóm tắt ở đây được ghi trực tiếp từ kết quả agent trả về."
+  },
+  "tool_tests": {
+    "command": "pytest",
+    "passed": 64,
+    "failed": 0
+  },
+  "results_csv_sha256": "b46a37e4aa044b9b",
+  "runs_csv_sha256": "567f0aab1913768f"
+}
