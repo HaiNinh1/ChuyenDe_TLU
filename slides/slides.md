@@ -170,9 +170,11 @@ trọng số LLM **không đổi**, chỉ có thêm "sổ tay kinh nghiệm" tro
 
 ---
 
+<style scoped>table { font-size: 0.68em; } li { font-size: 0.85em; }</style>
+
 ## 10. Kết quả
 
-| | Coverage line / branch | Mutation (held-out) | Test fail còn lại | Bug được gắn nhãn đúng | Gọi LLM |
+| Cấu hình | Line / branch | Mutation held-out | Test fail còn lại | Bug gắn nhãn đúng | Gọi LLM |
 |---|---|---|---|---|---|
 | **A** Baseline | 99 / 98 % | 89.1 % | 1.2 / module | 0 / 2 | 1.0 |
 | **B** + coverage | 99 / 98 % | 91.8 % | **0** | **2 / 2** | 2.4 |
@@ -188,7 +190,7 @@ trọng số LLM **không đổi**, chỉ có thêm "sổ tay kinh nghiệm" tro
 
 ## 10. Kết quả (biểu đồ)
 
-![w:1000](../results/summary.png)
+![h:560](../results/summary.png)
 
 ---
 

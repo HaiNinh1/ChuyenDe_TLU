@@ -556,3 +556,39 @@ pytest tests/test_app.py -v
    "chỗ trống" (`st.empty`, `st.status`) nên Streamlit vẽ lại phần đó ngay, không cần chờ agent chạy xong.
 3. **Người dùng dán code bất kỳ có an toàn không?** → Code và test chạy trong tiến trình con có timeout, trong thư mục tạm;
    nhưng **không** phải sandbox bảo mật (code vẫn chạy với quyền của máy). Chỉ dùng cho demo với code tin cậy.
+
+---
+
+## GĐ9 — Slide và tài liệu thuyết trình
+
+### (a) Đã làm gì và tại sao
+- `slides/slides.md` (**Marp**, 15 slide, ~12–15 phút): tiêu đề → vấn đề → hướng tiếp cận hiện có (EvoSuite/Pynguin,
+  LLM một lần, LLM + phản hồi như CoverUp/MuTAP) → mục tiêu & phạm vi → kiến trúc → vòng lặp → coverage (ví dụ
+  `pass_status`) → mutation (ví dụ `letter_grade(90)` giết mutant `> 90`) → bộ nhớ → thiết lập thực nghiệm → kết quả
+  (bảng + biểu đồ `results/summary.png`) → demo → hạn chế & hướng phát triển → kết luận.
+- `slides/speaker_notes.md`: lời thoại từng slide + **10 câu hỏi vấn đáp** kèm gợi ý trả lời.
+- Đã render thử ra ảnh bằng Marp CLI để kiểm tra không slide nào tràn chữ (đã sửa slide kết quả bị tràn).
+- Nguyên tắc: ít chữ, mỗi slide một ý; số liệu trên slide **khớp đúng** `results/results.csv`; nói rõ hạn chế.
+
+### (b) Khái niệm quan trọng
+- **Marp:** viết slide bằng Markdown, mỗi slide cách nhau bởi `---`. Xuất PDF/PPTX/HTML bằng extension
+  "Marp for VS Code" hoặc lệnh `npx @marp-team/marp-cli`. Lợi ích: slide nằm trong git cùng code, dễ sửa số liệu.
+- **Kể chuyện bằng số liệu trung thực:** trình bày cả kết quả "không như kỳ vọng" (mutation không cải thiện trên
+  held-out) và cách mình phát hiện ra (review, tách tập held-out) — giảng viên đánh giá cao tư duy phản biện hơn là
+  con số đẹp.
+
+### (c) File liên quan
+`slides/slides.md`, `slides/speaker_notes.md`, `results/summary.png`, `DEMO_CHECKLIST.md`
+
+### (d) Lệnh tự chạy thử
+```bash
+npx @marp-team/marp-cli@latest --no-stdin slides/slides.md --allow-local-files -o slides/slides.html   # xem trên trình duyệt
+npx @marp-team/marp-cli@latest --no-stdin slides/slides.md --allow-local-files --pdf -o slides/slides.pdf
+```
+(Hoặc mở `slides/slides.md` trong VS Code với extension "Marp for VS Code" → Export Slide Deck.)
+
+### (e) Câu hỏi giảng viên có thể hỏi
+Xem 10 câu hỏi trong `slides/speaker_notes.md`. Ba câu nên luyện kỹ nhất:
+1. Oracle problem là gì và em giải quyết đến đâu?
+2. Vì sao mutation feedback không cải thiện trên mutant held-out?
+3. "Tự học" ở đây theo nghĩa nào?
