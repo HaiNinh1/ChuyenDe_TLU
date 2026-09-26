@@ -1,21 +1,21 @@
-config,module,run,line_coverage,branch_coverage,mutation_score,mutation_all,mutants_heldout,iterations,llm_calls,seconds,cost_usd,tests_total,tests_failing,suspected,suspected_tp,suspected_fp,has_bug,bug_detected,stop_reason,provider,model,log
-A,calculator,1,100.0,100.0,94.1,77.3,17,0,1,8.7,0.0,12,0,0,0,0,0,0,sinh một lần,openrouter,nvidia/nemotron-3-super-120b-a12b:free,calculator_eval_C_20260926-190319.json
-B,calculator,1,100.0,100.0,94.1,77.3,17,0,1,9.4,0.0,12,0,0,0,0,0,0,hết phase coverage,openrouter,nvidia/nemotron-3-super-120b-a12b:free,calculator_eval_C_20260926-190319.json
-C,calculator,1,100.0,100.0,94.1,77.3,17,0,1,13.0,0.0,12,0,0,0,0,0,0,Đạt ngưỡng mutation score (80.0%),openrouter,nvidia/nemotron-3-super-120b-a12b:free,calculator_eval_C_20260926-190319.json
-D,calculator,1,100.0,100.0,94.1,90.9,17,1,2,70.4,0.0,25,0,0,0,0,0,0,Đạt ngưỡng mutation score (95.0%),openrouter,nvidia/nemotron-3-super-120b-a12b:free,calculator_eval_D_20260926-190447.json
-A,text_utils,1,100.0,100.0,96.0,83.3,25,0,1,12.4,0.0,33,1,0,0,0,0,0,sinh một lần,openrouter,nvidia/nemotron-3-super-120b-a12b:free,text_utils_eval_C_20260926-190521.json
-B,text_utils,1,100.0,100.0,96.0,83.3,25,1,3,24.0,0.0,33,0,0,0,0,0,0,hết phase coverage,openrouter,nvidia/nemotron-3-super-120b-a12b:free,text_utils_eval_C_20260926-190521.json
-C,text_utils,1,100.0,100.0,96.0,83.3,25,1,3,28.1,0.0,33,0,0,0,0,0,0,Đạt ngưỡng mutation score (80.0%),openrouter,nvidia/nemotron-3-super-120b-a12b:free,text_utils_eval_C_20260926-190521.json
-D,text_utils,1,100.0,100.0,96.0,80.0,25,2,3,157.3,0.0,37,0,0,0,0,0,0,Mutation score không cải thiện sau 2 lần thử,openrouter,nvidia/nemotron-3-super-120b-a12b:free,text_utils_eval_D_20260926-190822.json
-A,grading,1,97.5,96.9,87.5,87.5,40,0,1,31.9,0.0,20,2,0,0,0,1,1,sinh một lần,openrouter,nvidia/nemotron-3-super-120b-a12b:free,grading_eval_C_20260926-190937.json
-B,grading,1,97.5,96.9,90.0,90.0,40,1,3,60.4,0.0,20,0,1,1,0,1,1,hết phase coverage,openrouter,nvidia/nemotron-3-super-120b-a12b:free,grading_eval_C_20260926-190937.json
-C,grading,1,97.5,96.9,90.0,90.0,40,1,3,65.0,0.0,20,0,1,1,0,1,1,Đạt ngưỡng mutation score (95.0%),openrouter,nvidia/nemotron-3-super-120b-a12b:free,grading_eval_C_20260926-190937.json
-D,grading,1,97.5,96.9,90.0,90.0,40,1,3,144.1,0.0,20,0,1,1,0,1,1,Đạt ngưỡng mutation score (95.0%),openrouter,nvidia/nemotron-3-super-120b-a12b:free,grading_eval_D_20260926-191226.json
-A,safe_parser,1,100.0,100.0,85.2,72.7,27,0,1,20.5,0.0,17,1,0,0,0,0,0,sinh một lần,openrouter,nvidia/nemotron-3-super-120b-a12b:free,safe_parser_eval_C_20260926-191412.json
-B,safe_parser,1,100.0,100.0,96.3,81.8,27,1,3,64.0,0.0,17,0,0,0,0,0,0,hết phase coverage,openrouter,nvidia/nemotron-3-super-120b-a12b:free,safe_parser_eval_C_20260926-191412.json
-C,safe_parser,1,100.0,100.0,96.3,97.0,27,2,4,97.0,0.0,23,0,0,0,0,0,0,Đạt ngưỡng mutation score (100.0%),openrouter,nvidia/nemotron-3-super-120b-a12b:free,safe_parser_eval_C_20260926-191412.json
-D,safe_parser,1,100.0,100.0,96.3,97.0,27,4,5,145.1,0.0,37,0,0,0,0,0,0,Đạt ngưỡng mutation score (100.0%),openrouter,nvidia/nemotron-3-super-120b-a12b:free,safe_parser_eval_D_20260926-191705.json
-A,shopping_cart,1,97.7,95.0,82.5,82.5,40,0,1,36.8,0.0,20,2,0,0,0,1,1,sinh một lần,openrouter,nvidia/nemotron-3-super-120b-a12b:free,shopping_cart_eval_C_20260926-191805.json
-B,shopping_cart,1,97.7,95.0,82.5,82.5,40,1,2,45.0,0.0,20,0,2,2,0,1,1,hết phase coverage,openrouter,nvidia/nemotron-3-super-120b-a12b:free,shopping_cart_eval_C_20260926-191805.json
-C,shopping_cart,1,97.7,95.0,82.5,82.5,40,1,2,50.9,0.0,20,0,2,2,0,1,1,Đạt ngưỡng mutation score (85.0%),openrouter,nvidia/nemotron-3-super-120b-a12b:free,shopping_cart_eval_C_20260926-191805.json
-D,shopping_cart,1,97.7,95.0,82.5,82.5,40,1,3,93.3,0.0,21,0,2,2,0,1,1,Đạt ngưỡng mutation score (85.0%),openrouter,nvidia/nemotron-3-super-120b-a12b:free,shopping_cart_eval_D_20260926-192007.json
+language,config,module,run,line_coverage,branch_coverage,mutation_score,mutation_all,mutants_heldout,iterations,llm_calls,seconds,cost_usd,tests_total,tests_failing,suspected,suspected_tp,suspected_fp,has_bug,bug_detected,stop_reason,provider,model,log
+python,A,calculator,1,100.0,100.0,94.1,77.3,17,0,1,8.7,0.0,12,0,0,0,0,0,0,sinh một lần,openrouter,nvidia/nemotron-3-super-120b-a12b:free,calculator_eval_C_20260926-190319.json
+python,B,calculator,1,100.0,100.0,94.1,77.3,17,0,1,9.4,0.0,12,0,0,0,0,0,0,hết phase coverage,openrouter,nvidia/nemotron-3-super-120b-a12b:free,calculator_eval_C_20260926-190319.json
+python,C,calculator,1,100.0,100.0,94.1,77.3,17,0,1,13.0,0.0,12,0,0,0,0,0,0,Đạt ngưỡng mutation score (80.0%),openrouter,nvidia/nemotron-3-super-120b-a12b:free,calculator_eval_C_20260926-190319.json
+python,D,calculator,1,100.0,100.0,94.1,90.9,17,1,2,70.4,0.0,25,0,0,0,0,0,0,Đạt ngưỡng mutation score (95.0%),openrouter,nvidia/nemotron-3-super-120b-a12b:free,calculator_eval_D_20260926-190447.json
+python,A,text_utils,1,100.0,100.0,96.0,83.3,25,0,1,12.4,0.0,33,1,0,0,0,0,0,sinh một lần,openrouter,nvidia/nemotron-3-super-120b-a12b:free,text_utils_eval_C_20260926-190521.json
+python,B,text_utils,1,100.0,100.0,96.0,83.3,25,1,3,24.0,0.0,33,0,0,0,0,0,0,hết phase coverage,openrouter,nvidia/nemotron-3-super-120b-a12b:free,text_utils_eval_C_20260926-190521.json
+python,C,text_utils,1,100.0,100.0,96.0,83.3,25,1,3,28.1,0.0,33,0,0,0,0,0,0,Đạt ngưỡng mutation score (80.0%),openrouter,nvidia/nemotron-3-super-120b-a12b:free,text_utils_eval_C_20260926-190521.json
+python,D,text_utils,1,100.0,100.0,96.0,80.0,25,2,3,157.3,0.0,37,0,0,0,0,0,0,Mutation score không cải thiện sau 2 lần thử,openrouter,nvidia/nemotron-3-super-120b-a12b:free,text_utils_eval_D_20260926-190822.json
+python,A,grading,1,97.5,96.9,87.5,87.5,40,0,1,31.9,0.0,20,2,0,0,0,1,1,sinh một lần,openrouter,nvidia/nemotron-3-super-120b-a12b:free,grading_eval_C_20260926-190937.json
+python,B,grading,1,97.5,96.9,90.0,90.0,40,1,3,60.4,0.0,20,0,1,1,0,1,1,hết phase coverage,openrouter,nvidia/nemotron-3-super-120b-a12b:free,grading_eval_C_20260926-190937.json
+python,C,grading,1,97.5,96.9,90.0,90.0,40,1,3,65.0,0.0,20,0,1,1,0,1,1,Đạt ngưỡng mutation score (95.0%),openrouter,nvidia/nemotron-3-super-120b-a12b:free,grading_eval_C_20260926-190937.json
+python,D,grading,1,97.5,96.9,90.0,90.0,40,1,3,144.1,0.0,20,0,1,1,0,1,1,Đạt ngưỡng mutation score (95.0%),openrouter,nvidia/nemotron-3-super-120b-a12b:free,grading_eval_D_20260926-191226.json
+python,A,safe_parser,1,100.0,100.0,85.2,72.7,27,0,1,20.5,0.0,17,1,0,0,0,0,0,sinh một lần,openrouter,nvidia/nemotron-3-super-120b-a12b:free,safe_parser_eval_C_20260926-191412.json
+python,B,safe_parser,1,100.0,100.0,96.3,81.8,27,1,3,64.0,0.0,17,0,0,0,0,0,0,hết phase coverage,openrouter,nvidia/nemotron-3-super-120b-a12b:free,safe_parser_eval_C_20260926-191412.json
+python,C,safe_parser,1,100.0,100.0,96.3,97.0,27,2,4,97.0,0.0,23,0,0,0,0,0,0,Đạt ngưỡng mutation score (100.0%),openrouter,nvidia/nemotron-3-super-120b-a12b:free,safe_parser_eval_C_20260926-191412.json
+python,D,safe_parser,1,100.0,100.0,96.3,97.0,27,4,5,145.1,0.0,37,0,0,0,0,0,0,Đạt ngưỡng mutation score (100.0%),openrouter,nvidia/nemotron-3-super-120b-a12b:free,safe_parser_eval_D_20260926-191705.json
+python,A,shopping_cart,1,97.7,95.0,82.5,82.5,40,0,1,36.8,0.0,20,2,0,0,0,1,1,sinh một lần,openrouter,nvidia/nemotron-3-super-120b-a12b:free,shopping_cart_eval_C_20260926-191805.json
+python,B,shopping_cart,1,97.7,95.0,82.5,82.5,40,1,2,45.0,0.0,20,0,2,2,0,1,1,hết phase coverage,openrouter,nvidia/nemotron-3-super-120b-a12b:free,shopping_cart_eval_C_20260926-191805.json
+python,C,shopping_cart,1,97.7,95.0,82.5,82.5,40,1,2,50.9,0.0,20,0,2,2,0,1,1,Đạt ngưỡng mutation score (85.0%),openrouter,nvidia/nemotron-3-super-120b-a12b:free,shopping_cart_eval_C_20260926-191805.json
+python,D,shopping_cart,1,97.7,95.0,82.5,82.5,40,1,3,93.3,0.0,21,0,2,2,0,1,1,Đạt ngưỡng mutation score (85.0%),openrouter,nvidia/nemotron-3-super-120b-a12b:free,shopping_cart_eval_D_20260926-192007.json

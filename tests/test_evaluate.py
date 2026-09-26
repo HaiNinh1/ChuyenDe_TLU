@@ -5,7 +5,11 @@ import json
 import pytest
 
 import evaluate
+from adapters import get_adapter
 from testgen import agent as agent_module
+
+needs_node = pytest.mark.skipif(not get_adapter("javascript").check_environment().ok,
+                                reason="Chưa cài Node.js/Jest (npm install)")
 
 GOOD_GRADING_TESTS = '''import pytest
 import grading
@@ -60,7 +64,8 @@ def sandbox(tmp_path, monkeypatch):
 
 
 def make_args(**kw):
-    base = dict(modules=["calculator"], runs=1, max_iters=3, max_mutants=5, measure_mutants=5)
+    base = dict(languages=["python"], modules=["calculator"], runs=1, max_iters=3, max_mutants=5,
+                measure_mutants=5)
     base.update(kw)
     return argparse.Namespace(**base)
 
@@ -80,7 +85,9 @@ def test_full_pipeline_with_mock(sandbox):
     evaluate.report(rows)
     results = sandbox / "results"
     assert (results / "results.csv").exists() and (results / "runs.csv").exists()
-    assert (results / "summary.png").exists() and (results / "mutation_by_module.png").exists()
+    assert (results / "summary_python.png").exists() and (results / "mutation_by_module_python.png").exists()
+    assert not (results / "language_comparison.png").exists()      # mới có 1 ngôn ngữ -> chưa so sánh
+    assert all(r["language"] == "python" for r in rows)
 
 
 def test_run_stopped_by_llm_error_is_not_counted(sandbox, monkeypatch):
@@ -95,3 +102,36 @@ def test_run_stopped_by_llm_error_is_not_counted(sandbox, monkeypatch):
     assert json.loads(log.read_text(encoding="utf-8"))["stop_reason"].startswith("Lỗi gọi LLM")
     assert evaluate.eval_logs("calculator", "eval_C") == []   # không được tính
     assert evaluate.measure_all(make_args()) == []
+
+
+def test_module_files_and_languages():
+    assert evaluate.module_file("python", "grading").name == "grading.py"
+    assert evaluate.module_file("javascript", "shipping").name == "shipping.ts"
+    assert evaluate.module_file("javascript", "bank_account", fixed=True).parent.name == "javascript"
+    assert evaluate.language_of("duration_parser") == "javascript"
+
+
+@needs_node
+def test_measure_javascript_bug_detection():
+    code = ("import { shippingFee } from './shipping';\n\n"
+            "test('đơn nhỏ', () => {\n  expect(shippingFee(100)).toBe(30);\n});\n\n"
+            "// SUSPECTED_BUG: 500 phải miễn phí\n"
+            "test.failing('biên 500', () => {\n  expect(shippingFee(500)).toBe(0);\n});\n")
+    m = evaluate.measure("shipping", code, exclude=set(), measure_mutants=10)
+    assert m["has_bug"] == 1 and m["bug_detected"] == 1
+    assert (m["suspected"], m["suspected_tp"], m["suspected_fp"]) == (1, 1, 0)
+    assert m["tests_failing"] == 0 and 0 < m["line_coverage"] < 100
+
+
+@needs_node
+def test_pipeline_two_languages_with_mock(sandbox):
+    evaluate.generate(make_args(languages=["python", "javascript"], modules=["calculator", "string_tools"]))
+    assert len(list((sandbox / "logs").glob("string_tools_eval_C_*.json"))) == 1
+    rows = evaluate.measure_all(make_args())
+    assert {r["language"] for r in rows} == {"python", "javascript"}
+    evaluate.report(rows)
+    results = sandbox / "results"
+    assert (results / "summary_javascript.png").exists() and (results / "language_comparison.png").exists()
+    summary = evaluate.summarize(rows)
+    assert {(s["language"], s["config"][0]) for s in summary} == {(lang, c) for lang in ("python", "javascript")
+                                                                  for c in "ABCD"}

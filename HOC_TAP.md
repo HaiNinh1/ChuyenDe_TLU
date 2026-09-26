@@ -977,3 +977,61 @@ Kiểm tra hồi quy: phần Python tất định vẫn **giống hệt** baseli
    pytest vào prompt Jest dễ làm LLM viết lẫn cú pháp. Tách theo ngôn ngữ là lựa chọn an toàn, đơn giản.
 2. **Dữ liệu bộ nhớ cũ có bị mất không?** → Không: đọc định dạng cũ vẫn được (tự chuyển), và đã chuyển hẳn file của
    lượt thực nghiệm 1; có test kiểm tra.
+
+---
+
+## RF6 — Thực nghiệm trên cả hai ngôn ngữ (`evaluate.py`)
+
+### (a) Đã làm gì và tại sao
+- `evaluate.py` giữ **nguyên** thiết kế cũ (4 cấu hình A/B/C/D, ghép cặp A/B từ lần chạy C, D chạy riêng với bộ nhớ
+  mới mỗi lượt, bước SINH tách bước CHẤM, mutation chấm trên tập **held-out**, bỏ lần chạy lỗi LLM) và thêm chiều
+  **ngôn ngữ**:
+  - `LANGUAGES = {"python": [5 module], "javascript": [4 module]}`; file module tìm theo tên (`.py`/`.js`/`.ts`).
+  - Mọi phép đo đi qua **adapter** của ngôn ngữ (coverage.py / Istanbul, mutmut / Stryker). Khi chấm trên bản đã sửa
+    bug, nhãn "dự kiến fail" được bỏ (`adapter.unmark_suspected`: JS đổi `test.failing` → `test`; Python giữ nguyên
+    vì `xfail(strict=False)` pass thì vẫn tính là pass).
+  - Log cũ (trước refactor) không có trường `language` → được hiểu là Python.
+  - Kết quả có cột `language`: `results.csv` = trung bình theo (ngôn ngữ, cấu hình).
+  - Biểu đồ **tách theo ngôn ngữ**: `summary_python.png`, `summary_javascript.png`,
+    `mutation_by_module_<ngôn ngữ>.png`; và **biểu đồ so sánh hai ngôn ngữ** `language_comparison.png`
+    (line/branch coverage, mutation held-out, bug gắn nhãn đúng, test fail còn lại, số lần gọi LLM — theo từng cấu hình).
+  - Tham số tiết kiệm API: `--languages`, `--modules`, `--quick` (mỗi ngôn ngữ 1 module có bug: `grading`, `shipping`).
+- Adapter JS: kết quả Stryker được nhớ tạm (cache) theo (mã nguồn, bộ test) → chấm "held-out" và "tất cả mutant" chỉ
+  tốn 1 lần chạy Stryker.
+- Chấm lại log Python lượt 1 bằng `evaluate.py` mới: **mọi con số trong `results.csv` giống hệt bản cũ** (chỉ thêm cột
+  `language`, `n_modules`).
+
+### Số liệu
+- **Python** (lượt 1, 5 module): chấm lại bằng code mới → giống hệt bảng GĐ7.
+- **JavaScript/TypeScript**: **chưa có lượt thực nghiệm A/B/C/D nào** tại thời điểm viết mục này — hạn mức 50
+  request/ngày của model miễn phí đã dùng hết cho việc kiểm chứng refactor (RF1, RF3) và chạy thử adapter JS (RF4).
+  Lệnh cần chạy: `python evaluate.py --languages javascript --runs 1` (~30 request). Không có số nào được điền tay.
+- Pipeline 2 ngôn ngữ đã được kiểm tra đầu-cuối bằng LLM giả lập (`tests/test_evaluate.py`): sinh log, chấm, vẽ đủ
+  biểu đồ theo ngôn ngữ + biểu đồ so sánh.
+
+### (b) Khái niệm quan trọng
+- **So sánh giữa ngôn ngữ phải cùng thước đo *khái niệm*, nhưng công cụ đo khác nhau**: line coverage của Istanbul tính
+  theo câu lệnh quy ra dòng, của coverage.py tính theo dòng lệnh; nhánh của Istanbul gồm cả `&&`/`||` và tham số mặc
+  định; toán tử đột biến của Stryker nhiều hơn mutmut (ví dụ làm rỗng khối lệnh `{}`, đổi chuỗi thành `""`). → Con số
+  **giữa hai ngôn ngữ chỉ so sánh được một cách tương đối**; so sánh giữa các cấu hình **trong cùng một ngôn ngữ** mới
+  là so sánh chính.
+- **Thiết kế thí nghiệm chạy tiếp được**: bước SINH chỉ chạy phần còn thiếu, nên có thể chia nhiều ngày theo hạn mức API.
+
+### (c) File liên quan
+`evaluate.py`, `tests/test_evaluate.py` (thêm test chấm bug JS + pipeline 2 ngôn ngữ với LLM giả lập),
+`results/results.csv`, `results/runs.csv`, `results/*.png`
+
+### (d) Lệnh tự chạy thử
+```bash
+python evaluate.py --measure-only                     # chấm lại từ log, không tốn API
+python evaluate.py --quick                            # grading + shipping, 1 lần (~15 request)
+python evaluate.py --languages javascript --runs 1    # 4 module JS, 1 lần (~30 request)
+python evaluate.py --runs 3                           # đầy đủ (chạy tiếp được qua nhiều ngày)
+```
+
+### (e) Câu hỏi giảng viên có thể hỏi
+1. **Mutation score Python 90% và JS 90% có nghĩa như nhau không?** → Không hoàn toàn: hai công cụ có bộ toán tử đột
+   biến khác nhau, nên điểm tuyệt đối khó so. Em so sánh chủ yếu các cấu hình với nhau *trong* mỗi ngôn ngữ; so sánh
+   giữa ngôn ngữ chỉ để xem xu hướng có giống nhau không.
+2. **Sao có tham số `--quick`?** → Model miễn phí giới hạn 50 request/ngày; `--quick` chạy 1 module có bug mỗi ngôn ngữ
+   để kiểm tra toàn bộ pipeline với ~15 request.
