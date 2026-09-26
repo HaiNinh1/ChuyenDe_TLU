@@ -111,3 +111,65 @@ python -c "import sys; sys.path.insert(0,'targets'); import grading; print(gradi
    nhánh `"B"` nhưng không lộ bug. Cần test đúng giá trị biên (80). Đây là lý do dự án dùng thêm mutation testing.
 3. **Vì sao chọn module có độ khó tăng dần?** → Để thấy agent xử lý thế nào khi code có nhiều nhánh, ngoại lệ,
    và trạng thái; kết quả thực nghiệm có thể so sánh theo độ khó.
+
+---
+
+## GĐ2 — Baseline: sinh test một lần
+
+### (a) Đã làm gì và tại sao
+- `testgen/config.py`: đọc `.env` → đối tượng `Settings` (provider, model, key, base_url...).
+- `testgen/llm_client.py`: lớp `LLMClient` với **một hàm duy nhất `chat(system, user, task)`**. Bên trong
+  chọn cách gọi theo nhà cung cấp:
+  - **OpenRouter, DeepSeek, OpenAI** dùng chung giao thức OpenAI → chỉ khác `base_url` + key (1 hàm).
+  - **Anthropic** dùng SDK `anthropic`; **Ollama** gọi HTTP `POST /api/chat`.
+  - **mock**: LLM giả lập, trả lời theo kịch bản → dùng cho unit test, chạy offline, không tốn tiền.
+  - Có **retry** (thử lại 3 lần, chờ 2s, 4s...) cho lỗi mạng/quá tải; **không** thử lại với lỗi 401/402/404
+    (sai key, hết tiền, sai model) vì thử lại vô ích.
+  - Ghi lại mỗi lần gọi (`history`): thời gian, token, chi phí → dùng làm chỉ số thực nghiệm.
+- `testgen/prompts.py`: toàn bộ prompt ở một chỗ. Prompt hệ thống yêu cầu **assert theo docstring**.
+- `testgen/code_utils.py`: tách code khỏi câu trả lời LLM (```python```), ghép/thay/xoá hàm test bằng `ast`,
+  gắn nhãn `SUSPECTED_BUG` (dùng ở GĐ4).
+- `testgen/generator.py`: **baseline** = gọi LLM **một lần**, lưu `generated_tests/baseline/test_<module>.py`.
+- `generated_tests/conftest.py`: để chạy trực tiếp test sinh ra bằng `pytest generated_tests/...`.
+- Test của công cụ: `tests/test_code_utils.py`, `tests/test_llm_client.py` (dùng mock, không tốn API).
+
+**Sự cố thực tế & cách xử lý (ghi trung thực):** key OpenRouter được cung cấp gần như **hết credit** (lỗi 402
+khi gọi `z-ai/glm-5.2`). Các model miễn phí (`:free`) bị giới hạn **50 request/ngày** và đôi khi bị 429
+(quá tải). Model miễn phí chạy được: `nvidia/nemotron-3-super-120b-a12b:free` (~20 s/lần gọi) → đặt trong `.env`.
+Hệ quả: thực nghiệm GĐ7 phải chạy quy mô nhỏ hoặc cần nạp credit / dùng key DeepSeek.
+
+**Kết quả thử thật:** baseline cho `grading.py` sinh 143 dòng test; chạy thì 1 test fail ở
+`assert grading.letter_grade(80) == "B"` → chính là **bug 1**. Nhưng baseline **không phân biệt** được
+"test sai" hay "code sai" — nó chỉ đưa ra một file test, fail thì người dùng tự xem. Đó là việc của agent (GĐ4).
+
+### (b) Khái niệm quan trọng
+- **System prompt vs user prompt:** system = "vai trò + luật chơi" cố định (bạn là kỹ sư test, assert theo
+  docstring...); user = dữ liệu cụ thể của lần gọi (mã nguồn module).
+- **Retry với exponential backoff:** lỗi tạm thời (mạng, 429 quá tải) thường tự hết sau vài giây. Chờ 2s, rồi 4s,
+  rồi 8s... để không "dội" server. Ví dụ: lần 1 lỗi 429 → chờ 2s → lần 2 thành công.
+- **Adapter pattern (mẫu thiết kế):** phần còn lại của chương trình chỉ biết `client.chat(...)`, không cần biết
+  bên dưới là OpenRouter hay Ollama → đổi nhà cung cấp không phải sửa agent.
+- **Vì sao parse bằng `ast` thay vì regex?** `ast.parse(code)` cho biết chính xác hàm `test_b` bắt đầu/kết thúc
+  ở dòng nào (kể cả decorator), không bị nhầm bởi chuỗi hay comment chứa chữ `def test_`.
+- **Baseline (mốc so sánh):** muốn chứng minh vòng lặp tự cải tiến có ích, phải so với cách đơn giản nhất
+  (sinh một lần). Không có baseline thì không biết cải thiện bao nhiêu.
+
+### (c) File liên quan
+`testgen/config.py`, `testgen/llm_client.py`, `testgen/prompts.py`, `testgen/code_utils.py`,
+`testgen/generator.py`, `tests/test_code_utils.py`, `tests/test_llm_client.py`, `generated_tests/baseline/`
+
+### (d) Lệnh tự chạy thử
+```bash
+pytest                                                   # test của công cụ (mock, không tốn API)
+python -m testgen.generator targets/grading.py           # sinh test baseline (gọi LLM thật, 1 request)
+pytest generated_tests/baseline/test_grading.py          # chạy test vừa sinh
+# đổi nhà cung cấp: sửa LLM_PROVIDER / LLM_MODEL trong .env, ví dụ LLM_PROVIDER=deepseek
+```
+
+### (e) Câu hỏi giảng viên có thể hỏi
+1. **Làm sao đổi sang nhà cung cấp LLM khác?** → Sửa `LLM_PROVIDER`, `LLM_MODEL`, key trong `.env`. Code agent
+   chỉ gọi `client.chat()`; nếu là nhà cung cấp mới hoàn toàn thì thêm một hàm `_call_xxx` trong `llm_client.py`.
+2. **Retry có nguy hiểm không (tốn tiền gấp 3)?** → Chỉ retry lỗi *tạm thời*; lỗi xác định (sai key, hết tiền)
+   báo ngay. Mỗi lần gọi được ghi lại nên số lần gọi thật được thống kê chính xác.
+3. **Mock LLM dùng để làm gì, có dùng để lấy kết quả không?** → Chỉ để kiểm thử pipeline (vòng lặp, ghép code,
+   runner) một cách lặp lại được và miễn phí. Tuyệt đối không dùng làm kết quả thực nghiệm.
