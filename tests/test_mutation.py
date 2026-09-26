@@ -4,7 +4,8 @@ from testgen import agent as agent_module
 from testgen.agent import AgentConfig, TestGenAgent
 from testgen.config import Settings
 from testgen.llm_client import LLMClient
-from testgen.mutation import describe_survivors, generate_mutants, run_mutation_testing
+from adapters.python_adapter import generate_mutants
+from testgen.mutation import describe_survivors, run_mutation_testing
 
 MODULE = '''def sign(x):
     """Trả về 1 nếu x > 0, -1 nếu x < 0, và 0 nếu x == 0."""

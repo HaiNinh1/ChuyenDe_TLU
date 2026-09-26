@@ -6,12 +6,12 @@ Lưu 2 loại kinh nghiệm:
 2. MẪU TEST TỐT (good_tests): các test mới đã làm TĂNG coverage hoặc GIẾT được mutant.
 
 Khi sinh test cho module mới: chọn vài bài học + mẫu test "liên quan" (dựa trên nhãn đặc điểm của module
-như `class`, `exception`, `branches`...) và chèn vào prompt.
+như `class`, `exception`, `branches`... — do adapter của ngôn ngữ tính, xem LanguageAdapter.module_tags)
+và chèn vào prompt.
 
 "Học" ở đây là HỌC TRONG NGỮ CẢNH (in-context learning): mô hình LLM KHÔNG thay đổi trọng số,
 chỉ nhận thêm kinh nghiệm cũ trong prompt. Xem giải thích và giới hạn trong HOC_TAP.md (GĐ6).
 """
-import ast
 import json
 import re
 from datetime import datetime
@@ -22,40 +22,6 @@ from .config import ROOT_DIR
 MEMORY_FILE = ROOT_DIR / "memory" / "memory.json"
 MAX_LESSONS = 50       # giới hạn kích thước bộ nhớ (bài học cũ ít dùng nhất bị xoá trước)
 MAX_GOOD_TESTS = 30
-
-
-def module_tags(source: str) -> list:
-    """Gắn nhãn đặc điểm cho module bằng phân tích AST (dùng để tìm kinh nghiệm liên quan)."""
-    try:
-        tree = ast.parse(source)
-    except SyntaxError:
-        return []
-    tags = set()
-    n_if = 0
-    for node in ast.walk(tree):
-        if isinstance(node, ast.ClassDef):
-            tags.add("class")
-        elif isinstance(node, (ast.Raise, ast.Try)):
-            tags.add("exception")
-        elif isinstance(node, ast.If):
-            n_if += 1
-        elif isinstance(node, (ast.For, ast.While)):
-            tags.add("loop")
-        elif isinstance(node, ast.BoolOp):
-            tags.add("compound_condition")
-        elif isinstance(node, ast.Attribute) and node.attr in ("split", "strip", "lower", "upper", "join", "replace"):
-            tags.add("string")
-        elif isinstance(node, ast.Call) and getattr(node.func, "id", "") == "round":
-            tags.add("float")
-        elif isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):
-            tags.add("float")
-        elif isinstance(node, ast.Dict):
-            tags.add("dict")
-        elif isinstance(node, ast.Assign) and any(isinstance(t, (ast.Attribute, ast.Subscript)) for t in node.targets):
-            tags.add("state")
-    if n_if >= 4:
-        tags.add("branches")
-    return sorted(tags)
 
 
 def error_type(error_text: str) -> str:
@@ -138,7 +104,8 @@ class Memory:
         candidates.sort(key=lambda t: len(set(tags) & set(t["tags"])), reverse=True)
         return candidates[:k]
 
-    def format_for_prompt(self, module: str, tags: list, error_text: str = "", with_examples: bool = True) -> str:
+    def format_for_prompt(self, module: str, tags: list, error_text: str = "", with_examples: bool = True,
+                          fence: str = "python") -> str:
         """Tạo đoạn văn bản chèn vào prompt. Rỗng nếu bộ nhớ chưa có gì liên quan."""
         lessons = self.relevant_lessons(tags, error_text)
         parts = []
@@ -148,7 +115,7 @@ class Memory:
         if with_examples:
             for example in self.relevant_good_tests(tags, exclude_module=module):
                 parts.append(f"- Mẫu test tốt ({example['reason']}, từ module {example['module']}):\n"
-                             f"```python\n{example['code']}\n```")
+                             f"```{fence}\n{example['code']}\n```")
         return "\n".join(parts)
 
     def stats(self) -> dict:

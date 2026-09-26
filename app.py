@@ -24,7 +24,7 @@ import streamlit as st
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-from testgen import code_utils as cu  # noqa: E402
+from adapters import get_adapter  # noqa: E402
 from testgen.agent import AgentConfig, TestGenAgent  # noqa: E402
 from testgen.config import DEFAULT_MODELS, ROOT_DIR, load_settings  # noqa: E402
 from testgen.llm_client import LLMClient  # noqa: E402
@@ -263,9 +263,10 @@ with tab_code:
         its = summary["iterations"]
         idx = st.select_slider("Xem code test tại vòng", options=list(range(len(its))), value=len(its) - 1)
         code = its[idx]["test_code"] if idx < len(its) - 1 else summary["final_test_code"]
-        suspected = cu.suspected_tests(code)
+        adapter = get_adapter(summary.get("language", "python"))  # log cũ (trước refactor) không có "language"
+        suspected = adapter.suspected_tests(code)
         c1, c2, c3 = st.columns(3)
-        c1.metric("Số hàm test", len(cu.test_function_names(code)) if cu.is_valid_python(code) else "lỗi cú pháp")
+        c1.metric("Số test", len(adapter.test_names(code)) if adapter.is_valid(code) else "lỗi cú pháp")
         c2.metric("SUSPECTED_BUG", len(suspected))
         c3.metric("Số dòng", len(code.splitlines()))
         if suspected:

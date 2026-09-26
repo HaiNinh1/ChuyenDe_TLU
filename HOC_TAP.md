@@ -774,3 +774,80 @@ Kết quả kiểm tra bước này: phần tất định **giống hệt** base
 2. **`run_tests` đã trả coverage rồi, sao còn `get_coverage`?** → Với cả pytest và Jest, coverage được đo cùng lần chạy
    test (rẻ hơn chạy 2 lần). `get_coverage` là phương thức tiện ích theo đúng giao diện, mặc định lấy từ `run_tests`.
 3. **Tại sao giữ tên `RunResult`?** → Để code và test cũ vẫn chạy trong lúc refactor từng bước (không "đập đi xây lại").
+
+---
+
+## RF3 — Chuyển phần Python thành `PythonAdapter`; agent chỉ làm việc qua adapter
+
+### (a) Đã làm gì và tại sao
+- **Chuyển nguyên (không viết lại)** logic Python sang `adapters/`:
+  | Từ (trước refactor) | Sang |
+  |---|---|
+  | `testgen/runner.py`: `run_tests`, `parse_junit`, `parse_coverage`, `describe_missing` | `adapters/python_adapter.py` |
+  | `testgen/mutation.py`: `generate_mutants`, `_run_one`, `run_mutation_testing` (mutmut) | `adapters/python_adapter.py` |
+  | `testgen/memory.py`: `module_tags` (dùng `ast`) | `adapters/python_adapter.py` |
+  | `testgen/code_utils.py`: `merge_tests`, `add_suspected_marker`, `remove_functions`... (dùng `ast`) | `adapters/python_edit.py` |
+  | `testgen/prompts.py`: các câu nhắc pytest (`pytest.raises`, `@pytest.mark.xfail`, khối ` ```python `...) | `PYTHON_HINTS` trong `python_adapter.py` |
+  | `run_subprocess`, `tail` | `adapters/common.py` (dùng chung mọi ngôn ngữ) |
+- `testgen/prompts.py` thành **khung prompt chung**: mỗi hàm nhận `hints = adapter.prompt_hints()`.
+- `testgen/agent.py`: `self.adapter = adapter_for_file(module_path)`; mọi thao tác phụ thuộc ngôn ngữ đi qua
+  `self.adapter.*` (chạy test, mutation, ghép/sửa/xoá test, gắn nhãn, mô tả dòng chưa phủ, nhãn module).
+  Thêm `_check_environment()`: thiếu công cụ test → báo lỗi rõ ràng kèm cách cài; thiếu công cụ mutation → tự tắt
+  mutation, vẫn chạy coverage (không crash). Log có thêm trường `language`, `tools`.
+- `testgen/generator.py`: chọn adapter theo đuôi file; tên file test theo quy ước của adapter.
+- `testgen/runner.py`, `testgen/mutation.py` còn lại là **"cổng chung"**: chọn adapter theo đuôi file + lệnh CLI
+  (lệnh cũ `python -m testgen.runner ...` vẫn dùng được).
+- Các test cũ chỉ đổi dòng `import` (nội dung kiểm tra giữ nguyên).
+
+### So sánh với baseline trước refactor (`docs/baseline_truoc_refactor.json` ↔ `docs/sau_refactor_python.json`)
+| Kiểm tra | Trước | Sau | Kết luận |
+|---|---|---|---|
+| Mã băm 8 prompt Python | — | — | **Giống hệt từng ký tự** |
+| Chạy lại 4 bộ test đã lưu (grading, shopping_cart × bản đầu/bản cuối): pass/fail/coverage/dòng chưa phủ | — | — | **Giống hệt** |
+| Mutation trên 4 bộ test đó: trạng thái từng mutant (40 mutant/bộ) | — | — | **Giống hệt** |
+| Agent + LLM giả lập (7 hành động, có phase mutation) | — | — | **Giống hệt** |
+| `pytest` (test của công cụ) | 64/64 | 73/73 (+9 test adapter) | pass |
+| `evaluate.py --measure-only` (chấm lại toàn bộ log thực nghiệm lượt 1) | `results.csv` cũ | mã băm `b46a37e4…` = trước | **Giống hệt từng byte** (cả `runs.csv`) |
+| **Agent + LLM thật** trên `grading` (bật mutation) — hành động | `fix_tests → stop` | `fix_tests → stop` | tương đương |
+| — coverage line / branch | 97,5% / 96,9% | 97,5% / 96,9% | như nhau |
+| — mutation score | 95% (19/20) | 95% (19/20) | như nhau |
+| — test pass / nghi bug | 21 / 2 | 23 / 1 | LLM sinh bộ test khác nhau đôi chút |
+| — nhãn nghi bug | `letter_grade(80)` ✔ + 1 nhãn **sai** (làm tròn số thực) | `letter_grade(80)` ✔ | lần sau không có nhãn sai |
+| — số lần gọi LLM | 3 | 2 | lần sau không cần gọi sửa test |
+
+Khác biệt ở phần LLM thật là do **LLM không tất định** (cùng prompt — đã chứng minh giống hệt — nhưng câu trả lời
+khác nhau), không phải do refactor. Mọi chức năng đều chạy: sinh, chạy, phân loại oracle, gắn nhãn, mutation, dừng.
+
+### (b) Khái niệm quan trọng
+- **Adapter pattern:** "bộ chuyển đổi" giữa giao diện mà agent mong đợi (`run_tests`, `run_mutation`...) và công cụ
+  thật (pytest, mutmut). Giống ổ cắm chuyển đổi: thiết bị (agent) không đổi, chỉ đổi đầu cắm.
+  ```python
+  # trước:                                   # sau:
+  run_tests(self.module_path, self.code)       self.adapter.run_tests(self.module_path, self.code)
+  cu.add_suspected_marker(code, name, why)     self.adapter.add_suspected_marker(code, name, why)
+  ```
+- **Strategy pattern:** agent chọn "chiến lược" (adapter) lúc chạy theo đuôi file; thuật toán vòng lặp giữ nguyên.
+- **Tách phần chung / phần riêng của prompt (template + hints):** khung prompt (quy trình, yêu cầu JSON, chống oracle
+  problem) là chung; tên framework, cú pháp import, cách viết ngoại lệ, nhãn nghi bug là riêng.
+- **Refactor an toàn = đổi cấu trúc, giữ hành vi**, chứng minh bằng so sánh ảnh chụp (xem RF1).
+
+### (c) File liên quan
+`adapters/python_adapter.py`, `adapters/python_edit.py`, `adapters/common.py`, `testgen/agent.py`,
+`testgen/prompts.py`, `testgen/generator.py`, `testgen/runner.py`, `testgen/mutation.py`, `testgen/code_utils.py`,
+`docs/sau_refactor_python.json`, `logs/grading_refactor_check_*.json`
+
+### (d) Lệnh tự chạy thử
+```bash
+pytest                                                                     # 73 test
+python scripts/snapshot_python.py --out docs/thu.json --compare docs/baseline_truoc_refactor.json
+python -m testgen.agent targets/grading.py --mutation                      # vẫn chạy như trước
+python -m testgen.runner targets/grading.py generated_tests/eval_C/test_grading.py
+```
+
+### (e) Câu hỏi giảng viên có thể hỏi
+1. **Vì sao prompt Python phải giống hệt từng ký tự?** → Để số liệu thực nghiệm cũ (lượt 1) vẫn so sánh được với số
+   liệu mới; nếu prompt đổi, khác biệt kết quả có thể do prompt chứ không do phương pháp.
+2. **Agent giờ còn biết gì về Python?** → Không gì cả: nó chỉ gọi `self.adapter.*`. Chỗ duy nhất biết `.py` → pytest
+   là registry. (Các chữ "pytest" còn lại trong `agent.py` chỉ nằm trong comment.)
+3. **Nếu máy thiếu mutmut thì sao?** → `check_environment()` báo thiếu, agent tự tắt phase mutation và vẫn chạy phần
+   coverage; nếu thiếu pytest thì báo lỗi rõ ràng kèm lệnh `pip install -r requirements.txt`.

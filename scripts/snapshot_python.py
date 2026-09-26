@@ -52,15 +52,30 @@ def snapshot_prompts() -> dict:
     test_code = "import grading\n\n\ndef test_a():\n    assert grading.letter_grade(95) == 'A'\n"
     lessons = "- [ImportError] Luôn import module bằng tên file."
     numbered = "\n".join(f"{i:4d} | {line}" for i, line in enumerate(src.splitlines(), start=1))
+    if hasattr(prompts, "system_prompt"):
+        # Sau refactor: khung prompt chung + phần riêng của Python lấy từ PythonAdapter.prompt_hints()
+        from adapters import get_adapter
+        hints = get_adapter("python").prompt_hints()
+        system = prompts.system_prompt(hints)
+
+        def build(fn, *args):
+            return fn(hints, *args)
+    else:
+        # Trước refactor: prompt viết cứng cho Python
+        system = prompts.SYSTEM_PROMPT
+
+        def build(fn, *args):
+            return fn(*args)
     cases = {
-        "SYSTEM_PROMPT": prompts.SYSTEM_PROMPT,
-        "initial": prompts.initial_prompt("grading", src),
-        "initial_lessons": prompts.initial_prompt("grading", src, lessons),
-        "fix_collection": prompts.fix_collection_prompt("grading", src, test_code, "ImportError: x", lessons),
-        "classify": prompts.classify_prompt("grading", src, test_code, "AssertionError: 'C' != 'B'"),
-        "fix_tests": prompts.fix_tests_prompt("grading", src, test_code, "AssertionError", lessons),
-        "coverage": prompts.coverage_prompt("grading", numbered, test_code, 80.0, 75.5, "- Dòng 3 chưa chạy"),
-        "mutation": prompts.mutation_prompt("grading", numbered, test_code, "- Mutant #1, dòng 3: `a` -> `b`"),
+        "SYSTEM_PROMPT": system,
+        "initial": build(prompts.initial_prompt, "grading", src),
+        "initial_lessons": build(prompts.initial_prompt, "grading", src, lessons),
+        "fix_collection": build(prompts.fix_collection_prompt, "grading", src, test_code, "ImportError: x", lessons),
+        "classify": build(prompts.classify_prompt, "grading", src, test_code, "AssertionError: 'C' != 'B'"),
+        "fix_tests": build(prompts.fix_tests_prompt, "grading", src, test_code, "AssertionError", lessons),
+        "coverage": build(prompts.coverage_prompt, "grading", numbered, test_code, 80.0, 75.5, "- Dòng 3 chưa chạy"),
+        "mutation": build(prompts.mutation_prompt, "grading", numbered, test_code,
+                          "- Mutant #1, dòng 3: `a` -> `b`"),
     }
     return {name: {"sha256": sha(text), "chars": len(text)} for name, text in cases.items()}
 

@@ -152,6 +152,8 @@ class LanguageAdapter(ABC):
     test_framework = ""       # hiển thị trên giao diện: "pytest"
     coverage_tool = ""        # "coverage.py"
     mutation_tool = ""        # "mutmut 2.5.1"
+    code_fence_tags = ()      # thẻ khối code chấp nhận khi tách code khỏi câu trả lời LLM, ví dụ ("python", "py")
+    code_markers = ()         # dấu hiệu "đây là code" khi LLM quên bọc khối, ví dụ ("def test", "import ")
 
     # ------------------------------------------------------------------ môi trường & quy ước
     @abstractmethod
@@ -165,10 +167,6 @@ class LanguageAdapter(ABC):
     def module_name(self, source_file) -> str:
         """Tên module dùng trong prompt và tên log (mặc định: tên file bỏ đuôi)."""
         return Path(source_file).stem
-
-    def code_fence(self, source_file=None) -> str:
-        """Thẻ ngôn ngữ của khối code markdown gửi cho LLM, ví dụ ```python."""
-        return self.name
 
     @abstractmethod
     def prompt_hints(self, source_file=None) -> dict:

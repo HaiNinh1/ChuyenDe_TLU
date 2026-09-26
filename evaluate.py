@@ -38,7 +38,7 @@ import time
 from pathlib import Path
 
 import testgen  # noqa: F401  (cấu hình UTF-8 cho console Windows)
-from testgen import code_utils as cu
+from adapters import adapter_for_file
 from testgen.agent import LOGS_DIR, AgentConfig, TestGenAgent
 from testgen.config import ROOT_DIR
 from testgen.llm_client import LLMClient
@@ -120,9 +120,10 @@ def measure(module: str, test_code: str, exclude: set, measure_mutants: int) -> 
     outcomes_buggy = {t.name: t.outcome for t in res.tests}
     outcomes_fixed = {t.name: t.outcome for t in run_tests(fixed_path, test_code, with_coverage=False).tests}
     # Test "bắt được bug": fail (hoặc bị gắn nhãn nghi bug) trên code lỗi, nhưng pass trên code đúng
-    catching = {cu.base_test_name(n) for n, o in outcomes_buggy.items()
+    adapter = adapter_for_file(module_path)
+    catching = {adapter.base_test_name(n) for n, o in outcomes_buggy.items()
                 if o in ("failed", "error", "xfailed") and outcomes_fixed.get(n) == "passed"}
-    suspected = cu.suspected_tests(test_code)
+    suspected = adapter.suspected_tests(test_code)
     suspected_tp = [n for n in suspected if n in catching]
     return {
         "line_coverage": 0.0 if res.collection_error else res.line_coverage,

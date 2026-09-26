@@ -4,7 +4,8 @@ from testgen import agent as agent_module
 from testgen.agent import AgentConfig, TestGenAgent
 from testgen.config import Settings
 from testgen.llm_client import LLMClient
-from testgen.memory import Memory, error_type, module_tags
+from adapters.python_adapter import module_tags
+from testgen.memory import Memory, error_type
 
 from test_agent import MODULE, SCRIPT
 

@@ -2,7 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from testgen.runner import describe_missing, run_tests
+from adapters.python_adapter import describe_missing
+from testgen.runner import run_tests
 
 MODULE = '''def sign(x):
     if x > 0:
