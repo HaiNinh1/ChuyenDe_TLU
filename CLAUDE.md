@@ -46,7 +46,9 @@ Hiện thực 2 ngôn ngữ theo kiến trúc **Adapter**: Python và JavaScript
   - Thực nghiệm JS cần LLM thật: `python evaluate.py --languages javascript --runs 1` (~30 request/lượt), rồi Python
     lượt 2–3 và JS lượt 2–3 (`python evaluate.py --runs 3`). Model miễn phí giới hạn 50 request/ngày
     (nạp 10 USD vào OpenRouter → 1000 request/ngày). Sau đó cập nhật bảng RF6 trong HOC_TAP, slide kết quả, lời thoại.
-  - Chỉ gợi ý merge `multi-language` vào `main` khi mọi thứ ổn (Bước 9).
+  - Đã merge `multi-language` vào `main` (fast-forward) theo yêu cầu người dùng; repo GitHub:
+    https://github.com/HaiNinh1/ChuyenDe_TLU (nhánh `main`). Làm việc tiếp trên `main`.
+- Tổng quan tài liệu (TL1): `docs/TAI_LIEU_THAM_KHAO.md` (37 tài liệu, DOI), slide 15 trang trên claude.ai.
 - Thiết kế thực nghiệm: bước SINH (log `logs/*_eval_C|D_*.json`, có trường `language`; log cũ không có = Python) tách
   bước CHẤM (`--measure-only`, mutation held-out: loại các mutant đã đưa vào prompt). Không được chấm mutation trên tập
   mutant LLM đã thấy.
