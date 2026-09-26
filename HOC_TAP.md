@@ -296,3 +296,69 @@ pytest tests/test_agent.py -v                                          # kiểm 
    đọc hiểu docstring.
 3. **Làm sao biết vòng lặp không chạy mãi?** → Ba chốt chặn: `max_iterations`, `patience` (không cải thiện thì dừng),
    giới hạn số lần sửa mỗi test (`max_fix_attempts`), cộng timeout cho mỗi lần chạy pytest.
+
+---
+
+## GĐ5 — Mutation testing
+
+### (a) Đã làm gì và tại sao
+- `testgen/mutation.py`:
+  - `generate_mutants(source)`: dùng **toán tử đột biến của mutmut 2.5.1** (`list_mutations`, `mutate`) để sinh mọi
+    mutant; bỏ các mutant chỉ đổi docstring (so sánh cây AST sau khi bỏ docstring).
+  - `run_mutation_testing(module, tests, max_mutants=20, seed=0)`: kiểm tra bộ test pass trên code gốc → lấy mẫu
+    tối đa `max_mutants` mutant (seed cố định) → mỗi mutant chạy pytest `-x` trong thư mục tạm riêng, **4 tiến trình
+    song song** → tính mutation score.
+  - `skip_failing=True`: khi ĐO để so sánh (GĐ7), bỏ qua các test đang fail trên code gốc.
+- `agent.py`: thêm **phase mutation** chạy SAU phase coverage (khi coverage đạt ngưỡng hoặc không tăng nữa). Mutant còn
+  sống (tối đa 6) được mô tả dạng `dòng 40: if value < low: -> if value <= low:` và gửi cho LLM viết test "giết" chúng.
+  Dừng khi mutation score ≥ ngưỡng (mặc định 80%), không còn mutant sống, hoặc không cải thiện.
+- Giới hạn phạm vi cho demo: chỉ đột biến **một module**, tối đa 20 mutant, mỗi mutant timeout 30 s → ~5-10 giây/lần.
+
+**Vì sao không gọi thẳng lệnh `mutmut run`?** mutmut 3.x không chạy trên Windows; mutmut 2 CLI chạy được nhưng không
+giới hạn số mutant, lưu cache SQLite riêng và in ra màn hình khó phân tích. Dùng thư viện sinh mutant của mutmut + runner
+tự viết (~60 dòng) thì kiểm soát được hoàn toàn và vẫn dùng đúng bộ toán tử chuẩn.
+
+**Kết quả chạy thật:**
+- `grading.py` (agent + mutation): vòng 0 phát hiện **bug 1** (LLM phân loại SUSPECTED_BUG: *"docstring nói 80 → B
+  nhưng code trả C vì dùng > 80"*), coverage 97.5/96.9%, mutation score 95% → dừng. 2 lần gọi LLM.
+- `calculator.py` (ngưỡng mutation 100%): coverage 100% ngay từ đầu nhưng mutation 90.9% — 2 mutant còn sống đều
+  ở **biên** của `clamp` (`value < low` → `value <= low`). LLM viết thêm test `clamp(low, low, high)` → **100%**.
+  Đây là minh hoạ rõ nhất cho việc **coverage 100% chưa đủ**.
+- Chạy `python -m testgen.mutation` trên test baseline của `grading.py`: mutant `elif score > 80` → `elif score >= 80`
+  **sống sót** — mutant này thực chất là *bản sửa của bug 1*! (test bắt bug bị bỏ qua vì đang fail).
+
+### (b) Khái niệm quan trọng
+- **Mutant và "giết" mutant:** ví dụ code `if value < low: return low`. Mutant đổi thành `if value <= low:`.
+  Test `clamp(-5, 0, 10) == 0` vẫn pass với cả hai → mutant **sống**. Test `clamp(0, 0, 10) == 0`... cũng pass
+  (vì trả về low = 0 = value) → mutant tương đương ở điểm này! Phải thử `clamp(value=low)` với kiểu khác, v.v.
+  Ý chính: test phải kiểm tra **đúng biên** và **đúng giá trị** thì mới giết được mutant.
+- **Mutation score = mutant bị giết / tổng mutant.** Đo "độ nhạy" của bộ test: nếu code bị sửa sai một chút, bộ test
+  có kêu không? Coverage chỉ đo "code có được chạy không".
+- **Toán tử đột biến của mutmut:** đổi so sánh (`<` ↔ `<=`), số (`0` → `1`), toán tử (`+` → `-`), `and` ↔ `or`,
+  chuỗi (`"A"` → `"XXAXX"`), giá trị mặc định tham số, `break` ↔ `continue`...
+- **Mutant tương đương (equivalent mutant):** thay đổi cú pháp nhưng không đổi hành vi → không test nào giết được.
+  Không thể tự động phát hiện hoàn toàn (bài toán không quyết định được) → mutation score 100% không phải lúc nào cũng
+  đạt được; prompt cho phép LLM bỏ qua mutant tương đương.
+- **Lấy mẫu với seed cố định:** 77 mutant × ~1 s là quá lâu cho demo → lấy 20 mutant ngẫu nhiên, nhưng `seed=0` để mọi
+  cấu hình được chấm trên **cùng một tập** mutant (so sánh công bằng).
+
+### (c) File liên quan
+`testgen/mutation.py`, `testgen/agent.py` (`_mutation_step`), `testgen/prompts.py` (`mutation_prompt`),
+`tests/test_mutation.py`
+
+### (d) Lệnh tự chạy thử
+```bash
+python -m testgen.mutation targets/grading.py generated_tests/baseline/test_grading.py
+python -m testgen.agent targets/calculator.py --mutation --max-mutants 30
+pytest tests/test_mutation.py -v
+```
+
+### (e) Câu hỏi giảng viên có thể hỏi
+1. **Coverage 100% rồi thì cần mutation testing làm gì?** → Ví dụ `calculator.clamp`: coverage 100% nhưng 2 mutant biên
+   sống sót, tức nếu lập trình viên lỡ viết `<=` thay `<` thì bộ test không phát hiện. Mutation đo *chất lượng assert*,
+   coverage chỉ đo *code có chạy qua không*.
+2. **Mutation testing rất chậm, em giải quyết thế nào?** → Chỉ đột biến module đang test, lấy mẫu tối đa N mutant,
+   chạy song song 4 tiến trình, pytest `-x` dừng ngay khi có test fail, timeout mỗi mutant. Đánh đổi: điểm là ước lượng
+   trên mẫu, không phải toàn bộ mutant.
+3. **Vì sao chạy mutation SAU khi đạt coverage?** → Mutant ở dòng chưa được test chạy tới chắc chắn sống sót — gửi cho
+   LLM chỉ lặp lại việc tăng coverage mà tốn thêm thời gian. Tăng coverage trước (rẻ), rồi mới "mài" chất lượng assert.

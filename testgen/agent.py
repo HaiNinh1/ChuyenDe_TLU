@@ -32,6 +32,7 @@ from . import prompts
 from .config import ROOT_DIR
 from .generator import generate_tests
 from .llm_client import LLMClient, LLMError
+from .mutation import describe_survivors, run_mutation_testing
 from .runner import RunResult, describe_missing, run_tests
 
 LOGS_DIR = ROOT_DIR / "logs"
@@ -278,9 +279,37 @@ class TestGenAgent:
         self._emit(entry)
 
     def _mutation_step(self, entry: IterationLog) -> bool:
-        """Phase mutation — được cài đặt ở GĐ5."""
-        self._finish(entry, "stop", "Mutation testing chưa được cài đặt")
-        return False
+        """Phase mutation: chạy mutation testing, đưa mutant còn sống cho LLM viết test "giết" chúng."""
+        self._message(f"Chạy mutation testing (tối đa {self.config.max_mutants} mutant)...")
+        mres = run_mutation_testing(self.module_path, self.code, max_mutants=self.config.max_mutants,
+                                    timeout=self.config.test_timeout)
+        self.last_mutation = mres
+        entry.phase = "mutation"
+        entry.mutation_score, entry.mutants_total, entry.mutants_killed = (
+            mres.score, mres.total, mres.killed + mres.timeout)
+        entry.survived_mutants = [m.describe() for m in mres.survivors()]
+
+        if mres.error:
+            self._finish(entry, "stop", f"Không chạy được mutation testing: {mres.error}")
+            return False
+        self._message(f"Mutation score {mres.score}% ({mres.killed + mres.timeout}/{mres.total} mutant bị giết)")
+        if mres.score >= self.config.mutation_threshold or not mres.survivors():
+            self._finish(entry, "stop", f"Đạt ngưỡng mutation score ({mres.score}%)")
+            return False
+        if not self._improved(mres.score):
+            self._finish(entry, "stop", f"Mutation score không cải thiện sau {self.config.patience} lần thử")
+            return False
+
+        entry.action = "kill_mutants"
+        entry.reason = (f"Mutation score {mres.score}% < {self.config.mutation_threshold}% -> đưa "
+                        f"{min(6, mres.survived)} mutant còn sống cho LLM viết test mới")
+        self._message(entry.reason)
+        prompt = prompts.mutation_prompt(self.module_name, cu.number_lines(self.source), self.code,
+                                         describe_survivors(mres))
+        answer = self.client.chat(prompts.SYSTEM_PROMPT, prompt, task="kill_mutants")
+        self._merge(cu.extract_code(answer), on_conflict="rename")
+        self._emit(entry)
+        return True
 
     # ================================================================ TIỆN ÍCH
     def _merge(self, new_code: str, on_conflict: str):
@@ -394,11 +423,14 @@ def main():
     parser.add_argument("--max-iters", type=int, default=8)
     parser.add_argument("--line", type=float, default=95.0, help="ngưỡng line coverage")
     parser.add_argument("--branch", type=float, default=90.0, help="ngưỡng branch coverage")
+    parser.add_argument("--mutation", action="store_true", help="bật mutation testing (GĐ5)")
+    parser.add_argument("--max-mutants", type=int, default=20)
     parser.add_argument("--label", default="agent")
     args = parser.parse_args()
 
     config = AgentConfig(max_iterations=args.max_iters, line_threshold=args.line,
-                         branch_threshold=args.branch, label=args.label)
+                         branch_threshold=args.branch, use_mutation=args.mutation,
+                         max_mutants=args.max_mutants, label=args.label)
     summary = TestGenAgent(args.module, config=config).run()
     print("\n=== KẾT QUẢ ===")
     print(json.dumps({k: summary[k] for k in ("stop_reason", "final", "suspected_bugs", "stats")},

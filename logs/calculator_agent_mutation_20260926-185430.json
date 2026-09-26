@@ -1,0 +1,101 @@
+{
+  "module": "calculator",
+  "module_path": "targets\\calculator.py",
+  "label": "agent_mutation",
+  "config": {
+    "max_iterations": 6,
+    "line_threshold": 95.0,
+    "branch_threshold": 90.0,
+    "patience": 2,
+    "max_fix_attempts": 2,
+    "test_timeout": 60,
+    "use_mutation": true,
+    "mutation_threshold": 100,
+    "max_mutants": 30,
+    "use_memory": false,
+    "label": "agent_mutation"
+  },
+  "llm": {
+    "provider": "openrouter",
+    "model": "nvidia/nemotron-3-super-120b-a12b:free"
+  },
+  "stop_reason": "Đạt ngưỡng mutation score (100.0%)",
+  "iterations": [
+    {
+      "iteration": 0,
+      "phase": "mutation",
+      "action": "kill_mutants",
+      "reason": "Mutation score 90.9% < 100% -> đưa 2 mutant còn sống cho LLM viết test mới",
+      "test_code": "import pytest\nimport calculator\n\n\ndef test_add():\n    # Trường hợp bình thường\n    assert calculator.add(2, 3) == 5\n    assert calculator.add(-1, 1) == 0\n    assert calculator.add(0, 0) == 0\n    assert calculator.add(2.5, 3.5) == 6.0\n    # Trường hợp biên: số lớn\n    assert calculator.add(10**6, -10**6) == 0\n\n\ndef test_divide():\n    # Trường hợp bình thường\n    assert calculator.divide(10, 2) == 5\n    assert calculator.divide(5, 2) == 2.5\n    assert calculator.divide(-6, 3) == -2.0\n    assert calculator.divide(0, 5) == 0\n    # Trường hợp biên: chia cho 1\n    assert calculator.divide(7, 1) == 7\n    # Ngoại lệ: chia cho 0\n    with pytest.raises(ZeroDivisionError) as excinfo:\n        calculator.divide(5, 0)\n    assert str(excinfo.value) == \"Không thể chia cho 0\"\n\n\ndef test_average():\n    # Danh sách rỗng\n    assert calculator.average([]) == 0\n    # Một phần tử\n    assert calculator.average([42]) == 42.0\n    # Trường hợp bình thường\n    assert calculator.average([1, 2, 3]) == 2.0\n    assert calculator.average([10, 20, 30, 40]) == 25.0\n    # Số thực\n    assert calculator.average([1.5, 2.5, 3.0]) == pytest.approx(2.333333333333333)\n    # Trường hợp biên: danh sách lớn\n    big_list = [1] * 1000\n    assert calculator.average(big_list) == 1.0\n    # Danh sách với số âm\n    assert calculator.average([-5, 0, 5]) == 0.0\n\n\ndef test_clamp():\n    # Trường hợp bình thường: giá trị trong khoảng\n    assert calculator.clamp(5, 0, 10) == 5\n    assert calculator.clamp(0, 0, 10) == 0\n    assert calculator.clamp(10, 0, 10) == 10\n    # Giá trị dưới low\n    assert calculator.clamp(-3, 0, 10) == 0\n    # Giá trị trên high\n    assert calculator.clamp(15, 0, 10) == 10\n    # Trường hợp biên: low == high\n    assert calculator.clamp(7, 5, 5) == 5\n    assert calculator.clamp(5, 5, 5) == 5\n    assert calculator.clamp(3, 5, 5) == 5\n    assert calculator.clamp(9, 5, 5) == 5\n    # Số thực\n    assert calculator.clamp(2.5, 2.0, 3.0) == 2.5\n    assert calculator.clamp(1.0, 2.0, 3.0) == 2.0\n    assert calculator.clamp(4.0, 2.0, 3.0) == 3.0\n    # Ngoại lệ: low > high\n    with pytest.raises(ValueError) as excinfo:\n        calculator.clamp(5, 10, 0)\n    assert str(excinfo.value) == \"low phải nhỏ hơn hoặc bằng high\"\n\n\ndef test_factorial():\n    # Trường hợp bình thường\n    assert calculator.factorial(0) == 1\n    assert calculator.factorial(1) == 1\n    assert calculator.factorial(5) == 120\n    assert calculator.factorial(7) == 5040\n    # Trường hợp biên: n lớn (nhưng vẫn hợp lý cho test)\n    assert calculator.factorial(10) == 3628800\n    # Ngoại lệ: n < 0\n    with pytest.raises(ValueError) as excinfo:\n        calculator.factorial(-1)\n    assert str(excinfo.value) == \"n phải >= 0\"\n",
+      "passed": 5,
+      "failed": 0,
+      "errors": 0,
+      "xfailed": 0,
+      "collection_error": "",
+      "line_coverage": 100.0,
+      "branch_coverage": 100.0,
+      "missing_lines": [],
+      "missing_branches": [],
+      "mutation_score": 90.9,
+      "mutants_total": 22,
+      "mutants_killed": 20,
+      "survived_mutants": [
+        "Mutant #11, dòng 40: `if value < low:`  ->  `if value <= low:`",
+        "Mutant #12, dòng 42: `if value > high:`  ->  `if value >= high:`"
+      ],
+      "suspected": {},
+      "classifications": [],
+      "removed_tests": [],
+      "lesson": "",
+      "llm_calls_so_far": 2,
+      "elapsed": 50.3
+    },
+    {
+      "iteration": 1,
+      "phase": "done",
+      "action": "stop",
+      "reason": "Đạt ngưỡng mutation score (100.0%)",
+      "test_code": "import pytest\nimport calculator\n\n\ndef test_add():\n    # Trường hợp bình thường\n    assert calculator.add(2, 3) == 5\n    assert calculator.add(-1, 1) == 0\n    assert calculator.add(0, 0) == 0\n    assert calculator.add(2.5, 3.5) == 6.0\n    # Trường hợp biên: số lớn\n    assert calculator.add(10**6, -10**6) == 0\n\n\ndef test_divide():\n    # Trường hợp bình thường\n    assert calculator.divide(10, 2) == 5\n    assert calculator.divide(5, 2) == 2.5\n    assert calculator.divide(-6, 3) == -2.0\n    assert calculator.divide(0, 5) == 0\n    # Trường hợp biên: chia cho 1\n    assert calculator.divide(7, 1) == 7\n    # Ngoại lệ: chia cho 0\n    with pytest.raises(ZeroDivisionError) as excinfo:\n        calculator.divide(5, 0)\n    assert str(excinfo.value) == \"Không thể chia cho 0\"\n\n\ndef test_average():\n    # Danh sách rỗng\n    assert calculator.average([]) == 0\n    # Một phần tử\n    assert calculator.average([42]) == 42.0\n    # Trường hợp bình thường\n    assert calculator.average([1, 2, 3]) == 2.0\n    assert calculator.average([10, 20, 30, 40]) == 25.0\n    # Số thực\n    assert calculator.average([1.5, 2.5, 3.0]) == pytest.approx(2.333333333333333)\n    # Trường hợp biên: danh sách lớn\n    big_list = [1] * 1000\n    assert calculator.average(big_list) == 1.0\n    # Danh sách với số âm\n    assert calculator.average([-5, 0, 5]) == 0.0\n\n\ndef test_clamp():\n    # Trường hợp bình thường: giá trị trong khoảng\n    assert calculator.clamp(5, 0, 10) == 5\n    assert calculator.clamp(0, 0, 10) == 0\n    assert calculator.clamp(10, 0, 10) == 10\n    # Giá trị dưới low\n    assert calculator.clamp(-3, 0, 10) == 0\n    # Giá trị trên high\n    assert calculator.clamp(15, 0, 10) == 10\n    # Trường hợp biên: low == high\n    assert calculator.clamp(7, 5, 5) == 5\n    assert calculator.clamp(5, 5, 5) == 5\n    assert calculator.clamp(3, 5, 5) == 5\n    assert calculator.clamp(9, 5, 5) == 5\n    # Số thực\n    assert calculator.clamp(2.5, 2.0, 3.0) == 2.5\n    assert calculator.clamp(1.0, 2.0, 3.0) == 2.0\n    assert calculator.clamp(4.0, 2.0, 3.0) == 3.0\n    # Ngoại lệ: low > high\n    with pytest.raises(ValueError) as excinfo:\n        calculator.clamp(5, 10, 0)\n    assert str(excinfo.value) == \"low phải nhỏ hơn hoặc bằng high\"\n\n\ndef test_factorial():\n    # Trường hợp bình thường\n    assert calculator.factorial(0) == 1\n    assert calculator.factorial(1) == 1\n    assert calculator.factorial(5) == 120\n    assert calculator.factorial(7) == 5040\n    # Trường hợp biên: n lớn (nhưng vẫn hợp lý cho test)\n    assert calculator.factorial(10) == 3628800\n    # Ngoại lệ: n < 0\n    with pytest.raises(ValueError) as excinfo:\n        calculator.factorial(-1)\n    assert str(excinfo.value) == \"n phải >= 0\"\n\n\nclass _Wrap:\n    \"\"\"Simple wrapper for testing identity in clamp.\"\"\"\n    def __init__(self, val):\n        self.val = val\n    def __lt__(self, other):\n        return self.val < other.val\n    def __le__(self, other):\n        return self.val <= other.val\n    def __gt__(self, other):\n        return self.val > other.val\n    def __ge__(self, other):\n        return self.val >= other.val\n    def __eq__(self, other):\n        return isinstance(other, _Wrap) and self.val == other.val\n\n\ndef test_clamp_returns_same_object_when_value_equals_low():\n    \"\"\"When value equals low (and low < high) clamp should return the value object itself.\"\"\"\n    low = _Wrap(5)\n    high = _Wrap(10)\n    value = _Wrap(5)  # equal to low\n    result = calculator.clamp(value, low, high)\n    # Original implementation returns `value`; mutant #11 would return `low`.\n    assert result is value\n\n\ndef test_clamp_returns_same_object_when_value_equals_high():\n    \"\"\"When value equals high (and low < high) clamp should return the value object itself.\"\"\"\n    low = _Wrap(5)\n    high = _Wrap(10)\n    value = _Wrap(10)  # equal to high\n    result = calculator.clamp(value, low, high)\n    # Original implementation returns `value`; mutant #12 would return `high`.\n    assert result is value\n",
+      "passed": 7,
+      "failed": 0,
+      "errors": 0,
+      "xfailed": 0,
+      "collection_error": "",
+      "line_coverage": 100.0,
+      "branch_coverage": 100.0,
+      "missing_lines": [],
+      "missing_branches": [],
+      "mutation_score": 100.0,
+      "mutants_total": 22,
+      "mutants_killed": 22,
+      "survived_mutants": [],
+      "suspected": {},
+      "classifications": [],
+      "removed_tests": [],
+      "lesson": "",
+      "llm_calls_so_far": 2,
+      "elapsed": 55.5
+    }
+  ],
+  "final_test_code": "import pytest\nimport calculator\n\n\ndef test_add():\n    # Trường hợp bình thường\n    assert calculator.add(2, 3) == 5\n    assert calculator.add(-1, 1) == 0\n    assert calculator.add(0, 0) == 0\n    assert calculator.add(2.5, 3.5) == 6.0\n    # Trường hợp biên: số lớn\n    assert calculator.add(10**6, -10**6) == 0\n\n\ndef test_divide():\n    # Trường hợp bình thường\n    assert calculator.divide(10, 2) == 5\n    assert calculator.divide(5, 2) == 2.5\n    assert calculator.divide(-6, 3) == -2.0\n    assert calculator.divide(0, 5) == 0\n    # Trường hợp biên: chia cho 1\n    assert calculator.divide(7, 1) == 7\n    # Ngoại lệ: chia cho 0\n    with pytest.raises(ZeroDivisionError) as excinfo:\n        calculator.divide(5, 0)\n    assert str(excinfo.value) == \"Không thể chia cho 0\"\n\n\ndef test_average():\n    # Danh sách rỗng\n    assert calculator.average([]) == 0\n    # Một phần tử\n    assert calculator.average([42]) == 42.0\n    # Trường hợp bình thường\n    assert calculator.average([1, 2, 3]) == 2.0\n    assert calculator.average([10, 20, 30, 40]) == 25.0\n    # Số thực\n    assert calculator.average([1.5, 2.5, 3.0]) == pytest.approx(2.333333333333333)\n    # Trường hợp biên: danh sách lớn\n    big_list = [1] * 1000\n    assert calculator.average(big_list) == 1.0\n    # Danh sách với số âm\n    assert calculator.average([-5, 0, 5]) == 0.0\n\n\ndef test_clamp():\n    # Trường hợp bình thường: giá trị trong khoảng\n    assert calculator.clamp(5, 0, 10) == 5\n    assert calculator.clamp(0, 0, 10) == 0\n    assert calculator.clamp(10, 0, 10) == 10\n    # Giá trị dưới low\n    assert calculator.clamp(-3, 0, 10) == 0\n    # Giá trị trên high\n    assert calculator.clamp(15, 0, 10) == 10\n    # Trường hợp biên: low == high\n    assert calculator.clamp(7, 5, 5) == 5\n    assert calculator.clamp(5, 5, 5) == 5\n    assert calculator.clamp(3, 5, 5) == 5\n    assert calculator.clamp(9, 5, 5) == 5\n    # Số thực\n    assert calculator.clamp(2.5, 2.0, 3.0) == 2.5\n    assert calculator.clamp(1.0, 2.0, 3.0) == 2.0\n    assert calculator.clamp(4.0, 2.0, 3.0) == 3.0\n    # Ngoại lệ: low > high\n    with pytest.raises(ValueError) as excinfo:\n        calculator.clamp(5, 10, 0)\n    assert str(excinfo.value) == \"low phải nhỏ hơn hoặc bằng high\"\n\n\ndef test_factorial():\n    # Trường hợp bình thường\n    assert calculator.factorial(0) == 1\n    assert calculator.factorial(1) == 1\n    assert calculator.factorial(5) == 120\n    assert calculator.factorial(7) == 5040\n    # Trường hợp biên: n lớn (nhưng vẫn hợp lý cho test)\n    assert calculator.factorial(10) == 3628800\n    # Ngoại lệ: n < 0\n    with pytest.raises(ValueError) as excinfo:\n        calculator.factorial(-1)\n    assert str(excinfo.value) == \"n phải >= 0\"\n\n\nclass _Wrap:\n    \"\"\"Simple wrapper for testing identity in clamp.\"\"\"\n    def __init__(self, val):\n        self.val = val\n    def __lt__(self, other):\n        return self.val < other.val\n    def __le__(self, other):\n        return self.val <= other.val\n    def __gt__(self, other):\n        return self.val > other.val\n    def __ge__(self, other):\n        return self.val >= other.val\n    def __eq__(self, other):\n        return isinstance(other, _Wrap) and self.val == other.val\n\n\ndef test_clamp_returns_same_object_when_value_equals_low():\n    \"\"\"When value equals low (and low < high) clamp should return the value object itself.\"\"\"\n    low = _Wrap(5)\n    high = _Wrap(10)\n    value = _Wrap(5)  # equal to low\n    result = calculator.clamp(value, low, high)\n    # Original implementation returns `value`; mutant #11 would return `low`.\n    assert result is value\n\n\ndef test_clamp_returns_same_object_when_value_equals_high():\n    \"\"\"When value equals high (and low < high) clamp should return the value object itself.\"\"\"\n    low = _Wrap(5)\n    high = _Wrap(10)\n    value = _Wrap(10)  # equal to high\n    result = calculator.clamp(value, low, high)\n    # Original implementation returns `value`; mutant #12 would return `high`.\n    assert result is value\n",
+  "suspected_bugs": {},
+  "lessons_used": "",
+  "final": {
+    "line_coverage": 100.0,
+    "branch_coverage": 100.0,
+    "passed": 7,
+    "failed": 0,
+    "xfailed": 0,
+    "mutation_score": 100.0,
+    "num_iterations": 1
+  },
+  "stats": {
+    "llm_calls": 2,
+    "input_tokens": 2940,
+    "output_tokens": 4281,
+    "cost_usd": 0.0,
+    "llm_seconds": 45.3,
+    "total_seconds": 55.5
+  },
+  "source_code": "\"\"\"Module 1 (dễ): các hàm tính toán đơn giản.\"\"\"\n\n\ndef add(a, b):\n    \"\"\"Trả về tổng a + b.\"\"\"\n    return a + b\n\n\ndef divide(a, b):\n    \"\"\"Trả về a / b.\n\n    Ném ZeroDivisionError với thông báo \"Không thể chia cho 0\" nếu b == 0.\n    \"\"\"\n    if b == 0:\n        raise ZeroDivisionError(\"Không thể chia cho 0\")\n    return a / b\n\n\ndef average(numbers):\n    \"\"\"Trả về trung bình cộng của danh sách số.\n\n    Danh sách rỗng thì trả về 0.\n    Ví dụ: average([1, 2, 3]) == 2.0\n    \"\"\"\n    if not numbers:\n        return 0\n    return sum(numbers) / len(numbers)\n\n\ndef clamp(value, low, high):\n    \"\"\"Giới hạn value trong đoạn [low, high].\n\n    - value < low  -> trả về low\n    - value > high -> trả về high\n    - còn lại      -> trả về value\n    Ném ValueError nếu low > high.\n    \"\"\"\n    if low > high:\n        raise ValueError(\"low phải nhỏ hơn hoặc bằng high\")\n    if value < low:\n        return low\n    if value > high:\n        return high\n    return value\n\n\ndef factorial(n):\n    \"\"\"Trả về n! (n giai thừa) với n là số nguyên không âm.\n\n    factorial(0) == 1, factorial(5) == 120.\n    Ném ValueError nếu n < 0.\n    \"\"\"\n    if n < 0:\n        raise ValueError(\"n phải >= 0\")\n    result = 1\n    for i in range(2, n + 1):\n        result *= i\n    return result\n"
+}
