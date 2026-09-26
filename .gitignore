@@ -1,0 +1,21 @@
+# Môi trường Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.json
+htmlcov/
+
+# Bí mật: KHÔNG BAO GIỜ commit file .env (chứa API key)
+.env
+
+# Dữ liệu tạm khi chạy
+workspace/
+.mutmut-cache
+
+# IDE
+.vscode/
+.idea/
+.omc/

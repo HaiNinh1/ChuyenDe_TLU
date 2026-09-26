@@ -1,0 +1,20 @@
+# Kiểm thử và đo coverage
+pytest>=7.4
+pytest-cov>=4.1
+coverage>=7.3
+
+# Mutation testing: dùng bộ toán tử đột biến của mutmut 2.x.
+# mutmut 3.x KHÔNG chạy được trên Windows (cần os.fork), nên ghim bản 2.5.1.
+mutmut==2.5.1
+
+# Đọc cấu hình từ file .env
+python-dotenv>=1.0
+
+# Client LLM (chỉ cần cài SDK của nhà cung cấp bạn dùng)
+openai>=1.30        # dùng cho OpenAI, DeepSeek, OpenRouter (API tương thích OpenAI)
+anthropic>=0.30     # dùng cho Anthropic Claude
+requests>=2.31      # dùng cho Ollama (gọi HTTP trực tiếp)
+
+# Giao diện demo và biểu đồ
+streamlit>=1.30
+matplotlib>=3.7
