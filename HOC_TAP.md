@@ -1248,3 +1248,43 @@ streamlit run app.py
 9. `testgen/memory.py` (phần đầu + `select_language`), `evaluate.py` (`measure`, `summarize`) (15 phút)
 10. `tests/test_adapters_base.py` (adapter giả `.fake`) và `tests/test_javascript_adapter.py` (agent chạy trên `.ts`)
 11. `scripts/snapshot_python.py` — cách chứng minh không làm hỏng Python
+
+---
+
+# PHẦN 3 — TỔNG QUAN TÀI LIỆU (buổi họp nhóm)
+
+## TL1 — Tìm, đọc tài liệu tham khảo và làm slide trình bày
+
+### (a) Đã làm gì và tại sao
+- Thầy yêu cầu tìm và đọc tài liệu (bài báo, chương sách, hướng dẫn) liên quan đến đề tài và trình bày ở buổi họp.
+- Tìm theo cách: bắt đầu từ bài khảo sát [12] (102 nghiên cứu LLM trong kiểm thử) → lần theo trích dẫn hai chiều;
+  ưu tiên ICSE/FSE/ISSTA/TSE/NeurIPS/ICLR và bài công nghiệp (Meta, Google); bài kinh điển cho phần nền tảng.
+- Kết quả: **37 tài liệu** (31 bài báo, 4 sách, 2 hướng dẫn/tài liệu công cụ), chia 5 nhóm; tất cả kiểm tra có thật
+  qua DOI/arXiv. Ghi chú đọc + DOI: `docs/TAI_LIEU_THAM_KHAO.md`.
+- Slide (27 trang, có lời thoại): đề tài → cách tìm tài liệu → nền tảng → các công trình LLM (bảng so sánh, đọc kỹ
+  TestPilot, TestGen-LLM/ACH, CoverUp/MuTAP) → agent & thiết kế → mỗi bước của vòng lặp dựa trên tài liệu nào →
+  tiến độ, kết quả, khoảng cách với tài liệu, kế hoạch. Slide nằm trên claude.ai (tải được PDF/PPTX), không nằm trong repo.
+
+### (b) Khái niệm quan trọng
+- **Snowballing**: tìm tài liệu bằng cách đi ngược (bài được trích) và đi xuôi (bài trích lại) từ một bài gốc.
+- **Định vị đồ án (positioning)**: bảng "công trình × loại phản hồi" cho thấy mỗi công trình dùng một phần của vòng
+  phản hồi (sửa lỗi chạy, coverage, mutation); đồ án ghép đủ + phân loại oracle + bộ nhớ + 2 ngôn ngữ, nhưng ở quy
+  mô nhỏ hơn nhiều → không so số liệu trực tiếp.
+- **Misguidance effect** [28]: code có bug làm LLM viết test khẳng định hành vi sai — đúng hiện tượng "hợp thức hoá
+  bug" mà bước SUSPECTED_BUG nhắm tới.
+
+### (c) File liên quan
+`docs/TAI_LIEU_THAM_KHAO.md`, `slides/slides.md` (slide bảo vệ cũ, không đổi)
+
+### (d) Tự kiểm tra
+- Mở từng DOI/arXiv trong `docs/TAI_LIEU_THAM_KHAO.md`, đọc tóm tắt; đọc kỹ 6 bài ★.
+- Đối chiếu mỗi con số trên slide với phần tóm tắt của bài.
+
+### (e) Câu hỏi thầy/bạn có thể hỏi
+1. **Đồ án khác CoverUp / MuTAP ở đâu?** → CoverUp chỉ dùng coverage, MuTAP chỉ dùng mutation, cả hai chỉ Python và
+   không phân loại test fail. Đồ án ghép cả hai, thêm phân loại oracle, bộ nhớ, và chạy cho Python + JS/TS qua Adapter.
+   Nhưng quy mô nhỏ, không khẳng định tốt hơn.
+2. **Vì sao cần mutation khi đã có coverage?** → [5]: coverage chỉ tương quan thấp–vừa với hiệu quả bộ test; [4]:
+   phát hiện mutant tương quan với phát hiện lỗi thật, độc lập với coverage.
+3. **Bộ nhớ "tự học" có phải học máy không?** → Không; giống Reflexion [30]: lưu bài học dạng chữ và đưa vào prompt,
+   trọng số LLM không đổi (học trong ngữ cảnh).
