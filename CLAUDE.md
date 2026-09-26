@@ -31,4 +31,10 @@
 - `evaluate.py` (thực nghiệm), `app.py` (Streamlit), `slides/`, `docs/`
 
 ## Tiến độ các giai đoạn
-Xem các mục trong `HOC_TAP.md` và `git log`.
+GĐ0–GĐ10 đã xong (xem `HOC_TAP.md`, `git log`). Việc còn lại:
+- Thực nghiệm mới có **lượt 1** (5 module × 4 cấu hình). Chạy tiếp `python evaluate.py --runs 3` vào các ngày sau
+  (model miễn phí OpenRouter giới hạn 50 request/ngày, ~30 request/lượt), rồi cập nhật bảng GĐ7 trong HOC_TAP.md,
+  slide 10 (`slides/slides.md`) và lời thoại slide 10.
+- Key OpenRouter gần hết credit: `z-ai/glm-5.2` bị lỗi 402 → `.env` đang dùng `nvidia/nemotron-3-super-120b-a12b:free`.
+- Thiết kế thực nghiệm: bước SINH (log `logs/*_eval_C|D_*.json`) tách bước CHẤM (`--measure-only`, mutation held-out:
+  loại các mutant đã đưa vào prompt). Không được chấm mutation trên tập mutant LLM đã thấy.

@@ -592,3 +592,80 @@ Xem 10 câu hỏi trong `slides/speaker_notes.md`. Ba câu nên luyện kỹ nh�
 1. Oracle problem là gì và em giải quyết đến đâu?
 2. Vì sao mutation feedback không cải thiện trên mutant held-out?
 3. "Tự học" ở đây theo nghĩa nào?
+
+---
+
+## GĐ10 — Hoàn thiện & kiểm tra lại từ đầu
+
+### (a) Đã làm gì và tại sao
+- `README.md` đầy đủ (giới thiệu, cài đặt, bảng nhà cung cấp LLM, cách chạy từng phần, cách chạy demo, thứ tự đọc code).
+- `DEMO_CHECKLIST.md`: chuẩn bị tối hôm trước, 5 phút trước demo, **kịch bản 5 phút** theo từng mốc thời gian, phương án
+  dự phòng (REPLAY khi mất mạng/hết quota).
+- **Chạy lại toàn bộ từ đầu trên bản clone sạch** (thư mục mới, `python -m venv`, `pip install -r requirements.txt`):
+  1. `.env` **không** có trong repo (key không bị lộ) ✔
+  2. `pytest` → **64/64 test pass** (mock, không tốn API) ✔
+  3. LLM thật: `testgen.generator` → `testgen.runner` → `testgen.mutation` → `testgen.agent --mutation --memory` ✔
+     (agent lại phát hiện bug 2 ở `shopping_cart`, sửa 2 test sai, học 1 bài học, mutation 85% → dừng)
+  4. `evaluate.py --measure-only` tái lập **đúng y** `results/results.csv` đã commit ✔
+  5. Giao diện: kiểm tra bằng `AppTest` (trong pytest) + mở trình duyệt thật, chụp màn hình các tab ✔
+- Quét mã: không còn TODO/stub/test bị bỏ qua (chỉ 1 `pytest.skip` có điều kiện khi thư mục logs trống).
+
+### (b) Khái niệm quan trọng
+- **Tái lập (reproducibility):** người khác clone repo, cài theo README, chạy lệnh → ra đúng kết quả. Vì vậy log thô
+  (`logs/*_eval_*.json`) được commit: bước CHẤM có thể chạy lại bất kỳ lúc nào mà không cần LLM.
+- **Review độc lập:** người viết code dễ "mù" với lỗi của chính mình. Lượt review ở GĐ7 tìm ra lỗi đánh giá quan trọng
+  nhất của cả dự án.
+
+### (c) File liên quan
+`README.md`, `DEMO_CHECKLIST.md`, `CLAUDE.md`
+
+### (d) Lệnh tự chạy thử
+```bash
+pytest                              # 64 test, ~2 phút
+python evaluate.py --measure-only   # tái lập bảng kết quả
+streamlit run app.py                # demo
+```
+
+### (e) Câu hỏi giảng viên có thể hỏi
+1. **Làm sao thầy/cô kiểm chứng kết quả của em?** → Log thô của từng lần chạy nằm trong `logs/`; lệnh
+   `python evaluate.py --measure-only` chấm lại từ log và ra đúng bảng trong báo cáo.
+2. **Em đã kiểm thử công cụ của mình thế nào?** → 64 test dùng LLM giả lập theo kịch bản (đi qua mọi nhánh của vòng lặp),
+   test runner/mutation trên module thật, test giao diện bằng AppTest; cộng một lượt review code độc lập.
+
+---
+
+# TỔNG KẾT CUỐI CÙNG
+
+## Đã làm được
+- Agent hoàn chỉnh **sinh → chạy → đo → sửa/bổ sung**, tự viết bằng vòng `for` + `if/else` (không framework).
+- Hỗ trợ 6 nhà cung cấp LLM qua `.env`: OpenRouter, DeepSeek, OpenAI, Anthropic, Ollama, mock.
+- Runner cô lập (subprocess + timeout + thư mục tạm), đo line/branch coverage chính xác từ JSON.
+- **Oracle problem:** phân loại TEST_WRONG / SUSPECTED_BUG; test nghi bug được giữ và gắn nhãn xfail.
+  Kết quả thật: gắn nhãn đúng **cả 2 bug cài sẵn**, 0 nhãn sai (lượt 1).
+- Mutation testing chạy được trên Windows (toán tử mutmut 2.5.1 + runner song song, giới hạn mutant).
+- Bộ nhớ tự học (JSON) có cơ chế xác nhận trước khi lưu.
+- Thực nghiệm A/B/C/D có thiết kế ghép cặp, **chấm held-out**, chạy tiếp được qua nhiều ngày, tái lập được.
+- Giao diện Streamlit có REPLAY; slide Marp 15 trang + lời thoại + 10 câu hỏi; 64 test cho chính công cụ.
+
+## Hạn chế (nói thẳng khi bảo vệ)
+1. **Thực nghiệm mới 1 lượt** (đề yêu cầu 3) do model miễn phí giới hạn 50 request/ngày; key OpenRouter được cấp gần hết
+   credit nên không dùng được `z-ai/glm-5.2`. → Chạy `python evaluate.py --runs 3` vào 2 ngày tiếp theo (~30 request/lượt),
+   rồi cập nhật số liệu trên slide 10 và bảng GĐ7.
+2. Coverage bão hoà ngay từ đầu với module nhỏ → chưa thấy rõ tác dụng của phản hồi coverage.
+3. Mutation feedback **không** cải thiện trên mutant held-out; tối ưu mutation có thể sinh test bám chi tiết cài đặt.
+4. Bộ nhớ chưa cho thấy tác dụng đo được; "học" chỉ là in-context learning.
+5. Phụ thuộc docstring; LLM có thể phân loại sai; 5 module tự viết, 1 model → không tổng quát.
+6. Chạy code người dùng dán vào **không** phải sandbox bảo mật.
+
+## Thứ tự nên đọc code để hiểu dự án nhanh nhất
+1. `targets/grading.py` + `BUGS.md` — hiểu "đề bài" và bug cài sẵn (5 phút)
+2. `testgen/prompts.py` — LLM được yêu cầu những gì (10 phút)
+3. `testgen/generator.py` — baseline, 20 dòng (3 phút)
+4. `testgen/runner.py` — `run_tests()`, `parse_junit()`, `parse_coverage()` (15 phút)
+5. **`testgen/agent.py` — `run()` rồi `_step()`**, sau đó `_handle_failures()` (oracle problem) (30 phút) ← quan trọng nhất
+6. `testgen/code_utils.py` — `merge_tests()`, `add_suspected_marker()` (15 phút)
+7. `testgen/mutation.py` — `generate_mutants()`, `run_mutation_testing()` (15 phút)
+8. `testgen/memory.py` (10 phút)
+9. `evaluate.py` — `generate()`, `measure()`, `shown_mutants()` (15 phút)
+10. `app.py` — chỉ cần hiểu callback `on_progress` và chế độ REPLAY (10 phút)
+11. `tests/test_agent.py` — kịch bản mock cho thấy toàn bộ vòng lặp trong ~60 dòng (đọc cùng lúc với bước 5 rất dễ hiểu)
