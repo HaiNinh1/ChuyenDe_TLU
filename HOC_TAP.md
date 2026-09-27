@@ -1288,3 +1288,34 @@ streamlit run app.py
    phát hiện mutant tương quan với phát hiện lỗi thật, độc lập với coverage.
 3. **Bộ nhớ "tự học" có phải học máy không?** → Không; giống Reflexion [30]: lưu bài học dạng chữ và đưa vào prompt,
    trọng số LLM không đổi (học trong ngữ cảnh).
+
+## TL2 — Slide giới thiệu đề tài 10 trang (buổi đầu gặp thầy hướng dẫn)
+
+### (a) Đã làm gì và tại sao
+- Slide bảo vệ cũ (`slides/slides.md`, 17 trang) quá dài và đi sâu kết quả/refactor — không hợp buổi đầu, khi thầy
+  chỉ cần hiểu: đề tài là gì, giải quyết vấn đề gì, giải quyết thế nào, đang ở đâu.
+- Làm deck mới **10 trang** trên claude.ai (tải được PDF/PPTX, có lời thoại từng trang), không nằm trong repo:
+  bìa → vấn đề → các hướng hiện có → mục tiêu & phạm vi → vòng lặp tự cải tiến → coverage & mutation →
+  bài toán oracle → kiến trúc Adapter → hiện trạng & kết quả ban đầu → kế hoạch + câu hỏi xin ý kiến thầy.
+- Bỏ khỏi deck ngắn (vẫn còn trong slide cũ): chi tiết refactor an toàn, biểu đồ, bảng JS từng module, demo.
+- Số liệu lấy nguyên từ `results/results.csv` (Python, 1 lượt); ghi rõ "chưa có ý nghĩa thống kê", JS/TS chưa có số A/B/C/D.
+
+### (b) Khái niệm quan trọng
+- **Cấu trúc một buổi giới thiệu**: vấn đề → khoảng trống của các hướng hiện có → ý tưởng → hiện trạng → xin ý kiến.
+  Một ý chính mỗi slide; chi tiết kỹ thuật để trong lời thoại, khi thầy hỏi mới nói.
+
+### (c) File liên quan
+`results/results.csv`, `BUGS.md` (ví dụ bug 1 trên slide 2), `slides/slides.md` (slide bảo vệ cũ, không đổi)
+
+### (d) Tự kiểm tra
+- Đối chiếu bảng slide 9 với `results/results.csv` (tests_failing, bug_flagged_rate, mutation_score, llm_calls).
+- Tập nói theo lời thoại: mục tiêu ~10 phút, mỗi slide ~1 phút.
+
+### (e) Câu hỏi thầy có thể hỏi
+1. **Coverage đã 99% ngay lần đầu thì vòng lặp có ích gì?** → Khác biệt nằm ở xử lý test fail: A còn 1,2 test
+   fail/module, 0 bug được gắn nhãn; B–D còn 0 test fail, 2/2 bug gắn nhãn đúng. Mutation feedback chưa cho thấy lợi ích
+   trên mutant mới — nói thẳng.
+2. **Sao biết LLM phân loại SUSPECTED_BUG đúng?** → Chấm bằng bản đã sửa: test phải fail trên code lỗi và pass trên
+   bản sửa. LLM vẫn có thể sai → cần người review nhãn.
+3. **Sao chọn 2 ngôn ngữ thay vì làm sâu 1?** → Để kiểm chứng kiến trúc Adapter thật sự tách được phần phụ thuộc
+   ngôn ngữ; đây cũng là câu em muốn xin ý kiến thầy.
