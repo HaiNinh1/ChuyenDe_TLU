@@ -1292,30 +1292,34 @@ streamlit run app.py
 ## TL2 — Slide giới thiệu đề tài 10 trang (buổi đầu gặp thầy hướng dẫn)
 
 ### (a) Đã làm gì và tại sao
-- Slide bảo vệ cũ (`slides/slides.md`, 17 trang) quá dài và đi sâu kết quả/refactor — không hợp buổi đầu, khi thầy
-  chỉ cần hiểu: đề tài là gì, giải quyết vấn đề gì, giải quyết thế nào, đang ở đâu.
-- Làm deck mới **10 trang** trên claude.ai (tải được PDF/PPTX, có lời thoại từng trang), không nằm trong repo:
-  bìa → vấn đề → các hướng hiện có → mục tiêu & phạm vi → vòng lặp tự cải tiến → coverage & mutation →
-  bài toán oracle → kiến trúc Adapter → hiện trạng & kết quả ban đầu → kế hoạch + câu hỏi xin ý kiến thầy.
-- Bỏ khỏi deck ngắn (vẫn còn trong slide cũ): chi tiết refactor an toàn, biểu đồ, bảng JS từng module, demo.
-- Số liệu lấy nguyên từ `results/results.csv` (Python, 1 lượt); ghi rõ "chưa có ý nghĩa thống kê", JS/TS chưa có số A/B/C/D.
+- Slide bảo vệ cũ (`slides/slides.md`, 17 trang) quá dài và đi sâu code/kết quả — không hợp buổi đầu, khi thầy
+  cần hiểu: đề tài giải quyết vấn đề gì, dựa trên lý thuyết nào, giải quyết theo hướng nào, đang ở đâu.
+- Bản 1 (10 trang) vẫn còn nhiều chi tiết cài đặt (tên công cụ, nhãn, bảng số liệu) → người dùng yêu cầu thiên về
+  **lý thuyết**, không nói tới code. Bản 2 (hiện tại) trên claude.ai (tải được PDF/PPTX, có lời thoại từng trang):
+  bìa → kiểm thử đơn vị & 3 thế hệ sinh test tự động → vấn đề khi LLM viết test (misguidance effect [28]) →
+  oracle problem [7] → coverage (giới hạn [5]) → mutation testing (giả thuyết lập trình viên thành thạo, hiệu ứng ghép
+  cặp [1], bằng chứng [4]) → LLM agent & học từ phản hồi (ReAct, Self-Refine, Self-Debug, Reflexion) → vòng lặp tự
+  cải tiến của đồ án → mục tiêu & phạm vi → hiện trạng, kế hoạch, xin ý kiến thầy.
+- Không đưa code, tên công cụ đo hay bảng số liệu lên slide; kết quả chỉ nói định tính "mới 1 lượt, chưa đủ kết luận".
 
 ### (b) Khái niệm quan trọng
-- **Cấu trúc một buổi giới thiệu**: vấn đề → khoảng trống của các hướng hiện có → ý tưởng → hiện trạng → xin ý kiến.
-  Một ý chính mỗi slide; chi tiết kỹ thuật để trong lời thoại, khi thầy hỏi mới nói.
+- **Cấu trúc một buổi giới thiệu đề tài**: bối cảnh → vấn đề → cơ sở lý thuyết → hướng giải quyết → mục tiêu/phạm vi
+  → hiện trạng và xin ý kiến. Một ý chính mỗi slide; chi tiết để trong lời thoại.
+- Mỗi bước của vòng lặp gắn với một cơ sở lý thuyết: lỗi thực thi ↔ Self-Debug; bổ sung test ↔ coverage/mutation;
+  phân loại test fail ↔ oracle problem; bộ nhớ ↔ Reflexion (học trong ngữ cảnh).
 
 ### (c) File liên quan
-`results/results.csv`, `BUGS.md` (ví dụ bug 1 trên slide 2), `slides/slides.md` (slide bảo vệ cũ, không đổi)
+`docs/TAI_LIEU_THAM_KHAO.md` (nguồn trích dẫn trên slide), `slides/slides.md` (slide bảo vệ cũ, không đổi)
 
 ### (d) Tự kiểm tra
-- Đối chiếu bảng slide 9 với `results/results.csv` (tests_failing, bug_flagged_rate, mutation_score, llm_calls).
+- Đối chiếu mỗi trích dẫn trên slide với ghi chú trong `docs/TAI_LIEU_THAM_KHAO.md` ([1], [4], [5], [7], [28]–[33]).
 - Tập nói theo lời thoại: mục tiêu ~10 phút, mỗi slide ~1 phút.
 
 ### (e) Câu hỏi thầy có thể hỏi
-1. **Coverage đã 99% ngay lần đầu thì vòng lặp có ích gì?** → Khác biệt nằm ở xử lý test fail: A còn 1,2 test
-   fail/module, 0 bug được gắn nhãn; B–D còn 0 test fail, 2/2 bug gắn nhãn đúng. Mutation feedback chưa cho thấy lợi ích
-   trên mutant mới — nói thẳng.
-2. **Sao biết LLM phân loại SUSPECTED_BUG đúng?** → Chấm bằng bản đã sửa: test phải fail trên code lỗi và pass trên
-   bản sửa. LLM vẫn có thể sai → cần người review nhãn.
-3. **Sao chọn 2 ngôn ngữ thay vì làm sâu 1?** → Để kiểm chứng kiến trúc Adapter thật sự tách được phần phụ thuộc
-   ngôn ngữ; đây cũng là câu em muốn xin ý kiến thầy.
+1. **Vì sao cần mutation khi đã có coverage?** → Coverage chỉ nói code đã được chạy, không nói kết quả có được kiểm
+   tra; tương quan coverage – hiệu quả chỉ thấp đến vừa [5]. Phát hiện mutant tương quan với phát hiện lỗi thật,
+   độc lập với coverage [4].
+2. **Agent "học" như thế nào?** → Học trong ngữ cảnh: trọng số không đổi, bài học được ghi lại và đưa vào prompt lần
+   sau (giống Reflexion [30]).
+3. **LLM phân loại test sai / code sai có đáng tin không?** → Không hoàn toàn — oracle problem chưa có lời giải tổng
+   quát [7]; LLM đề xuất, người review xác nhận; khi thực nghiệm thì chấm bằng bản code đã sửa bug.
