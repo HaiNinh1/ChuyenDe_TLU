@@ -1309,7 +1309,8 @@ streamlit run app.py
   phân loại test fail ↔ oracle problem; bộ nhớ ↔ Reflexion (học trong ngữ cảnh).
 
 ### (c) File liên quan
-`docs/TAI_LIEU_THAM_KHAO.md` (nguồn trích dẫn trên slide), `slides/slides.md` (slide bảo vệ cũ, không đổi)
+`slides/LOI_THOAI_GIOI_THIEU.md` (tài liệu đọc khi thuyết trình: hiểu đề tài bằng lời thường + ví dụ xuyên suốt +
+lời nói từng slide + câu hỏi), `docs/TAI_LIEU_THAM_KHAO.md` (nguồn trích dẫn trên slide), `slides/slides.md` (slide bảo vệ cũ)
 
 ### (d) Tự kiểm tra
 - Đối chiếu mỗi trích dẫn trên slide với ghi chú trong `docs/TAI_LIEU_THAM_KHAO.md` ([1], [4], [5], [7], [28]–[33]).
