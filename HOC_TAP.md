@@ -1324,3 +1324,32 @@ lời nói từng slide + câu hỏi), `docs/TAI_LIEU_THAM_KHAO.md` (nguồn tr�
    sau (giống Reflexion [30]).
 3. **LLM phân loại test sai / code sai có đáng tin không?** → Không hoàn toàn — oracle problem chưa có lời giải tổng
    quát [7]; LLM đề xuất, người review xác nhận; khi thực nghiệm thì chấm bằng bản code đã sửa bug.
+
+---
+
+## TL3 — Báo cáo tìm hiểu bài nghiên cứu chính (MuTAP)
+
+### (a) Đã làm gì và tại sao
+- Thầy yêu cầu chọn **một** bài nghiên cứu làm cơ sở, rồi báo cáo: bài nói về cái gì, em đang nghiên cứu tới đâu, em
+  áp dụng ra sao. Chọn MuTAP [21] vì gần đề tài nhất (LLM sinh unit test Python + đưa mutant còn sống vào prompt).
+- Viết `docs/BAO_CAO_MUTAP.md` (không có code): thông tin bài, vấn đề, khái niệm, 6 bước, kết quả (đọc từ bản arXiv
+  2308.16557), hạn chế; tiến độ; bảng so sánh MuTAP và đề tài; kết quả lượt 1 (lấy từ bảng GĐ7, không thêm số mới).
+- Đề tài đổi tên gọi ngắn khi báo cáo: "AI sinh unit test tự động" (nội dung kỹ thuật không đổi).
+
+### (b) Khái niệm quan trọng
+- **Bước "sửa hành vi mong đợi" của MuTAP giả định code đúng** → nếu code có bug, test bị sửa cho khớp bug (oracle
+  problem). Đề tài khác ở chỗ: so với đặc tả, nghi code sai thì giữ test + nhãn SUSPECTED_BUG.
+- Ví dụ: đặc tả "80 điểm là B", code trả "C" → MuTAP sửa test thành "C"; đề tài giữ "B" và báo nghi bug.
+
+### (c) File liên quan
+`docs/BAO_CAO_MUTAP.md`, `docs/TAI_LIEU_THAM_KHAO.md` (mục [21])
+
+### (d) Tự kiểm tra
+- Đối chiếu số liệu MuTAP (93,57 % / 65,94 %; 94,91 % / 67,54 %; 468 bài = 28 %; 79 bài = 17 %) với bản arXiv.
+- Còn chưa rõ: MuTAP tính mutation score trên cùng tập mutant đã đưa cho AI hay tập riêng — ghi là "cần đọc kỹ thêm".
+
+### (e) Câu hỏi thầy có thể hỏi
+1. **Em khác MuTAP ở đâu?** → Phân loại test fail theo đặc tả (không mặc định code đúng), gửi thông báo lỗi khi sửa,
+   thêm bước coverage, chấm trên mutant held-out, hỗ trợ JavaScript.
+2. **Sao kết quả mutation của em không tăng như MuTAP?** → Mới 1 lượt, module nhỏ, coverage và mutation score ban đầu
+   đã cao; em chấm trên mutant AI chưa thấy nên khó tăng hơn. Cần thêm lượt chạy mới kết luận được.
