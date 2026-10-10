@@ -22,6 +22,22 @@ và **mỗi công cụ chỉ cho một ngôn ngữ**. Hỏi LLM một lần: d�
 MuTAP kết hợp LLM với phản hồi thực thi. Em đi theo hướng thứ ba, tự cài đặt đơn giản, và tách phần phụ thuộc ngôn ngữ
 ra thành các adapter."
 
+## Slide 2.1 — Bài nền tảng MuTAP (1 phút 30)
+"Đề tài của em dựa trên bài **MuTAP** của nhóm Dakhel, đăng trên tạp chí Information and Software Technology năm 2024.
+Ý tưởng chính: mutant còn sống cho AI biết chính xác bộ test đang bỏ sót lỗi nào, nên đưa mutant đó vào prompt để AI viết
+thêm test bắt đúng lỗi đó. Quy trình 6 bước: sinh test, sửa cú pháp, sửa giá trị mong đợi theo kết quả chạy code, đo
+mutation bằng MutPy, chưa đạt 100 % thì thêm một mutant sống vào prompt rồi lặp, cuối cùng rút gọn bộ test. Kết quả trong
+bài: mutation score 93,57 % so với 65,94 % của Pynguin; trên lỗi thật của sinh viên phát hiện 94,91 % so với 67,54 %.
+Đây là số của bài, em không chạy lại."
+
+## Slide 2.2 — Kế thừa và cải tiến (1 phút 30)
+"Em kế thừa ý tưởng chính: dùng mutant còn sống làm phản hồi. Nhưng khi đọc kỹ em thấy hai điểm yếu. Thứ nhất, bước 3
+**giả định code luôn đúng**: nếu code có bug thì test bị sửa cho khớp bug — ví dụ đặc tả nói 80 điểm là B, code trả C,
+MuTAP sẽ sửa test thành C. Đây là oracle problem. Em xử lý bằng cách cho AI so test với đặc tả: test sai thì sửa, nghi
+code sai thì giữ test và gắn nhãn nghi bug. Thứ hai, MuTAP chấm mutation score trên **chính các mutant đã đưa cho AI xem**
+— giống cho xem trước đề rồi chấm trên đúng đề đó. Em chấm thêm trên tập mutant AI chưa từng thấy. Ngoài ra em gửi kèm
+thông báo lỗi khi sửa test, thêm bước coverage, và làm cho cả JavaScript."
+
 ## Slide 3 — Mục tiêu & phạm vi (40 giây)
 "Mục tiêu: agent sinh test, chạy, đo, rồi dùng kết quả đo để tự sửa và bổ sung; xử lý oracle problem; **một vòng lặp
 dùng cho nhiều ngôn ngữ**; so sánh 4 cấu hình. Phạm vi: Python 5 module, JavaScript/TypeScript 4 module, tổng cộng 4 bug
@@ -74,8 +90,9 @@ chấm trên các mutant LLM chưa từng thấy; bug được tính là phát h
 ## Slide 11 — Kết quả Python (2 phút, 2 slide)
 "Kết quả Python lượt 1, 5 module. Coverage đã khoảng 99% ngay từ lần sinh đầu nên phản hồi coverage gần như không có gì
 để cải thiện. Khác biệt thật nằm ở test fail: baseline để lại 1,2 test fail mỗi module; agent đưa về 0, sửa test viết sai
-và gắn nhãn đúng cả 2 bug, không nhãn sai. Mutation feedback chỉ tăng điểm trên mutant đã đưa cho LLM, trên mutant mới
-thì không — em phát hiện điều này sau khi tách tập held-out. Chi phí: số lần gọi LLM tăng từ 1 lên 2,4 đến 3,2. Đây là
+và gắn nhãn đúng cả 2 bug, không nhãn sai. Mutation feedback: nếu chấm như MuTAP, tính cả mutant đã đưa cho AI, thì điểm
+tăng từ 83 lên 86 %; nhưng chỉ tính mutant AI chưa thấy thì đứng yên ở 91,8 % — em chỉ thấy được điều này nhờ tách tập
+held-out. Đây là chỗ kết quả của em khác MuTAP, và em nghĩ một phần là do cách chấm. Chi phí: số lần gọi LLM tăng từ 1 lên 2,4 đến 3,2. Đây là
 1 lần chạy, chỉ là quan sát ban đầu."
 
 ## Slide 12 — Kết quả JavaScript/TypeScript (1 phút)
@@ -104,7 +121,7 @@ review. Em cảm ơn thầy cô đã lắng nghe."
 
 ---
 
-# 13 câu hỏi giảng viên có thể hỏi (kèm gợi ý trả lời)
+# 15 câu hỏi giảng viên có thể hỏi (kèm gợi ý trả lời)
 
 **1. Agent của em khác gì so với hỏi ChatGPT viết test?**
 → ChatGPT sinh một lần, không chạy thử. Agent của em **chạy test thật**, đo coverage/mutation, và dùng kết quả đo làm
@@ -165,3 +182,14 @@ Maven) và test sai kiểu làm hỏng cả file.
 → Theo kinh nghiệm làm adapter JS: khoảng **3,5 ngày** (cài công cụ, `run_tests` + đọc báo cáo, `run_mutation`, bộ đọc/sửa
 file test, prompt hints, module mục tiêu). Java ước lượng **5–6 ngày** (Maven/JaCoCo/PIT chậm, test nằm trong lớp, không
 có "expected failure" chuẩn). Hướng dẫn chi tiết và bảng phương thức cần viết: `docs/THEM_NGON_NGU_MOI.md`.
+
+**14. Đề tài của em dựa trên bài nghiên cứu nào, và khác bài đó ở đâu?**
+→ Dựa trên **MuTAP** (Dakhel và cộng sự, Information and Software Technology, 2024): dùng mutant còn sống làm phản hồi
+cho LLM. Em khác ở: (1) không mặc định code đúng — phân loại test fail theo đặc tả, giữ test nghi bug; (2) gửi kèm thông
+báo lỗi khi sửa test; (3) thêm phản hồi coverage; (4) chấm mutation trên tập held-out; (5) đa ngôn ngữ qua Adapter.
+Chi tiết: `docs/BAO_CAO_MUTAP.md`.
+
+**15. MuTAP thấy mutation feedback giúp nhiều, sao của em không?**
+→ Ba lý do có thể: (1) MuTAP chấm trên chính các mutant đã đưa vào prompt; khi em chấm như vậy cũng thấy tăng (83 → 86 %),
+chỉ trên tập held-out mới không tăng; (2) module của em nhỏ, điểm ban đầu đã cao (89–92 %) nên ít chỗ để tăng; (3) em mới
+chạy 1 lượt với 5 module nên chưa đủ để kết luận. Em không khẳng định MuTAP sai, chỉ nói cách chấm ảnh hưởng tới kết luận.

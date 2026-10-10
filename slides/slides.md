@@ -55,6 +55,44 @@ Môn: ……………… · 2026
 
 ---
 
+<style scoped>li { font-size: 0.85em; } table { font-size: 0.72em; }</style>
+
+## 2.1. Bài nghiên cứu nền tảng: MuTAP
+
+**Dakhel và cộng sự**, *Effective Test Generation Using Pre-trained LLMs and Mutation Testing*,
+Information and Software Technology, 2024 — [doi:10.1016/j.infsof.2024.107468](https://doi.org/10.1016/j.infsof.2024.107468)
+
+**Ý tưởng:** mutant còn sống cho LLM biết **chính xác** bộ test đang bỏ sót lỗi nào → đưa mutant đó vào prompt
+
+1. LLM sinh test → 2. sửa cú pháp → 3. **sửa giá trị mong đợi theo kết quả của code**
+4. đo mutation (MutPy) → 5. chưa đạt 100 %: thêm **1 mutant sống** vào prompt, sinh thêm → lặp 4–5 → 6. rút gọn bộ test
+
+| Kết quả (llama-2-chat few-shot) | MuTAP | Pynguin |
+|---|---|---|
+| HumanEval — mutation score | 93,57 % | 65,94 % |
+| Refactory (lỗi thật của sinh viên) — phát hiện | 94,91 % | 67,54 % |
+
+<span class="small">Số liệu trích từ bài (bản arXiv 2308.16557), không phải do em chạy lại.</span>
+
+---
+
+<style scoped>table { font-size: 0.7em; } li { font-size: 0.85em; }</style>
+
+## 2.2. Kế thừa và cải tiến so với MuTAP
+
+| | MuTAP | Đồ án |
+|---|---|---|
+| Mutant còn sống làm phản hồi | ✓ | ✓ **kế thừa** |
+| Test fail trên code | sửa test **cho khớp code** (giả định code đúng) | so với **đặc tả**: test sai → sửa; nghi code sai → **giữ test**, gắn `SUSPECTED_BUG` |
+| Sửa test hỏng | chỉ yêu cầu sửa lại | gửi kèm **thông báo lỗi thật** |
+| Phản hồi coverage | — | có, chạy trước mutation |
+| Chấm mutation score | trên **chính các mutant đã đưa vào prompt** | thêm tập **held-out** (mutant LLM chưa thấy) |
+| Ngôn ngữ | Python | Python + JS/TS (Adapter) |
+
+- Hai điểm yếu của MuTAP mà đồ án nhắm tới: **oracle problem** (bước 3 hợp thức hoá bug) và **chấm trên đề đã lộ**
+
+---
+
 ## 3. Mục tiêu và phạm vi
 
 **Mục tiêu**
@@ -206,7 +244,8 @@ Chụp hành vi **trước** refactor → so sánh **sau mỗi bước**:
 | **D** + memory | 99 / 98 % | 91.8 % | **0** | **2 / 2** | 3.2 |
 
 - Coverage **đã bão hoà** ngay lần sinh đầu → khác biệt nằm ở **xử lý test fail**: 0 nhãn sai (FP)
-- Mutation feedback chỉ tăng điểm trên **mutant đã đưa cho LLM** (83 → 86 %), **không** tăng trên mutant mới
+- Mutation feedback (B → C): chấm **như MuTAP** (gồm mutant đã đưa cho LLM) 83,0 → 86,0 %;
+  chấm **held-out** 91,8 → 91,8 % → **không** tăng trên mutant mới
 
 <span class="small">5 module × 1 lần chạy — quan sát ban đầu, chưa có ý nghĩa thống kê.</span>
 
@@ -270,7 +309,8 @@ Chụp hành vi **trước** refactor → so sánh **sau mỗi bước**:
 - **Kiến trúc Adapter**: vòng lặp không biết ngôn ngữ; phần Python được **chứng minh không đổi hành vi**
 - **Phản hồi thực thi** đưa test fail về 0 và **giữ lại test phát hiện bug** thay vì sửa cho khớp code sai
   (Python 2/2 bug; TypeScript bắt đúng bug biên)
-- Mutation feedback **chưa** cải thiện trên mutant mới — phải chấm held-out mới thấy
+- Kế thừa ý tưởng của **MuTAP**, bổ sung phân loại test fail theo đặc tả và chấm held-out
+- Mutation feedback **chưa** cải thiện trên mutant mới — phải chấm held-out mới thấy (cách chấm của MuTAP không thấy được)
 - Đổi lại: nhiều lần gọi LLM hơn, và vẫn cần con người review nhãn SUSPECTED_BUG
 
 <br>

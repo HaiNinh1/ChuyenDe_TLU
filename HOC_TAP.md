@@ -1353,3 +1353,40 @@ lời nói từng slide + câu hỏi), `docs/TAI_LIEU_THAM_KHAO.md` (nguồn tr�
    thêm bước coverage, chấm trên mutant held-out, hỗ trợ JavaScript.
 2. **Sao kết quả mutation của em không tăng như MuTAP?** → Mới 1 lượt, module nhỏ, coverage và mutation score ban đầu
    đã cao; em chấm trên mutant AI chưa thấy nên khó tăng hơn. Cần thêm lượt chạy mới kết luận được.
+
+---
+
+## TL4 — Đối chiếu cách chấm của MuTAP, slide nền tảng MuTAP, khung báo cáo cuối kỳ
+
+### (a) Đã làm gì và tại sao
+- Báo cáo TL3 còn bỏ ngỏ câu hỏi "MuTAP chấm mutation score trên tập nào". Đọc lại bản arXiv (mục 3.3–3.4, thuật toán
+  tăng cường prompt): MS được tính trên **chính danh sách mutant** của hàm — cũng là nơi lấy mutant sống đưa vào prompt;
+  bài không dùng tập held-out. Cập nhật `docs/BAO_CAO_MUTAP.md` (mục 1.6, phần 2, bảng 3.2, thêm bảng "hai cách chấm").
+- Thầy yêu cầu đồ án phải dựa trên một bài nghiên cứu → thêm 2 slide vào `slides/slides.md`: **2.1 MuTAP** (ý tưởng,
+  6 bước, kết quả trích từ bài) và **2.2 Kế thừa và cải tiến**; sửa slide 11 và 15 để so với cách chấm của MuTAP. Thêm
+  lời thoại và câu hỏi 14–15 trong `slides/speaker_notes.md`.
+- Viết `docs/BAO_CAO_CUOI_KY.md` (bản nháp 7 chương, 4 câu hỏi nghiên cứu). Phần chưa có số liệu ghi **[CHỜ SỐ LIỆU]**,
+  không điền tay.
+
+### (b) Khái niệm quan trọng
+- **Chấm trên "đề đã lộ":** nếu mutant đã nằm trong prompt thì việc giết được nó không chứng minh bộ test bắt được lỗi
+  mới. Ví dụ ở lượt 1 Python (B → C): tính cả mutant đã đưa vào prompt 83,0 → 86,0 %; chỉ tính held-out 91,8 → 91,8 %.
+- Điểm held-out cao hơn điểm "tất cả" vì những mutant khó nhất (còn sống nên được đưa vào prompt) đã bị loại khỏi tập
+  held-out. Tập held-out = bỏ mutant đã thấy ở C và D, dùng chung cho cả 4 cấu hình (`evaluate.py`, hàm chấm).
+
+### (c) File liên quan
+`docs/BAO_CAO_MUTAP.md`, `docs/BAO_CAO_CUOI_KY.md`, `slides/slides.md`, `slides/speaker_notes.md`,
+`results/results.csv` (cột `mutation_score` = held-out, `mutation_all` = tất cả)
+
+### (d) Lệnh tự chạy thử
+```bash
+python evaluate.py --measure-only     # chấm lại từ log, xem lại hai cột mutation_score / mutation_all
+npx @marp-team/marp-cli slides/slides.md --html   # xem slide (nếu đã cài Marp)
+```
+
+### (e) Câu hỏi thầy có thể hỏi
+1. **Em dựa trên bài nào?** → MuTAP (IST 2024): kế thừa phản hồi bằng mutant sống; cải tiến phân loại test fail theo đặc
+   tả và chấm held-out.
+2. **Sao em nói cách chấm của MuTAP có thể lạc quan?** → Mutant dùng để chấm cũng là mutant đã đưa cho AI; em tự thử chấm
+   theo hai cách trên cùng dữ liệu và thấy kết luận khác nhau (tăng 3 điểm so với không tăng).
+3. **Báo cáo đã xong chưa?** → Chưa: thiếu thực nghiệm JS và Python lượt 2–3; các chỗ đó đánh dấu [CHỜ SỐ LIỆU].

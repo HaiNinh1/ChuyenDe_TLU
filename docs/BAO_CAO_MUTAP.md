@@ -121,6 +121,12 @@ Bước 4 và bước 5 lặp lại cho đến khi mutation score đạt 100 % h
 test cho khớp với bug. Khi đó test sẽ "hợp thức hoá" bug thay vì phát hiện nó. Trong kiểm thử phần mềm, khó khăn này được
 gọi là **oracle problem**: rất khó biết kết quả nào mới là kết quả đúng.
 
+**Em nhận xét thêm (về cách chấm):** theo mô tả ở mục 3.3–3.4 và thuật toán của bài, mutation score được tính lại trên
+**chính danh sách mutant** do MutPy tạo cho mỗi hàm — cũng là nơi lấy mutant còn sống để đưa vào prompt. Bài **không**
+dùng một tập mutant riêng mà AI chưa thấy. Như vậy AI được "xem trước đề" rồi mới được chấm trên đúng đề đó, nên con số
+93,57 % trên HumanEval có thể cao hơn khả năng bắt lỗi mới thật sự. Kết quả trên Refactory (lỗi thật của sinh viên,
+không đưa vào prompt) không bị ảnh hưởng bởi vấn đề này.
+
 ---
 
 ## Phần 2. Em đang nghiên cứu tới đâu
@@ -133,10 +139,11 @@ gọi là **oracle problem**: rất khó biết kết quả nào mới là kết
 | Xây dựng hệ thống áp dụng ý tưởng của MuTAP cho Python và JavaScript | Xong, chạy được từ đầu đến cuối |
 | Thử nghiệm lần 1 với 5 đoạn code Python | Xong |
 | Thử nghiệm thêm 2 lần cho Python và 3 lần cho JavaScript | Chưa làm |
-| Đọc kỹ lại phần đánh giá của bài để so sánh với kết quả của em | Đang làm |
+| Đọc kỹ lại phần đánh giá của bài để so sánh với kết quả của em | Xong (xem nhận xét về cách chấm ở mục 1.6) |
 
-**Điểm em cần đọc kỹ thêm trong bài:** mutation score được tính trên chính các mutant đã đưa cho AI hay trên một tập
-mutant riêng. Nếu là cùng một tập thì điểm có thể cao hơn thực tế, vì AI đã được cho xem trước chính những lỗi đó.
+**Điều em rút ra khi đọc kỹ phần đánh giá:** MuTAP chấm mutation score trên chính các mutant đã đưa cho AI. Vì vậy
+trong đề tài, em chấm theo **cả hai cách** để so sánh: (1) trên tất cả mutant, giống cách của bài; (2) chỉ trên những
+mutant AI chưa từng thấy (held-out).
 
 ---
 
@@ -157,7 +164,7 @@ mutant riêng. Nếu là cùng một tập thì điểm có thể cao hơn thự
 | Sửa test không chạy được | Không gửi thông báo lỗi | Gửi kèm thông báo lỗi thật cho AI |
 | Kiểm tra phần code chưa được test chạy qua | Không có | Có, làm trước bước mutation |
 | Ghi nhớ kinh nghiệm cho lần sau | Không có | Có |
-| Cách chấm điểm mutation | (cần đọc kỹ thêm) | Chấm thêm trên những mutant AI chưa từng thấy |
+| Cách chấm điểm mutation | Trên chính các mutant đã đưa cho AI | Chấm cả hai cách; kết luận dựa trên những mutant AI chưa từng thấy |
 | Ngôn ngữ | Python | Python và JavaScript |
 
 Quy trình của em: AI viết test → hệ thống chạy test → xử lý theo thứ tự ưu tiên:
@@ -179,6 +186,16 @@ và báo "nghi có bug" để người kiểm tra xem lại.
 | Số test còn báo lỗi chưa rõ nguyên nhân | Trung bình 1,2 test mỗi đoạn code | 0 |
 | Số bug được đánh dấu đúng | 0/2 | 2/2, không đánh dấu nhầm |
 | Tỉ lệ bắt được mutant mà AI chưa từng thấy | 89,1 % | 91,8 % |
+
+**Hai cách chấm cho kết luận khác nhau** (so cấu hình "chỉ có phản hồi coverage" với "thêm bước đưa mutant cho AI"):
+
+| Cách chấm | Trước khi đưa mutant | Sau khi đưa mutant |
+|---|---|---|
+| Trên tất cả mutant (gồm cả mutant đã đưa cho AI — giống cách của MuTAP) | 83,0 % | 86,0 % |
+| Chỉ trên mutant AI chưa từng thấy | 91,8 % | 91,8 % |
+
+Nếu chấm như MuTAP thì bước đưa mutant "có vẻ" giúp tăng 3 điểm. Nhưng khi chỉ tính những mutant AI chưa thấy thì không
+tăng. (Điểm held-out cao hơn vì những mutant khó nhất đã được đưa cho AI nên bị loại khỏi tập held-out.)
 
 **Nhận xét trung thực:**
 
