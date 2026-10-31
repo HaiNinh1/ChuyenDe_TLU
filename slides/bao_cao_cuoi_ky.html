@@ -5,600 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="data:,">
 <title>Báo cáo cuối kỳ: LLM Agent tự sinh unit test đa ngôn ngữ</title>
-<style>
-:root {
-  --ink: #14233A; --paper: #F1F4F8; --card: #FBFCFE; --slate: #4A5A70; --line: #CBD4E0;
-  --cobalt: #1F4FBF; --cobalt-tint: #E3EAF9; --amber: #F2B01E; --amber-mark: #E39A0B; --amber-tint: #FCF0CF;
-  --bug: #A8174F; --bug-tint: #F8E3EB; --on-ink: #E8EEF6; --on-ink-soft: #A9B9CE;
-  --sans: 'Be Vietnam Pro', 'Segoe UI', Tahoma, Arial, sans-serif;
-  --mono: 'JetBrains Mono', Consolas, 'Courier New', monospace;
-}
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; background: #0E1828; overflow: hidden; font-family: var(--sans); }
-#stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; background: var(--paper); overflow: hidden; }
-
-/* Slide trình chiếu: chữ thân tối thiểu 40px; lời nói nằm trong slides/LOI_THOAI_CUOI_KY.md */
-.slide { position: absolute; inset: 0; display: none; flex-direction: column; padding: 76px 110px 96px; gap: 36px; background: var(--paper); color: var(--ink); font-size: 44px; line-height: 1.3; }
-.slide.on { display: flex; }
-.slide.dark { background: var(--ink); color: var(--on-ink); }
-.slide.blue { background: var(--cobalt); color: #F4F7FD; }
-h1 { font-size: 84px; line-height: 1.1; font-weight: 800; letter-spacing: -1px; }
-h2 { font-size: 72px; line-height: 1.12; font-weight: 800; letter-spacing: -1px; text-wrap: balance; }
-h3 { font-size: 48px; line-height: 1.2; font-weight: 700; }
-b { font-weight: 800; }
-.body { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 44px; }
-.row { display: flex; gap: 40px; align-items: stretch; }
-.f1 { flex: 1; min-width: 0; }
-.soft { color: var(--slate); }
-.dark .soft { color: var(--on-ink-soft); }
-.foot { position: absolute; left: 110px; right: 110px; bottom: 34px; display: flex; justify-content: space-between; gap: 40px; font-size: 25px; line-height: 1.25; color: var(--slate); }
-.foot span:last-child { white-space: nowrap; }
-.dark .foot { color: var(--on-ink-soft); } .blue .foot { color: #D5E0F7; }
-code, .mono, pre { font-family: var(--mono); font-variant-ligatures: none; font-feature-settings: 'calt' 0, 'liga' 0; }
-.line { background: var(--ink); color: var(--on-ink); font-family: var(--mono); font-variant-ligatures: none; font-feature-settings: 'calt' 0, 'liga' 0; font-size: 60px; padding: 30px 44px; border-radius: 8px; white-space: nowrap; }
-.line .bad { background: var(--amber); color: var(--ink); padding: 0 12px; border-radius: 4px; font-weight: 700; }
-.line .good { color: #8FC1FF; font-weight: 700; }
-.pill { display: inline-block; font-weight: 800; padding: 6px 26px; border-radius: 8px; white-space: nowrap; }
-.pill.bug { background: var(--bug); color: #FFF4F8; }
-.pill.fix { background: var(--cobalt); color: #F4F7FD; }
-.pill.warn { background: var(--amber); color: var(--ink); }
-.tile { flex: 1; background: var(--card); border: 3px solid var(--ink); border-radius: 10px; padding: 36px 40px; display: flex; flex-direction: column; gap: 16px; }
-.tile.blue-t { background: var(--cobalt); border-color: var(--cobalt); color: #F4F7FD; }
-.tile.bug-t { background: var(--bug-tint); border-color: var(--bug); }
-.tile.amb-t { background: var(--amber-tint); border-color: var(--amber-mark); }
-.hero { font-size: 118px; line-height: 1.05; font-weight: 800; letter-spacing: -2px; white-space: nowrap; }
-.statement { font-size: 104px; line-height: 1.14; font-weight: 800; letter-spacing: -2px; text-wrap: balance; }
-.callout { font-size: 52px; line-height: 1.22; font-weight: 700; text-wrap: balance; }
-.list { display: flex; flex-direction: column; gap: 26px; }
-.f { transition: opacity .25s; }
-.f.hide { opacity: 0; }
-
-/* Bìa: một ký tự sai là hình ảnh xuyên suốt */
-.cover { padding: 76px 110px 68px; justify-content: space-between; gap: 0; }
-.bigcode { font-family: var(--mono); font-variant-ligatures: none; font-feature-settings: 'calt' 0, 'liga' 0; font-size: 160px; line-height: 1.15; font-weight: 700; display: grid; grid-template-columns: 340px auto; align-items: center; }
-.bigcode .lab { font-family: var(--sans); font-size: 38px; font-weight: 600; color: var(--on-ink-soft); line-height: 1.25; }
-.gap { display: inline-block; width: 96px; height: 126px; background: var(--amber); vertical-align: -14px; border-radius: 6px; }
-.letter { font-size: 230px; line-height: 1; font-weight: 800; }
-
-/* MuTAP */
-.steps { display: grid; grid-template-columns: repeat(6, 1fr); gap: 24px; }
-.step { background: var(--card); border: 3px solid var(--ink); border-radius: 10px; padding: 26px 22px; height: 350px; display: flex; flex-direction: column; gap: 14px; font-size: 38px; line-height: 1.18; font-weight: 700; }
-.step .n { font-size: 76px; line-height: 1; font-weight: 800; color: var(--cobalt); }
-.step.key { background: var(--cobalt); border-color: var(--cobalt); color: #F4F7FD; }
-.step.key .n { color: #F4F7FD; }
-
-.brow { display: grid; grid-template-columns: 200px 1fr 290px; align-items: center; gap: 24px; font-size: 40px; }
-.brow .track { height: 76px; }
-.brow .bar { height: 100%; border-radius: 0 6px 6px 0; }
-.brow .val { font-size: 60px; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.legend { display: flex; gap: 48px; font-size: 32px; }
-.legend i { display: inline-block; width: 32px; height: 32px; border-radius: 4px; margin-right: 14px; vertical-align: -5px; }
-
-.mods { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; }
-.mod { background: var(--card); border: 3px solid var(--line); border-radius: 10px; padding: 28px 18px; text-align: center; font-size: 34px; line-height: 1.25; color: var(--slate); }
-.mod b { display: block; font-family: var(--mono); font-size: 29px; font-weight: 700; color: var(--ink); margin-bottom: 12px; }
-.mod.on-m { background: var(--cobalt); border-color: var(--cobalt); color: #F4F7FD; }
-.mod.on-m b { color: #F4F7FD; }
-
-.qa { display: grid; grid-template-columns: 1fr auto; column-gap: 40px; align-items: center; }
-.qa > * { padding: 25px 0; border-bottom: 2px solid var(--line); height: 100%; display: flex; align-items: center; }
-.qa .pill { font-size: 38px; }
-
-/* Bảng chỉ dùng ở phụ lục */
-.t { width: 100%; border-collapse: collapse; font-size: 32px; line-height: 1.3; }
-.t th { text-align: left; font-weight: 700; padding: 16px 18px; border-bottom: 3px solid var(--ink); vertical-align: bottom; }
-.t td { padding: 18px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-.t .n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.refs p { break-inside: avoid; margin-bottom: 16px; }
-
-/* Lớp điều khiển ngoài khung slide */
-#hint { position: fixed; z-index: 10; font-family: var(--sans); left: 50%; bottom: 14px; transform: translateX(-50%); background: rgba(20,35,58,.92); color: var(--on-ink); font-size: 15px; padding: 8px 16px; border-radius: 6px; white-space: nowrap; }
-#nav { position: fixed; z-index: 9; right: 12px; bottom: 12px; display: flex; gap: 6px; opacity: 0; }
-#nav:hover, #nav:focus-within { opacity: 1; }
-#nav button { font: 600 16px var(--sans); width: 38px; height: 34px; border: 1px solid #5C6E86; background: #24364F; color: #fff; border-radius: 4px; cursor: pointer; }
-#nav button:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
-@media (prefers-reduced-motion: reduce) { .f { transition: none; } }
-</style>
-</head>
-<body>
-<div id="stage">
-
-<!-- 1. BÌA: điền Sinh viên / MSSV / GVHD ở đây -->
-<section class="slide dark cover">
-  <div>
-    <h1>LLM Agent tự sinh unit test đa ngôn ngữ</h1>
-    <p style="font-size:42px;color:var(--on-ink-soft);margin-top:16px">Vòng lặp tự cải tiến dựa trên phản hồi coverage và mutation testing</p>
-  </div>
-  <div class="bigcode" role="img" aria-label="Đặc tả yêu cầu score lớn hơn hoặc bằng 80, code viết score lớn hơn 80, thiếu một dấu bằng">
-    <span class="lab">Đặc tả yêu cầu</span><span>score &gt;= 80</span>
-    <span class="lab">Code lại viết</span><span>score &gt;<span class="gap"></span> 80</span>
-  </div>
-  <div class="row" style="justify-content:space-between;font-size:32px;line-height:1.4">
-    <div>Sinh viên: ……………………… &nbsp; MSSV: ………………<br>Giảng viên hướng dẫn: ………………………</div>
-    <div style="text-align:right">Báo cáo cuối kỳ, 2026<br><span class="soft">Bài nền tảng: MuTAP (2024)</span></div>
-  </div>
-</section>
-
-<!-- 2. CÂU HỎI MỞ ĐẦU -->
-<section class="slide dark">
-  <div class="body">
-    <p class="statement">AI viết unit test rất nhanh.<br><span style="color:var(--amber)">Nhưng test đó có đáng tin không?</span></p>
-  </div>
-</section>
-
-<!-- 3. BUG -->
-<section class="slide">
-  <h2>Một bug chỉ do thiếu một ký tự</h2>
-  <div class="body">
-    <p class="mono" style="font-size:84px;font-weight:700;text-align:center">letter_grade(80)</p>
-    <div class="row">
-      <div class="tile" style="align-items:center;text-align:center"><span class="callout">Đặc tả yêu cầu</span><span class="letter" style="color:var(--cobalt)">B</span></div>
-      <div class="tile bug-t" style="align-items:center;text-align:center"><span class="callout">Code trả về</span><span class="letter" style="color:var(--bug)">C</span></div>
-    </div>
-  </div>
-</section>
-
-<!-- 4. HỢP THỨC HOÁ -->
-<section class="slide">
-  <h2>Nguy hiểm nhất: AI chép luôn lỗi vào test</h2>
-  <div class="body" style="align-items:center">
-    <div class="line" style="font-size:72px">assert letter_grade(80) == <span class="bad">"C"</span></div>
-    <p class="statement" style="text-align:center;font-size:92px">Test vẫn pass.<br><span style="color:var(--bug)">Bug bị giấu đi.</span></p>
-  </div>
-  <div class="foot-src" data-src="Dòng assert là ví dụ minh hoạ."></div>
-</section>
-
-<!-- 5. COVERAGE -->
-<section class="slide">
-  <h2>Coverage cao chưa chắc bắt được lỗi</h2>
-  <div class="body">
-    <div class="line" style="text-align:center;font-size:72px">assert letter_grade(85) == "B"</div>
-    <div class="row">
-      <div class="tile" style="justify-content:center"><span class="soft" style="font-size:40px">Coverage</span><span class="callout" style="font-size:60px">Nhánh B đã được chạy qua</span></div>
-      <div class="tile bug-t" style="justify-content:center"><span class="soft" style="font-size:40px">Thực tế</span><span class="callout" style="font-size:60px">Bug ở mốc 80 vẫn còn</span></div>
-    </div>
-  </div>
-  <div class="foot-src" data-src="Inozemtseva &amp; Holmes, ICSE 2014: coverage chỉ tương quan thấp đến vừa với hiệu quả của bộ test."></div>
-</section>
-
-<!-- 6. MUTATION -->
-<section class="slide">
-  <h2>Mutation testing: cố tình cài lỗi vào code</h2>
-  <div class="body">
-    <div class="row" style="align-items:center;justify-content:center;gap:48px">
-      <div class="line">score &gt;= 80</div>
-      <svg width="110" height="60" viewBox="0 0 110 60" aria-hidden="true"><path d="M0,30 H90" stroke="#14233A" stroke-width="7"/><path d="M80,8 L108,30 L80,52 z" fill="#14233A"/></svg>
-      <div class="line">score &gt;<span class="bad">&nbsp;</span> 80</div>
-      <span class="callout">Mutant</span>
-    </div>
-    <div class="row f" style="align-items:center;gap:32px">
-      <span class="mono" style="font-size:52px;width:680px">letter_grade(85)</span>
-      <span class="f1" style="font-size:44px">Pass trên cả hai bản</span>
-      <span class="pill warn">Mutant còn sống</span>
-    </div>
-    <div class="row f" style="align-items:center;gap:32px">
-      <span class="mono" style="font-size:52px;width:680px">letter_grade(80)</span>
-      <span class="f1" style="font-size:44px">Fail trên mutant</span>
-      <span class="pill fix">Mutant bị giết</span>
-    </div>
-    <p class="callout f" style="text-align:center;color:var(--cobalt)">Mutation score = số mutant bị giết / tổng số mutant</p>
-  </div>
-</section>
-
-<!-- 7. ORACLE -->
-<section class="slide">
-  <h2>Khi test fail: test sai hay code sai?</h2>
-  <div class="body">
-    <div style="position:relative;height:560px">
-      <svg width="1700" height="560" viewBox="0 0 1700 560" style="position:absolute;inset:0" aria-hidden="true">
-        <path d="M480,280 C600,280 590,110 680,110" fill="none" stroke="#14233A" stroke-width="6"/>
-        <path d="M480,280 C600,280 590,450 680,450" fill="none" stroke="#14233A" stroke-width="6"/>
-        <path d="M675,86 L712,110 L675,134 z" fill="#14233A"/><path d="M675,426 L712,450 L675,474 z" fill="#14233A"/>
-      </svg>
-      <div class="tile" style="position:absolute;left:0;top:170px;width:480px;height:220px;justify-content:center;text-align:center"><span class="hero" style="font-size:88px">Test fail</span></div>
-      <div class="tile" style="position:absolute;left:720px;top:10px;width:980px;height:210px;justify-content:center"><h3 style="font-size:60px">Test viết sai</h3><span>Sửa test</span></div>
-      <div class="tile bug-t" style="position:absolute;left:720px;top:345px;width:980px;height:210px;justify-content:center"><h3 style="font-size:60px;color:var(--bug)">Code có bug</h3><span><b>Giữ test</b> và báo cho người kiểm tra</span></div>
-    </div>
-  </div>
-  <div class="foot-src" data-src="Oracle problem: Barr và cộng sự, IEEE TSE 2015."></div>
-</section>
-
-<!-- 8. CÂU HỎI NGHIÊN CỨU -->
-<section class="slide">
-  <h2>Bốn câu hỏi nghiên cứu</h2>
-  <div class="body list" style="font-size:54px;font-weight:600;gap:42px">
-    <div class="row" style="gap:44px"><b style="color:var(--cobalt);width:150px;flex:none">CH1</b><span>Vòng lặp phản hồi có giúp test tốt hơn không?</span></div>
-    <div class="row" style="gap:44px"><b style="color:var(--cobalt);width:150px;flex:none">CH2</b><span>Có phân biệt được test sai với code sai không?</span></div>
-    <div class="row" style="gap:44px"><b style="color:var(--cobalt);width:150px;flex:none">CH3</b><span>Phản hồi mutation có giúp bắt được lỗi mới không?</span></div>
-    <div class="row" style="gap:44px"><b style="color:var(--cobalt);width:150px;flex:none">CH4</b><span>Một vòng lặp có dùng được cho nhiều ngôn ngữ không?</span></div>
-  </div>
-</section>
-
-<!-- 9. BỨC TRANH NGHIÊN CỨU -->
-<section class="slide">
-  <h2>37 tài liệu, ba hướng tiếp cận</h2>
-  <div class="body">
-    <div class="row" style="height:560px">
-      <div class="tile" style="justify-content:space-between"><h3>Tìm kiếm, tiến hoá</h3><span class="soft">EvoSuite<br>Pynguin</span><span class="soft" style="font-size:38px">Mỗi công cụ một ngôn ngữ</span></div>
-      <div class="tile" style="justify-content:space-between"><h3>LLM sinh một lần</h3><span class="soft">ChatGPT<br>Copilot</span><span class="soft" style="font-size:38px">Không kiểm chứng, hay lỗi</span></div>
-      <div class="tile blue-t" style="justify-content:space-between"><h3>LLM + phản hồi</h3><span>TestPilot, CoverUp<br><b>MuTAP</b></span><span style="font-size:38px;font-weight:700">Đề tài của em thuộc hướng này</span></div>
-    </div>
-  </div>
-  <div class="foot-src" data-src="Danh sách đầy đủ: docs/TAI_LIEU_THAM_KHAO.md"></div>
-</section>
-
-<!-- 10. MUTAP -->
-<section class="slide dark">
-  <div class="body" style="gap:40px">
-    <p style="font-size:190px;line-height:1;font-weight:800;letter-spacing:-4px;color:var(--amber)">MuTAP</p>
-    <p style="font-size:38px;line-height:1.35" class="soft">Dakhel và cộng sự. Effective Test Generation Using Pre-trained Large Language Models and Mutation Testing. <i>Information and Software Technology</i>, 2024.</p>
-    <p class="statement" style="font-size:80px">Đưa mutant còn sống vào prompt để LLM viết đúng test còn thiếu.</p>
-  </div>
-</section>
-
-<!-- 11. QUY TRÌNH MUTAP -->
-<section class="slide">
-  <h2>Quy trình của MuTAP</h2>
-  <div class="body" style="gap:0">
-    <div class="steps">
-      <div class="step"><span class="n">1</span>Sinh test</div>
-      <div class="step"><span class="n">2</span>Sửa cú pháp</div>
-      <div class="step"><span class="n">3</span>Sửa giá trị mong đợi</div>
-      <div class="step"><span class="n">4</span>Đo mutation</div>
-      <div class="step key"><span class="n">5</span>Thêm mutant sống vào prompt</div>
-      <div class="step"><span class="n">6</span>Rút gọn bộ test</div>
-    </div>
-    <svg width="1700" height="110" viewBox="0 0 1700 110" aria-hidden="true">
-      <path d="M1281,0 V70 H994 V26" fill="none" stroke="#1F4FBF" stroke-width="7"/>
-      <path d="M972,30 L994,2 L1016,30 z" fill="#1F4FBF"/>
-    </svg>
-    <p class="callout" style="color:var(--cobalt);text-align:right;margin-top:-14px">Lặp đến khi đạt 100 % hoặc hết mutant sống</p>
-  </div>
-  <div class="foot-src" data-src="Mô hình: Codex, llama-2-chat. Dữ liệu: HumanEval (164 bài), Refactory (1.710 bài có lỗi thật của sinh viên)."></div>
-</section>
-
-<!-- 12. KẾT QUẢ MUTAP -->
-<section class="slide">
-  <h2>Kết quả trong bài báo: MuTAP vượt xa Pynguin</h2>
-  <div class="body" style="gap:30px">
-    <div class="legend"><span><i style="background:var(--cobalt)"></i>MuTAP</span><span><i style="background:var(--amber-mark)"></i>Pynguin (không dùng LLM)</span></div>
-    <div>
-      <h3 style="font-size:42px;margin-bottom:14px">HumanEval: mutation score</h3>
-      <div class="brow" title="HumanEval, MuTAP: 93,57 %"><span>MuTAP</span><div class="track"><div class="bar" style="width:93.57%;background:var(--cobalt)"></div></div><span class="val">93,57 %</span></div>
-      <div class="brow" style="margin-top:8px" title="HumanEval, Pynguin: 65,94 %"><span>Pynguin</span><div class="track"><div class="bar" style="width:65.94%;background:var(--amber-mark)"></div></div><span class="val">65,94 %</span></div>
-    </div>
-    <div>
-      <h3 style="font-size:42px;margin-bottom:14px">Refactory: phát hiện lỗi thật của sinh viên</h3>
-      <div class="brow" title="Refactory, MuTAP: 94,91 %"><span>MuTAP</span><div class="track"><div class="bar" style="width:94.91%;background:var(--cobalt)"></div></div><span class="val">94,91 %</span></div>
-      <div class="brow" style="margin-top:8px" title="Refactory, Pynguin: 67,54 %"><span>Pynguin</span><div class="track"><div class="bar" style="width:67.54%;background:var(--amber-mark)"></div></div><span class="val">67,54 %</span></div>
-    </div>
-  </div>
-  <div class="foot-src" data-src="Số liệu trích từ bài báo (llama-2-chat few-shot), em không chạy lại. Thang từ 0 đến 100 %."></div>
-</section>
-
-<!-- 13. ĐIỂM YẾU 1 -->
-<section class="slide">
-  <h2>Điểm yếu 1: bước 3 mặc định code đúng</h2>
-  <div class="body">
-    <div class="row" style="align-items:center;gap:36px"><span class="callout" style="width:430px;flex:none">LLM viết đúng</span><div class="line f1">letter_grade(80) == <span class="good">"B"</span></div></div>
-    <div class="row f" style="align-items:center;gap:36px"><span class="callout" style="width:430px;flex:none">Bước 3 sửa thành</span><div class="line f1">letter_grade(80) == <span class="bad">"C"</span></div></div>
-    <p class="statement f" style="font-size:76px;color:var(--bug)">Test đúng bị sửa thành test sai.</p>
-  </div>
-  <div class="foot-src" data-src="Nhận xét của em khi đọc bài, không phải hạn chế do tác giả tự nêu."></div>
-</section>
-
-<!-- 14. ĐIỂM YẾU 2 -->
-<section class="slide">
-  <h2>Điểm yếu 2: chấm điểm trên đề đã lộ</h2>
-  <div class="body">
-    <div class="row" style="align-items:center;gap:32px"><span class="callout" style="width:480px;flex:none">Dùng để chấm</span><div class="f1" style="height:96px;background:var(--cobalt);border-radius:8px"></div></div>
-    <div class="row" style="align-items:center;gap:32px"><span class="callout" style="width:480px;flex:none">Đưa cho LLM xem</span><div class="f1" style="height:96px;display:flex"><div style="width:40%;background:var(--amber);border-radius:8px"></div></div></div>
-    <p class="statement" style="font-size:72px;margin-top:20px">Giống cho xem trước đề rồi chấm trên đúng đề đó.</p>
-  </div>
-  <div class="foot-src" data-src="Hình minh hoạ khái niệm. Nhận xét của em (mục 3.3 đến 3.4 của bài). Kết quả trên Refactory không bị ảnh hưởng."></div>
-</section>
-
-<!-- 15. PHƯƠNG PHÁP RÚT RA -->
-<section class="slide">
-  <h2>Phương pháp em rút ra từ MuTAP</h2>
-  <div class="body">
-    <div class="row" style="height:600px;font-size:40px">
-      <div class="tile" style="gap:30px"><h3 style="font-size:64px">Giữ</h3><span>Mutant còn sống làm phản hồi cho LLM</span></div>
-      <div class="tile blue-t" style="gap:26px;flex:1.45"><h3 style="font-size:64px">Đổi</h3><span>Test fail: so với đặc tả, không mặc định code đúng</span><span>Chấm trên mutant LLM chưa thấy</span><span>Gửi kèm thông báo lỗi thật</span></div>
-      <div class="tile amb-t" style="gap:30px"><h3 style="font-size:64px">Thêm</h3><span>Phản hồi coverage</span><span>Đa ngôn ngữ: Python, JS/TS</span></div>
-    </div>
-  </div>
-  <div class="foot-src" data-src="Bước rút gọn bộ test của MuTAP chưa làm, nằm trong hướng phát triển."></div>
-</section>
-
-<!-- 16. VÒNG LẶP -->
-<section class="slide">
-  <h2>Vòng lặp tự cải tiến</h2>
-  <div class="body">
-    <div class="row" style="gap:60px;align-items:center">
-      <div style="position:relative;width:900px;height:640px;flex:none">
-        <svg width="900" height="640" viewBox="0 0 900 640" style="position:absolute;inset:0" aria-hidden="true">
-          <g fill="none" stroke="#1F4FBF" stroke-width="7"><path d="M360,95 H510"/><path d="M720,190 V420"/><path d="M540,545 H390"/><path d="M180,450 V220"/></g>
-          <g fill="#1F4FBF"><path d="M505,69 L538,95 L505,121 z"/><path d="M694,415 L720,448 L746,415 z"/><path d="M395,519 L362,545 L395,571 z"/><path d="M154,225 L180,192 L206,225 z"/></g>
-        </svg>
-        <div class="tile blue-t" style="position:absolute;left:0;top:0;width:360px;height:190px;align-items:center;justify-content:center;text-align:center"><span class="callout" style="font-size:48px">LLM viết test</span></div>
-        <div class="tile" style="position:absolute;right:0;top:0;width:360px;height:190px;align-items:center;justify-content:center;text-align:center"><span class="callout" style="font-size:48px">Chạy test thật</span></div>
-        <div class="tile" style="position:absolute;right:0;bottom:0;width:360px;height:190px;align-items:center;justify-content:center;text-align:center"><span class="callout" style="font-size:48px">Đo chất lượng</span></div>
-        <div class="tile amb-t" style="position:absolute;left:0;bottom:0;width:360px;height:190px;align-items:center;justify-content:center;text-align:center"><span class="callout" style="font-size:48px">Phản hồi cụ thể</span></div>
-      </div>
-      <div class="f1 list" style="font-size:46px;font-weight:600;gap:34px">
-        <p class="soft" style="font-size:40px">Phản hồi theo thứ tự ưu tiên</p>
-        <div class="f"><b style="color:var(--cobalt)">1</b>&nbsp; Lỗi cú pháp, import</div>
-        <div class="f"><b style="color:var(--bug)">2</b>&nbsp; Test fail: phân loại</div>
-        <div class="f"><b style="color:var(--cobalt)">3</b>&nbsp; Dòng, nhánh chưa phủ</div>
-        <div class="f"><b style="color:var(--cobalt)">4</b>&nbsp; Mutant còn sống</div>
-      </div>
-    </div>
-  </div>
-  <div class="foot-src" data-src="Tự viết bằng for và if/else, không dùng LangChain. Dừng khi đạt ngưỡng, 2 lần không cải thiện, hoặc hết 8 vòng."></div>
-</section>
-
-<!-- 17. VÍ DỤ THẬT -->
-<section class="slide">
-  <h2>Log thật: hai test fail, hai cách xử lý</h2>
-  <div class="body">
-    <div class="row" style="height:600px">
-      <div class="tile bug-t" style="justify-content:space-between"><span class="pill bug" style="align-self:flex-start">SUSPECTED_BUG</span><div class="mono" style="font-size:52px;line-height:1.3">letter_grade(80)<br>== "B"</div><p class="callout">Code sai.<br>Giữ test, gắn nhãn.</p></div>
-      <div class="tile" style="justify-content:space-between"><span class="pill fix" style="align-self:flex-start">TEST_WRONG</span><div class="mono" style="font-size:52px;line-height:1.3">final_score(...)<br>== <s style="color:var(--bug)">44.9</s> &nbsp;<b style="color:var(--cobalt)">48.1</b></div><p class="callout">LLM tính nhầm.<br>Sửa test.</p></div>
-    </div>
-  </div>
-  <div class="foot-src" data-src="Nguồn: logs/grading_eval_C_20260926-190937.json. Vòng 0: 18 pass, 2 fail. Vòng 1: 19 pass, 1 xfail. Code đã lược bớt."></div>
-</section>
-
-<!-- 18. ADAPTER -->
-<section class="slide">
-  <h2>Một vòng lặp, nhiều ngôn ngữ</h2>
-  <div class="body" style="gap:0">
-    <div style="background:var(--ink);color:var(--on-ink);text-align:center;font-size:52px;font-weight:800;padding:34px;border-radius:10px 10px 0 0">Vòng lặp agent: không biết ngôn ngữ</div>
-    <div class="mono" style="background:var(--cobalt);color:#F4F7FD;text-align:center;font-size:44px;font-weight:700;padding:24px;border-radius:0 0 10px 10px;margin-bottom:44px">LanguageAdapter</div>
-    <div class="row" style="height:360px">
-      <div class="tile" style="gap:12px"><h3 style="font-size:56px">Python</h3><span>pytest</span><span>coverage.py</span><span>mutmut</span></div>
-      <div class="tile" style="gap:12px"><h3 style="font-size:56px">JS / TS</h3><span>Jest</span><span>Istanbul</span><span>StrykerJS</span></div>
-      <div class="tile" style="gap:12px;border-style:dashed;border-color:var(--slate);color:var(--slate);background:none"><h3 style="font-size:56px">Java</h3><span>JUnit 5</span><span>JaCoCo, PIT</span><span style="font-size:36px;font-weight:700">Mới phác thảo</span></div>
-    </div>
-  </div>
-</section>
-
-<!-- 19. THỰC NGHIỆM -->
-<section class="slide">
-  <h2>Thực nghiệm: thêm dần từng thành phần</h2>
-  <div class="body">
-    <div class="row" style="height:360px;gap:24px">
-      <div class="tile" style="align-items:center;text-align:center;justify-content:center"><span class="hero">A</span><span style="font-size:40px">Sinh một lần</span></div>
-      <div class="tile" style="align-items:center;text-align:center;justify-content:center"><span class="hero">B</span><span style="font-size:40px">+ phản hồi coverage</span></div>
-      <div class="tile" style="align-items:center;text-align:center;justify-content:center"><span class="hero">C</span><span style="font-size:40px">+ phản hồi mutation</span></div>
-      <div class="tile" style="align-items:center;text-align:center;justify-content:center"><span class="hero">D</span><span style="font-size:40px">+ bộ nhớ</span></div>
-    </div>
-    <p class="callout" style="font-size:60px;color:var(--cobalt)">Mutation chấm trên mutant LLM chưa thấy (held-out).</p>
-  </div>
-  <div class="foot-src" data-src="9 module tự viết, 4 bug cài sẵn. Model miễn phí nemotron-3-super-120b (OpenRouter), 50 request/ngày."></div>
-</section>
-
-<!-- 20. KẾT QUẢ 1 -->
-<section class="slide">
-  <h2>Python: giá trị rõ nhất là xử lý test fail</h2>
-  <div class="body">
-    <div class="row" style="height:440px">
-      <div class="tile" style="justify-content:center;gap:24px"><span class="hero" style="font-size:104px">1,2 → 0</span><span>Test fail còn lại mỗi module</span></div>
-      <div class="tile blue-t" style="justify-content:center;gap:24px;flex:1.2"><span class="hero" style="font-size:104px">0/2 → 2/2</span><span>Bug được gắn nhãn đúng</span></div>
-      <div class="tile" style="justify-content:center;gap:24px;flex:.5"><span class="hero" style="font-size:104px">0</span><span>Nhãn sai</span></div>
-    </div>
-    <p class="callout soft" style="font-weight:600;font-size:46px">So sánh cấu hình A với B. Coverage đã đạt 99 % ngay từ đầu ở cả bốn cấu hình.</p>
-  </div>
-  <div class="foot-src" data-src="5 module, 1 lượt, 1 model: quan sát ban đầu, chưa có ý nghĩa thống kê. Nguồn: results/results.csv (bảng đầy đủ ở phụ lục)."></div>
-</section>
-
-<!-- 21. HAI CÁCH CHẤM -->
-<section class="slide">
-  <h2>Cách chấm làm đổi kết luận</h2>
-  <div class="body">
-    <div class="row" style="gap:70px;align-items:center">
-      <div style="width:1000px;flex:none;display:flex;flex-direction:column;gap:14px">
-        <div class="legend"><span><i style="background:var(--cobalt)"></i>Mutant LLM chưa thấy</span><span><i style="background:var(--amber-mark)"></i>Tất cả mutant (như MuTAP)</span></div>
-        <svg viewBox="0 0 820 500" width="1000" height="610" role="img" aria-label="Từ cấu hình B sang C: mutant LLM chưa thấy giữ nguyên 91,8 phần trăm; tất cả mutant tăng từ 83,0 lên 86,0 phần trăm" font-family="'Be Vietnam Pro','Segoe UI',sans-serif">
-          <!-- trục y từ 80 đến 95 %: y = 460 - (giá trị - 80) * 28 -->
-          <g stroke="#CBD4E0" stroke-width="1"><path d="M90,460 H780"/><path d="M90,320 H780"/><path d="M90,180 H780"/><path d="M90,40 H780"/></g>
-          <g fill="#4A5A70" font-size="24" text-anchor="end"><text x="78" y="468">80</text><text x="78" y="328">85</text><text x="78" y="188">90</text><text x="78" y="48">95 %</text></g>
-          <path d="M220,130 H660" stroke="#1F4FBF" stroke-width="6" fill="none"/>
-          <path d="M220,376 L660,292" stroke="#E39A0B" stroke-width="6" fill="none"/>
-          <circle cx="220" cy="130" r="13" fill="#1F4FBF" stroke="#F1F4F8" stroke-width="3"><title>B, chưa thấy: 91,8 %</title></circle>
-          <circle cx="660" cy="130" r="13" fill="#1F4FBF" stroke="#F1F4F8" stroke-width="3"><title>C, chưa thấy: 91,8 %</title></circle>
-          <circle cx="220" cy="376" r="13" fill="#E39A0B" stroke="#F1F4F8" stroke-width="3"><title>B, tất cả mutant: 83,0 %</title></circle>
-          <circle cx="660" cy="292" r="13" fill="#E39A0B" stroke="#F1F4F8" stroke-width="3"><title>C, tất cả mutant: 86,0 %</title></circle>
-          <g fill="#14233A" font-size="40" font-weight="800" text-anchor="middle"><text x="220" y="100">91,8</text><text x="660" y="100">91,8</text><text x="220" y="430">83,0</text><text x="660" y="346">86,0</text></g>
-          <g fill="#14233A" font-size="28" font-weight="700" text-anchor="middle"><text x="220" y="496">B: chưa có mutation</text><text x="660" y="496">C: có mutation</text></g>
-        </svg>
-      </div>
-      <div class="f1 list" style="gap:56px">
-        <div><span class="hero" style="color:var(--amber-mark)">+3,0</span><p class="callout" style="font-size:44px">điểm nếu chấm như MuTAP</p></div>
-        <div class="f"><span class="hero" style="color:var(--cobalt)">0</span><p class="callout" style="font-size:44px">điểm trên mutant LLM chưa thấy</p></div>
-      </div>
-    </div>
-  </div>
-  <div class="foot-src" data-src="Trục bắt đầu từ 80 %. Python, 5 module, 1 lượt. Nguồn: results/results.csv."></div>
-</section>
-
-<!-- 22. VÌ SAO -->
-<section class="slide">
-  <h2>Vòng mutation chỉ sinh test ở 1 trong 5 module</h2>
-  <div class="body">
-    <div class="mods">
-      <div class="mod"><b>calculator</b>Đã đạt ngưỡng, dừng ngay</div>
-      <div class="mod"><b>text_utils</b>Đã đạt ngưỡng, dừng ngay</div>
-      <div class="mod"><b>grading</b>Đã đạt ngưỡng, dừng ngay</div>
-      <div class="mod on-m"><b>safe_parser</b>Có sinh test: 75&nbsp;% lên 100&nbsp;%</div>
-      <div class="mod"><b>shopping_cart</b>Đã đạt ngưỡng, dừng ngay</div>
-    </div>
-    <p class="callout f">Cả 5 mutant đưa vào prompt ở <code>safe_parser</code> chỉ đổi nội dung thông báo lỗi.</p>
-    <p class="statement f" style="font-size:80px;color:var(--cobalt)">Chưa đủ dữ liệu để kết luận về phản hồi mutation.</p>
-  </div>
-  <div class="foot-src" data-src="75 % và 100 % do agent đo trên 20 mutant lấy mẫu. Nguồn: logs/*_eval_C_*.json."></div>
-</section>
-
-<!-- 23. JS/TS -->
-<section class="slide">
-  <h2>JS/TS: mới có 2 lần chạy thử</h2>
-  <div class="body">
-    <div class="row" style="height:440px">
-      <div class="tile" style="justify-content:space-between"><span class="mono" style="font-size:50px;font-weight:700">shipping.ts</span><span class="hero" style="font-size:96px">100 / 100 %</span><span>Line / branch. Nhãn: 3 đúng, 0 sai</span></div>
-      <div class="tile" style="justify-content:space-between"><span class="mono" style="font-size:50px;font-weight:700">bank_account.js</span><span class="hero" style="font-size:96px">96,6 / 95 %</span><span>Line / branch. Nhãn: 8 đúng, 1 sai</span></div>
-    </div>
-    <p class="callout" style="background:var(--amber);padding:24px 36px;border-radius:10px">Chưa có thực nghiệm A/B/C/D cho JS/TS, chưa so được với Python.</p>
-  </div>
-  <div class="foot-src" data-src="bank_account dừng giữa chừng vì hết hạn mức API. Nguồn: logs/*_agent_js_*.json."></div>
-</section>
-
-<!-- 24. TRẢ LỜI -->
-<section class="slide">
-  <h2>Trả lời bốn câu hỏi nghiên cứu</h2>
-  <div class="body">
-    <div class="qa" style="font-size:44px;font-weight:600">
-      <span><b style="color:var(--cobalt);margin-right:30px">CH1</b>Vòng lặp có giúp test tốt hơn?</span><span><span class="pill fix">Có</span></span>
-      <span><b style="color:var(--cobalt);margin-right:30px">CH2</b>Phân biệt được test sai, code sai?</span><span><span class="pill fix">Có, trên mẫu nhỏ</span></span>
-      <span><b style="color:var(--cobalt);margin-right:30px">CH3</b>Mutation giúp bắt lỗi mới?</span><span><span class="pill warn">Chưa kết luận được</span></span>
-      <span><b style="color:var(--cobalt);margin-right:30px">CH4</b>Một vòng lặp, nhiều ngôn ngữ?</span><span><span class="pill fix">Có, về kỹ thuật</span></span>
-    </div>
-  </div>
-  <div class="foot-src" data-src="Mọi số liệu lấy từ log và results/ của lần chạy LLM thật."></div>
-</section>
-
-<!-- 25. DEMO -->
-<section class="slide dark">
-  <div class="body" style="gap:56px">
-    <p style="font-size:190px;line-height:1;font-weight:800;letter-spacing:-4px;color:var(--amber)">Demo</p>
-    <div class="mono" style="font-size:76px;font-weight:700">streamlit run app.py</div>
-    <p style="font-size:52px;font-weight:600;line-height:1.3">Xem agent bắt bug <code>shippingFee(500)</code> trên TypeScript,<br>rồi chạy cùng vòng lặp trên Python.</p>
-  </div>
-</section>
-
-<!-- 26. HẠN CHẾ -->
-<section class="slide">
-  <h2>Hạn chế và hướng phát triển</h2>
-  <div class="body">
-    <div class="row" style="height:600px;font-size:44px">
-      <div class="tile bug-t" style="gap:34px"><h3 style="font-size:60px">Hạn chế</h3><span>Python 1 lượt, JS/TS chưa có A/B/C/D</span><span>Ngưỡng mutation 80 % làm vòng lặp dừng sớm</span><span>LLM vẫn có thể phân loại sai</span></div>
-      <div class="tile" style="gap:34px"><h3 style="font-size:60px">Hướng phát triển</h3><span>Chạy đủ 3 lượt mỗi ngôn ngữ, ngưỡng cao hơn</span><span>So sánh trực tiếp trên HumanEval</span><span>Thêm Java, Go</span></div>
-    </div>
-  </div>
-</section>
-
-<!-- 27. KẾT LUẬN -->
-<section class="slide blue">
-  <h2>Kết luận</h2>
-  <div class="body" style="gap:48px">
-    <p class="statement" style="font-size:66px">Agent sinh, chạy, đo, sửa và bổ sung test cho Python và JS/TS, kế thừa ý tưởng của MuTAP.</p>
-    <div class="row" style="font-size:44px;font-weight:600">
-      <div class="f1" style="border-top:4px solid #F4F7FD;padding-top:24px">Không mặc định code đúng: giữ lại test phát hiện bug</div>
-      <div class="f1" style="border-top:4px solid #F4F7FD;padding-top:24px">Chấm trên mutant LLM chưa thấy: cách chấm đổi kết luận</div>
-    </div>
-    <p style="font-size:60px;font-weight:800;margin-top:20px">Em xin cảm ơn thầy/cô đã lắng nghe.</p>
-  </div>
-</section>
-
-<!-- 28. PHỤ LỤC: số liệu -->
-<section class="slide">
-  <h2>Phụ lục: bảng số liệu Python</h2>
-  <div class="body">
-    <table class="t" style="font-size:34px">
-      <tr><th>Cấu hình</th><th class="n">Line / branch</th><th class="n">Chưa thấy</th><th class="n">Tất cả mutant</th><th class="n">Test fail</th><th class="n">Bug gắn nhãn</th><th class="n">Gọi LLM</th></tr>
-      <tr><td><b>A</b> Baseline</td><td class="n">99,0 / 98,4 %</td><td class="n">89,1 %</td><td class="n">80,7 %</td><td class="n">1,2</td><td class="n">0 / 2</td><td class="n">1,0</td></tr>
-      <tr><td><b>B</b> + coverage</td><td class="n">99,0 / 98,4 %</td><td class="n">91,8 %</td><td class="n">83,0 %</td><td class="n">0</td><td class="n">2 / 2</td><td class="n">2,4</td></tr>
-      <tr><td><b>C</b> + mutation</td><td class="n">99,0 / 98,4 %</td><td class="n">91,8 %</td><td class="n">86,0 %</td><td class="n">0</td><td class="n">2 / 2</td><td class="n">2,6</td></tr>
-      <tr><td><b>D</b> + bộ nhớ</td><td class="n">99,0 / 98,4 %</td><td class="n">91,8 %</td><td class="n">88,1 %</td><td class="n">0</td><td class="n">2 / 2</td><td class="n">3,2</td></tr>
-    </table>
-  </div>
-  <div class="foot-src" data-src="5 module, 1 lượt, trung bình theo module. Nguồn: results/results.csv."></div>
-</section>
-
-<!-- 29. PHỤ LỤC: tài liệu -->
-<section class="slide">
-  <h2>Phụ lục: tài liệu tham khảo chính</h2>
-  <div class="refs" style="columns:2;column-gap:60px;font-size:27px;line-height:1.3">
-    <p><b>[1] MuTAP.</b> A. M. Dakhel et al. Information and Software Technology, 2024. doi.org/10.1016/j.infsof.2024.107468</p>
-    <p><b>[2]</b> Inozemtseva, Holmes. Coverage Is Not Strongly Correlated with Test Suite Effectiveness. ICSE 2014. doi.org/10.1145/2568225.2568271</p>
-    <p><b>[3]</b> Just et al. Are Mutants a Valid Substitute for Real Faults? FSE 2014. doi.org/10.1145/2635868.2635929</p>
-    <p><b>[4]</b> Barr et al. The Oracle Problem in Software Testing. IEEE TSE, 2015. doi.org/10.1109/TSE.2014.2372785</p>
-    <p><b>[5] TestPilot.</b> Schäfer et al. IEEE TSE, 2024. doi.org/10.1109/TSE.2023.3334955</p>
-    <p><b>[6] CoverUp.</b> Altmayer Pizzorno, Berger. FSE 2025. doi.org/10.1145/3729398</p>
-    <p><b>[7] TestGen-LLM.</b> Alshahwan et al. FSE Companion 2024. doi.org/10.1145/3663529.3663839</p>
-    <p><b>[8] ACH.</b> Foster et al. FSE Companion 2025. doi.org/10.1145/3696630.3728544</p>
-    <p><b>[9]</b> Zhao, Zhou, Cohen. Misguidance Effect of Buggy Code. ISSTA 2026. arxiv.org/abs/2607.22883</p>
-    <p><b>[10] Reflexion.</b> Shinn et al. NeurIPS 2023. arxiv.org/abs/2303.11366</p>
-    <p><b>[11]</b> Anthropic. Building Effective Agents, 2024.</p>
-  </div>
-  <div class="foot-src" data-src="Toàn bộ 37 tài liệu: docs/TAI_LIEU_THAM_KHAO.md"></div>
-</section>
-
-</div>
-
-<div id="hint">← → chuyển slide &nbsp; F toàn màn hình</div>
-<div id="nav"><button id="prev" aria-label="Lùi">‹</button><button id="next" aria-label="Tiếp">›</button></div>
-
-<script>
-// Điều khiển: mũi tên phải hiện dần nội dung rồi sang slide sau; F toàn màn hình
-const slides = [...document.querySelectorAll('.slide')];
-const stage = document.getElementById('stage');
-const hint = document.getElementById('hint');
-let current = 0, step = 0;
-
-// Chân trang: nguồn (nếu có) + số trang; bìa không có
-slides.forEach((s, i) => {
-  if (!i) return;
-  const holder = s.querySelector('.foot-src');
-  const src = holder ? holder.dataset.src : '';
-  if (holder) holder.remove();
-  const foot = document.createElement('div');
-  foot.className = 'foot';
-  const left = document.createElement('span');
-  left.textContent = src;
-  const right = document.createElement('span');
-  right.textContent = (i + 1) + ' / ' + slides.length;
-  foot.append(left, right);
-  s.appendChild(foot);
-});
-
-function fit() {
-  const k = Math.min(innerWidth / 1920, innerHeight / 1080);
-  const x = (innerWidth - 1920 * k) / 2, y = (innerHeight - 1080 * k) / 2;
-  stage.style.transform = 'translate(' + x + 'px, ' + y + 'px) scale(' + k + ')';
-}
-
-function frags() { return [...slides[current].querySelectorAll('.f')]; }
-function paint() { frags().forEach((e, i) => e.classList.toggle('hide', i >= step)); }
-
-function show(i, allSteps) {
-  current = Math.max(0, Math.min(slides.length - 1, i));
-  slides.forEach((s, k) => s.classList.toggle('on', k === current));
-  step = allSteps ? frags().length : 0;
-  paint();
-  history.replaceState(null, '', '#' + (current + 1));
-}
-
-function next() { if (step < frags().length) { step++; paint(); } else show(current + 1); }
-function prev() { if (step > 0) { step--; paint(); } else show(current - 1, true); }
-
-setTimeout(() => { hint.style.display = 'none'; }, 9000);
-addEventListener('keydown', e => {
-  hint.style.display = 'none';
-  const k = e.key;
-  if (['ArrowRight', 'ArrowDown', 'PageDown', ' '].includes(k)) { e.preventDefault(); next(); }
-  else if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(k)) { e.preventDefault(); prev(); }
-  else if (k === 'Home') show(0);
-  else if (k === 'End') show(slides.length - 1);
-  else if (k === 'f' || k === 'F') { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); }
-});
-document.getElementById('prev').onclick = prev;
-document.getElementById('next').onclick = next;
-addEventListener('resize', fit);
-addEventListener('hashchange', () => show((parseInt(location.hash.slice(1), 10) || 1) - 1, true));
-fit();
-show((parseInt(location.hash.slice(1), 10) || 1) - 1);
-</script>
 <!--FONTS-->
 <style>/* Font nhúng sẵn để chạy không cần mạng: Be Vietnam Pro, JetBrains Mono */
 @font-face {   font-family: 'Be Vietnam Pro';   font-style: normal;   font-weight: 400;   font-display: swap;   src: url(data:font/woff2;base64,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) format('woff2');   unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB; }
@@ -616,5 +22,930 @@ show((parseInt(location.hash.slice(1), 10) || 1) - 1);
 @font-face {   font-family: 'JetBrains Mono';   font-style: normal;   font-weight: 700;   font-display: swap;   src: url(data:font/woff2;base64,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) format('woff2');   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
 </style>
 <!--/FONTS-->
+<style>
+:root {
+  --ink: #1A2433; --soft: #4B5A6B; --paper: #FFFFFF; --panel: #F2F5F7; --rule: #D3DAE1;
+  --head: #12384F; --head-soft: #A9C3D3; --accent: #0B6E82; --accent-tint: #E1F0F3;
+  --ok: #1E7B4F; --ok-tint: #E4F4EB; --no: #B92D2D; --no-tint: #FBE8E7; --wa: #A86200; --wa-tint: #FFF2D6;
+  --sans: 'Be Vietnam Pro', 'Segoe UI', Tahoma, Arial, sans-serif;
+  --mono: 'JetBrains Mono', Consolas, 'Courier New', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: #0C1A24; overflow: hidden; font-family: var(--sans); }
+#stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; background: var(--paper); overflow: hidden; }
+
+/* Mỗi slide là một trang tĩnh: dải đầu trang, nội dung, chân trang. Lời nói nằm trong slides/LOI_THOAI_CUOI_KY.md */
+.slide { position: absolute; inset: 0; display: none; flex-direction: column; background: var(--paper); color: var(--ink); font-size: 33px; line-height: 1.36; }
+.slide.on { display: flex; }
+.head { background: var(--head); color: #fff; padding: 16px 72px 20px; flex: none; }
+.strip { display: flex; gap: 34px; font-size: 23px; line-height: 1.3; color: var(--head-soft); margin-bottom: 8px; }
+.strip .now { color: #fff; font-weight: 700; border-bottom: 3px solid #FFB938; }
+h2 { font-size: 52px; line-height: 1.15; font-weight: 800; letter-spacing: -.5px; }
+.main { flex: 1; min-height: 0; padding: 30px 72px 14px; display: flex; flex-direction: column; gap: 24px; }
+.foot { flex: none; height: 50px; padding: 0 72px; display: flex; justify-content: space-between; align-items: center; gap: 40px; font-size: 22px; line-height: 1.2; color: var(--soft); border-top: 1px solid var(--rule); }
+.foot span:last-child { white-space: nowrap; }
+
+.grow { flex: 1; min-height: 0; }
+.c2 { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; }
+.c3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 26px; }
+b { font-weight: 700; }
+.soft { color: var(--soft); }
+
+/* Khối có thanh tiêu đề */
+.blk { display: flex; flex-direction: column; background: var(--panel); border-radius: 6px; overflow: hidden; min-height: 0; min-width: 0; }
+.blk > h3 { flex: none; background: var(--head); color: #fff; font-size: 33px; line-height: 1.25; font-weight: 700; padding: 11px 26px; }
+.blk > .in { flex: 1; padding: 20px 26px; display: flex; flex-direction: column; gap: 14px; min-height: 0; }
+.blk.a > h3 { background: var(--accent); } .blk.a > .in { background: var(--accent-tint); }
+.blk.k > h3 { background: var(--ok); } .blk.k > .in { background: var(--ok-tint); }
+.blk.n > h3 { background: var(--no); } .blk.n > .in { background: var(--no-tint); }
+.blk.w > h3 { background: var(--wa); } .blk.w > .in { background: var(--wa-tint); }
+.mid { justify-content: center; }
+
+ul.b { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+ul.b > li { position: relative; padding-left: 30px; }
+ul.b > li::before { content: ''; position: absolute; left: 2px; top: .52em; width: 13px; height: 13px; background: var(--accent); }
+
+.t { width: 100%; border-collapse: collapse; font-size: 31px; line-height: 1.3; }
+.t th { text-align: left; font-weight: 700; color: #fff; background: var(--head); padding: 13px 18px; vertical-align: bottom; }
+.t td { padding: 13px 18px; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+.t tr:nth-child(even) td { background: var(--panel); }
+.t .n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.t .hl td { background: var(--accent-tint); }
+.fillt { height: 100%; }
+
+code, .mono, .code { font-family: var(--mono); font-variant-ligatures: none; font-feature-settings: 'calt' 0, 'liga' 0; }
+code { font-size: .92em; background: #E4E9EE; padding: 1px 8px; border-radius: 4px; }
+.t td code, .blk code { white-space: nowrap; }
+.code { background: #14202B; color: #E6EDF3; font-size: 29px; line-height: 1.42; padding: 18px 24px; border-radius: 6px; white-space: pre; overflow: hidden; }
+.code i { font-style: normal; color: #93A8BA; }
+.code .bad { background: #E5484D; color: #fff; padding: 0 8px; border-radius: 3px; font-weight: 700; }
+.code .good { background: #2F9E6B; color: #fff; padding: 0 8px; border-radius: 3px; font-weight: 700; }
+
+.tag { display: inline-block; font-weight: 700; font-size: .88em; line-height: 1.3; padding: 3px 14px; border-radius: 4px; white-space: nowrap; color: #fff; background: var(--accent); }
+.tag.k { background: var(--ok); } .tag.n { background: var(--no); } .tag.w { background: var(--wa); } .tag.g { background: var(--soft); }
+.note { background: var(--accent-tint); border-left: 10px solid var(--accent); padding: 15px 24px; font-weight: 600; flex: none; }
+.note.w { background: var(--wa-tint); border-color: var(--wa); }
+.note.n { background: var(--no-tint); border-color: var(--no); }
+.note.k { background: var(--ok-tint); border-color: var(--ok); }
+.quote { font-style: italic; border-left: 5px solid #AEB9C4; padding-left: 18px; }
+
+/* Bìa */
+.cover { background: var(--head); color: #fff; padding: 56px 84px 44px; gap: 28px; }
+.cover h1 { font-size: 86px; line-height: 1.08; font-weight: 800; letter-spacing: -1.5px; }
+.cover .sub { font-size: 40px; line-height: 1.25; color: #CFE0EA; margin-top: 16px; }
+.cover .kick { font-size: 30px; font-weight: 600; color: #FFB938; margin-bottom: 18px; }
+.cover .what { flex: 1; background: #fff; color: var(--ink); border-radius: 8px; padding: 28px 38px; display: flex; flex-direction: column; gap: 22px; justify-content: center; min-height: 0; }
+.cover .what h3 { font-size: 42px; font-weight: 800; color: var(--accent); }
+.cover .what p { font-size: 38px; line-height: 1.4; }
+.cover .what .flow > .st { font-size: 32px; padding: 22px 16px; }
+.cover .who { display: flex; justify-content: space-between; gap: 50px; font-size: 29px; line-height: 1.42; }
+
+/* Chuỗi bước nối bằng mũi tên */
+.flow { display: flex; align-items: stretch; gap: 0; }
+.flow > .st { flex: 1; background: var(--accent-tint); border-radius: 6px; padding: 14px 16px; text-align: center; font-size: 30px; font-weight: 700; line-height: 1.22; display: flex; align-items: center; justify-content: center; }
+.flow > .st.end { background: var(--ok-tint); }
+.flow > .ar { flex: none; width: 54px; display: flex; align-items: center; justify-content: center; }
+.flow > .ar::after { content: ''; border-left: 26px solid var(--accent); border-top: 18px solid transparent; border-bottom: 18px solid transparent; }
+
+/* Quy trình 6 bước của MuTAP */
+.steps { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; }
+.step { background: var(--panel); border-top: 10px solid var(--head); border-radius: 4px; padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; font-size: 33px; line-height: 1.32; }
+.step b { font-size: 35px; line-height: 1.2; }
+.step .num { font-size: 62px; line-height: 1; font-weight: 800; color: var(--head); }
+.step.w { background: var(--wa-tint); border-color: var(--wa); } .step.w .num { color: var(--wa); }
+.step.a { background: var(--accent-tint); border-color: var(--accent); } .step.a .num { color: var(--accent); }
+
+/* Biểu đồ thanh */
+.brow { display: grid; grid-template-columns: 150px 1fr 170px; align-items: center; gap: 14px; font-size: 30px; }
+.brow .track { height: 72px; background: #E4E9EE; border-radius: 3px; }
+.brow .bar { height: 100%; border-radius: 3px; }
+.brow .val { font-weight: 800; font-size: 34px; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.legend { display: flex; gap: 40px; font-size: 29px; flex-wrap: wrap; }
+.legend i { display: inline-block; width: 26px; height: 26px; border-radius: 3px; margin-right: 12px; vertical-align: -3px; }
+
+.refs { columns: 2; column-gap: 50px; font-size: 32px; line-height: 1.34; }
+.refs p { break-inside: avoid; margin-bottom: 20px; }
+
+/* Lớp điều khiển ngoài khung slide */
+#hint { position: fixed; z-index: 10; font-family: var(--sans); left: 50%; bottom: 14px; transform: translateX(-50%); background: rgba(18,56,79,.94); color: #fff; font-size: 15px; padding: 8px 16px; border-radius: 6px; white-space: nowrap; }
+#nav { position: fixed; z-index: 9; right: 12px; bottom: 12px; display: flex; gap: 6px; opacity: 0; }
+#nav:hover, #nav:focus-within { opacity: 1; }
+#nav button { font: 600 16px var(--sans); width: 38px; height: 34px; border: 1px solid #5C6E86; background: #24364F; color: #fff; border-radius: 4px; cursor: pointer; }
+#nav button:focus-visible { outline: 3px solid #FFB938; outline-offset: 2px; }
+</style>
+</head>
+<body>
+<div id="stage">
+
+<!-- 1. BÌA: điền Sinh viên / MSSV / GVHD ở cuối mục này -->
+<section class="slide cover">
+  <div>
+    <p class="kick">Báo cáo đồ án cuối kỳ, 2026</p>
+    <h1>LLM Agent tự sinh unit test đa ngôn ngữ</h1>
+    <p class="sub">với vòng lặp tự cải tiến dựa trên phản hồi coverage và mutation testing</p>
+  </div>
+  <div class="what">
+    <h3>Đề tài này làm gì</h3>
+    <p>Xây dựng một chương trình dùng mô hình ngôn ngữ lớn (LLM) để tự viết unit test cho code Python và JavaScript/TypeScript. Chương trình không tin ngay test do LLM viết: nó chạy test thật, đo chất lượng, rồi đưa kết quả đo lại cho LLM để sửa và viết thêm, lặp qua nhiều vòng.</p>
+    <div class="flow">
+      <div class="st">Code và đặc tả</div><div class="ar"></div>
+      <div class="st">LLM viết test</div><div class="ar"></div>
+      <div class="st">Chạy test, đo chất lượng</div><div class="ar"></div>
+      <div class="st">Phản hồi cho LLM, lặp lại</div><div class="ar"></div>
+      <div class="st end">Bộ test và danh sách nghi bug</div>
+    </div>
+  </div>
+  <div class="who">
+    <div>Sinh viên: ……………………… &nbsp;&nbsp; MSSV: ………………<br>Giảng viên hướng dẫn: ………………………</div>
+    <div style="text-align:right">Bài nghiên cứu nền tảng: MuTAP<br>Dakhel và cộng sự, <i>Information and Software Technology</i>, 2024</div>
+  </div>
+</section>
+
+<!-- 2. GIỚI THIỆU -->
+<section class="slide" data-sec="0">
+  <div class="head"><h2>Giới thiệu đề tài: chương trình nhận gì, làm gì, trả về gì</h2></div>
+  <div class="main">
+    <div class="grow" style="display:grid;grid-template-columns:1fr 54px 1.15fr 54px 1fr;align-items:stretch">
+      <div class="blk"><h3>Đầu vào</h3><div class="in mid"><ul class="b">
+        <li>Một file code cần test: <code>.py</code>, <code>.js</code> hoặc <code>.ts</code></li>
+        <li>Docstring hoặc JSDoc trong file, dùng làm <b>đặc tả</b> (code phải làm gì)</li>
+      </ul></div></div>
+      <div class="flow"><div class="ar" style="flex:1"></div></div>
+      <div class="blk a"><h3>Agent xử lý qua nhiều vòng</h3><div class="in mid"><ul class="b">
+        <li>LLM viết test theo đặc tả</li>
+        <li>Chạy test thật, đo coverage và mutation score</li>
+        <li>Xác định vấn đề cần xử lý trước</li>
+        <li>Đưa vấn đề đó vào prompt của vòng sau</li>
+      </ul></div></div>
+      <div class="flow"><div class="ar" style="flex:1"></div></div>
+      <div class="blk k"><h3>Đầu ra</h3><div class="in mid"><ul class="b">
+        <li>Bộ test chạy được</li>
+        <li>Danh sách test <b>nghi code có bug</b>, để người kiểm tra</li>
+        <li>Log từng vòng để xem lại</li>
+      </ul></div></div>
+    </div>
+    <div class="c2" style="flex:none">
+      <div class="blk"><h3>Phạm vi đã làm</h3><div class="in"><ul class="b">
+        <li>Hai ngôn ngữ: Python, JavaScript/TypeScript</li>
+        <li>Dữ liệu: 9 module tự viết, có 4 bug cài sẵn</li>
+        <li>Một LLM miễn phí qua OpenRouter; giao diện demo Streamlit</li>
+      </ul></div></div>
+      <div class="blk"><h3>Điểm khác so với bài nền tảng MuTAP</h3><div class="in"><ul class="b">
+        <li>Không mặc định code đúng khi test fail</li>
+        <li>Chấm điểm trên lỗi mà LLM chưa được thấy</li>
+        <li>Thêm phản hồi coverage và chạy trên hai ngôn ngữ</li>
+      </ul></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 3. NỘI DUNG -->
+<section class="slide" data-sec="0">
+  <div class="head"><h2>Nội dung trình bày</h2></div>
+  <div class="main">
+    <table class="t fillt" style="font-size:34px">
+      <tr><th style="width:80px">Phần</th><th style="width:560px">Nội dung</th><th>Câu hỏi được trả lời</th><th class="n">Trang</th></tr>
+      <tr><td><b>1</b></td><td><b>Bài toán</b></td><td>Đề tài giải quyết vấn đề gì?</td><td class="n">4–5</td></tr>
+      <tr><td><b>2</b></td><td><b>Cơ sở lý thuyết</b></td><td>Đo chất lượng test bằng cách nào? Khó ở đâu?</td><td class="n">6–8</td></tr>
+      <tr><td><b>3</b></td><td><b>Nghiên cứu nền tảng</b></td><td>Đề tài dựa vào nghiên cứu nào? Bài đó còn điểm gì cần xem xét?</td><td class="n">9–13</td></tr>
+      <tr><td><b>4</b></td><td><b>Phương pháp</b></td><td>Rút ra được gì từ bài báo? Câu hỏi nghiên cứu là gì?</td><td class="n">14–15</td></tr>
+      <tr><td><b>5</b></td><td><b>Hệ thống và demo</b></td><td>Giải quyết bài toán cụ thể như thế nào?</td><td class="n">16–20</td></tr>
+      <tr><td><b>6</b></td><td><b>Thực nghiệm và kết quả</b></td><td>Cách làm này có hiệu quả không? Số liệu nói gì?</td><td class="n">21–26</td></tr>
+      <tr><td><b>7</b></td><td><b>Kết luận</b></td><td>Đã làm được gì, còn thiếu gì, làm gì tiếp?</td><td class="n">27–28</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 4. BỐI CẢNH -->
+<section class="slide" data-sec="1">
+  <div class="head"><h2>Bối cảnh: LLM viết test rất nhanh, nhưng chưa đáng tin</h2></div>
+  <div class="main">
+    <div class="c3" style="flex:none">
+      <div class="blk n"><h3>Rủi ro 1: không chạy được</h3><div class="in"><p>Sai cú pháp, sai import, gọi hàm sai cách. Test như vậy không kiểm tra được gì.</p></div></div>
+      <div class="blk n"><h3>Rủi ro 2: bỏ sót</h3><div class="in"><p>Không đi qua một số nhánh, thiếu trường hợp biên. Lỗi nằm ở đó không bị phát hiện.</p></div></div>
+      <div class="blk n"><h3>Rủi ro 3: viết sai</h3><div class="in"><p>Sai giá trị mong đợi. Nguy hiểm nhất là test viết theo code đang sai, làm bug bị giấu đi.</p></div></div>
+    </div>
+    <div class="grow">
+      <table class="t fillt">
+        <tr><th style="width:400px">Nghiên cứu</th><th>Quan sát được</th></tr>
+        <tr><td><b>TestPilot</b><br><span class="soft">IEEE TSE, 2024</span></td><td>gpt-3.5-turbo trên 25 gói npm: trung vị 70,2&nbsp;% statement coverage, 52,8&nbsp;% branch coverage</td></tr>
+        <tr><td><b>TestGen-LLM</b><br><span class="soft">Meta, FSE Companion 2024</span></td><td>Sau khi lọc: 75&nbsp;% test build được, 57&nbsp;% pass ổn định, 25&nbsp;% làm tăng coverage</td></tr>
+        <tr><td><b>Zhao và cộng sự</b><br><span class="soft">ISSTA 2026</span></td><td>Code có bug dẫn dắt sai LLM: tăng test khẳng định hành vi sai, giảm test bắt được bug</td></tr>
+      </table>
+    </div>
+    <div class="note"><b>Vấn đề của đề tài:</b> làm sao để test do LLM viết chạy được, đủ chặt, và không che giấu bug trong code?</div>
+  </div>
+  <div data-src="Số liệu trích từ các bài báo, em không chạy lại. Chi tiết: docs/TAI_LIEU_THAM_KHAO.md"></div>
+</section>
+
+<!-- 5. VÍ DỤ XUYÊN SUỐT -->
+<section class="slide" data-sec="1">
+  <div class="head"><h2>Ví dụ xuyên suốt: một bug chỉ do thiếu một dấu bằng</h2></div>
+  <div class="main">
+    <div class="c2 grow" style="grid-template-columns:1.05fr 1fr">
+      <div class="blk"><h3>Hàm đổi điểm số sang điểm chữ</h3><div class="in mid">
+        <div class="code" style="font-size:33px;line-height:1.5">def letter_grade(score):
+<i>    """80 &lt;= score &lt; 90 -&gt; "B"
+       65 &lt;= score &lt; 80 -&gt; "C"  ..."""</i>
+    if score &gt;= 90:
+        return "A"
+    elif <span class="bad">score &gt; 80</span>: <i># đặc tả: &gt;= 80</i>
+        return "B"
+    elif score &gt;= 65:
+        return "C"
+    ...</div>
+      </div></div>
+      <div style="display:flex;flex-direction:column;gap:22px;min-height:0">
+        <table class="t" style="font-size:34px">
+          <tr><th>Đầu vào</th><th>Đặc tả yêu cầu</th><th>Code trả về</th><th></th></tr>
+          <tr><td class="mono">85</td><td>B</td><td>B</td><td><span class="tag k">Đúng</span></td></tr>
+          <tr class="hl"><td class="mono"><b>80</b></td><td><b>B</b></td><td><b>C</b></td><td><span class="tag n">Sai</span></td></tr>
+          <tr><td class="mono">79</td><td>C</td><td>C</td><td><span class="tag k">Đúng</span></td></tr>
+        </table>
+        <div class="blk n grow"><h3>Nếu LLM đọc code rồi viết test theo code</h3><div class="in mid" style="font-size:36px;gap:22px">
+          <div class="code" style="font-size:33px">assert letter_grade(80) == <span class="bad">"C"</span></div>
+          <p>Test này <b>pass</b>. Người xem thấy test xanh nên tưởng code đúng, còn bug thì bị giấu đi. Em gọi hiện tượng này là <b>hợp thức hoá bug</b>.</p>
+        </div></div>
+      </div>
+    </div>
+  </div>
+  <div data-src="Bug có thật trong tập dữ liệu (BUGS.md, bug 1). Dòng assert là ví dụ minh hoạ."></div>
+</section>
+
+<!-- 6. COVERAGE -->
+<section class="slide" data-sec="2">
+  <div class="head"><h2>Thước đo 1: coverage cao chưa chắc bắt được lỗi</h2></div>
+  <div class="main">
+    <div class="c2 grow">
+      <div class="blk"><h3>Khái niệm</h3><div class="in mid"><ul class="b">
+        <li><b>Unit test:</b> đoạn kiểm tra tự động cho một hàm, đưa đầu vào rồi so kết quả với giá trị mong đợi</li>
+        <li><b>Line coverage:</b> tỉ lệ dòng code mà test đã chạy qua</li>
+        <li><b>Branch coverage:</b> tỉ lệ nhánh <code>if/else</code> mà test đã đi qua</li>
+      </ul></div></div>
+      <div class="blk n"><h3>Vì sao chưa đủ: thử với ví dụ của đề tài</h3><div class="in mid">
+        <div class="code">assert letter_grade(85) == "B"</div>
+        <ul class="b">
+          <li>Test pass, nhánh <code>"B"</code> được tính là đã phủ</li>
+          <li>Bug ở mốc 80 vẫn còn nguyên, vì test không thử đúng giá trị biên</li>
+        </ul>
+      </div></div>
+    </div>
+    <div class="blk" style="flex:none"><h3>Bằng chứng từ nghiên cứu</h3><div class="in"><ul class="b">
+      <li><b>Inozemtseva và Holmes, ICSE 2014:</b> 31.000 bộ test trên 5 hệ thống Java. Khi cố định số lượng test, coverage chỉ tương quan thấp đến vừa với hiệu quả của bộ test</li>
+      <li><b>MutGen (Wang và cộng sự):</b> nêu ví dụ bộ test đạt 100&nbsp;% coverage nhưng chỉ đạt 4&nbsp;% mutation score</li>
+    </ul></div></div>
+    <div class="note">Coverage cho biết code đã được <b>chạy qua</b>, không cho biết kết quả có được <b>kiểm tra đúng</b> hay không.</div>
+  </div>
+</section>
+
+<!-- 7. MUTATION -->
+<section class="slide" data-sec="2">
+  <div class="head"><h2>Thước đo 2: mutation testing, cố tình cài lỗi vào code</h2></div>
+  <div class="main">
+    <div class="c2" style="flex:none">
+      <div class="blk"><h3>Code gốc (đúng đặc tả)</h3><div class="in"><div class="code">elif <span class="good">score &gt;= 80</span>:
+    return "B"</div></div></div>
+      <div class="blk"><h3>Mutant: bản sao bị sửa một chỗ</h3><div class="in"><div class="code">elif <span class="bad">score &gt; 80</span>:
+    return "B"</div></div></div>
+    </div>
+    <table class="t" style="font-size:32px">
+      <tr><th>Test</th><th>Trên code gốc</th><th>Trên mutant</th><th>Kết luận</th></tr>
+      <tr><td class="mono">letter_grade(85) == "B"</td><td>Pass</td><td>Pass</td><td><span class="tag w">Mutant còn sống</span>&nbsp; bộ test chưa đủ chặt</td></tr>
+      <tr><td class="mono">letter_grade(80) == "B"</td><td>Pass</td><td>Fail</td><td><span class="tag k">Mutant bị giết</span>&nbsp; bắt được loại lỗi này</td></tr>
+    </table>
+    <div class="c2 grow">
+      <div class="blk a"><h3>Mutation score</h3><div class="in mid">
+        <p style="font-size:36px;font-weight:700">Số mutant bị giết / Tổng số mutant</p>
+        <p>Mỗi mutant còn sống cho biết <b>chính xác</b> bộ test đang bỏ sót điều gì. Đây là thông tin đề tài đưa lại cho LLM.</p>
+      </div></div>
+      <div class="blk"><h3>Vì sao tin được thước đo này</h3><div class="in mid">
+        <p><b>Just và cộng sự, FSE 2014:</b> trên 357 lỗi thật của 5 ứng dụng, khả năng phát hiện mutant tương quan có ý nghĩa thống kê với khả năng phát hiện lỗi thật, độc lập với coverage.</p>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 8. ORACLE -->
+<section class="slide" data-sec="2">
+  <div class="head"><h2>Khó khăn: khi test fail thì test sai hay code sai?</h2></div>
+  <div class="main">
+    <div class="grow">
+      <table class="t fillt">
+        <tr><th style="width:230px">Khả năng</th><th>Ví dụ</th><th style="width:400px">Cách xử lý đúng</th><th style="width:440px">Nếu xử lý nhầm</th></tr>
+        <tr><td><span class="tag">Test sai</span></td><td>LLM tính nhầm giá trị mong đợi của <code>final_score</code>: viết 44.9, đúng ra là 48.1</td><td>Sửa test</td><td>Giữ test sai, báo động giả cho người kiểm tra</td></tr>
+        <tr class="hl"><td><span class="tag n">Code sai</span></td><td>Test đúng đặc tả <code>letter_grade(80) == "B"</code> nhưng code trả về <code>"C"</code></td><td><b>Giữ test</b>, báo cho người kiểm tra</td><td>Sửa test cho khớp code: bug bị hợp thức hoá</td></tr>
+      </table>
+    </div>
+    <div class="c2" style="flex:none">
+      <div class="blk"><h3>Oracle problem</h3><div class="in"><p>Khó biết kết quả nào mới là kết quả đúng. Theo khảo sát của Barr và cộng sự (IEEE TSE, 2015), con người vẫn là nguồn xác nhận cuối cùng.</p></div></div>
+      <div class="blk a"><h3>Cách đề tài tiếp cận</h3><div class="in"><p>Dùng docstring làm căn cứ để so sánh. Chương trình chỉ gắn nhãn <b>nghi có bug</b>, người kiểm tra mới là người xác nhận. Đề tài không tuyên bố giải quyết xong bài toán này.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 9. TỔNG QUAN -->
+<section class="slide" data-sec="3">
+  <div class="head"><h2>Tổng quan 37 tài liệu: ba hướng tiếp cận</h2></div>
+  <div class="main">
+    <div class="grow">
+      <table class="t fillt" style="font-size:30px">
+        <tr><th style="width:300px">Hướng</th><th style="width:370px">Công trình tiêu biểu</th><th>Cách làm</th><th style="width:490px">Hạn chế chính</th></tr>
+        <tr><td><b>Thuật toán tìm kiếm</b></td><td>EvoSuite (Java), Pynguin (Python)</td><td>Tiến hoá bộ test để tối đa coverage</td><td>Mỗi công cụ gắn với một ngôn ngữ; assert ghi lại hành vi hiện tại của code</td></tr>
+        <tr><td><b>LLM sinh một lần</b></td><td>Đánh giá ChatGPT, Codex, GPT-3.5</td><td>Hỏi LLM một lần, nhận bộ test</td><td>Test không được chạy kiểm chứng, có thể lỗi hoặc sai</td></tr>
+        <tr class="hl"><td><b>LLM + phản hồi</b><br><span class="tag">Đề tài thuộc hướng này</span></td><td>TestPilot, CoverUp, <b>MuTAP</b>, ACH</td><td>Chạy test, đưa kết quả đo lại cho LLM, lặp nhiều vòng</td><td>Các bài em đọc thường tập trung một loại phản hồi trên một ngôn ngữ</td></tr>
+      </table>
+    </div>
+    <div class="blk a" style="flex:none"><h3>Vì sao chọn MuTAP làm bài nền tảng</h3><div class="in"><ul class="b">
+      <li>Dùng mutation testing làm phản hồi, đúng thước đo mạnh hơn coverage đã nêu ở phần trước</li>
+      <li>Quy trình mô tả rõ từng bước nên có thể áp dụng và đối chiếu</li>
+      <li>Có số liệu trên cả lỗi nhân tạo (HumanEval) lẫn lỗi thật của sinh viên (Refactory)</li>
+    </ul></div></div>
+  </div>
+  <div data-src="Danh sách đầy đủ: docs/TAI_LIEU_THAM_KHAO.md"></div>
+</section>
+
+<!-- 10. MUTAP -->
+<section class="slide" data-sec="3">
+  <div class="head"><h2>Bài nền tảng: MuTAP</h2></div>
+  <div class="main">
+    <div class="c2 grow" style="grid-template-columns:1.15fr 1fr">
+      <table class="t fillt" style="font-size:30px">
+        <tr><td style="width:190px"><b>Tên bài</b></td><td>Effective Test Generation Using Pre-trained Large Language Models and Mutation Testing</td></tr>
+        <tr><td><b>Tác giả</b></td><td>Dakhel, Nikanjam, Majdinasab, Khomh, Desmarais</td></tr>
+        <tr><td><b>Công bố</b></td><td><i>Information and Software Technology</i>, 2024</td></tr>
+        <tr><td><b>Mô hình</b></td><td>Codex (code-davinci-002), llama-2-chat</td></tr>
+        <tr><td><b>Dữ liệu</b></td><td>HumanEval: 164 bài toán Python, lỗi tạo bằng mutant<br>Refactory: 1.710 bài nộp có lỗi thật của sinh viên</td></tr>
+        <tr><td><b>So sánh với</b></td><td>Pynguin; LLM hỏi một lần, không có vòng mutation</td></tr>
+      </table>
+      <div style="display:flex;flex-direction:column;gap:22px;min-height:0">
+        <div class="blk"><h3>Vấn đề bài báo đặt ra</h3><div class="in"><p>Test do LLM viết thường chỉ được đánh giá bằng coverage, mà coverage liên quan yếu đến khả năng phát hiện lỗi. Test còn hay sai cú pháp, sai giá trị mong đợi và bỏ sót trường hợp biên.</p></div></div>
+        <div class="blk a grow"><h3>Ý tưởng chính</h3><div class="in mid">
+          <p>Đưa <b>mutant còn sống</b> vào prompt để LLM viết đúng test còn thiếu. Prompt gồm bộ test hiện tại, một mutant còn sống và câu:</p>
+          <p class="quote">"Test này không phát hiện được lỗi trong đoạn code sau"</p>
+        </div></div>
+      </div>
+    </div>
+  </div>
+  <div data-src="DOI: 10.1016/j.infsof.2024.107468. Bản đọc miễn phí: arXiv:2308.16557. Tóm tắt của em: docs/BAO_CAO_MUTAP.md"></div>
+</section>
+
+<!-- 11. QUY TRÌNH MUTAP -->
+<section class="slide" data-sec="3">
+  <div class="head"><h2>Quy trình 6 bước của MuTAP</h2></div>
+  <div class="main">
+    <div class="steps grow">
+      <div class="step"><span class="num">1</span><b>Sinh test</b><span>Đưa code cho LLM, hỏi kiểu zero-shot hoặc few-shot</span></div>
+      <div class="step"><span class="num">2</span><b>Sửa cú pháp</b><span>Có lỗi thì yêu cầu LLM sửa, tối đa 10 lần, không gửi kèm thông báo lỗi</span></div>
+      <div class="step w"><span class="num">3</span><b>Sửa giá trị mong đợi</b><span>Giá trị LLM viết khác kết quả của code thì thay bằng kết quả của code</span></div>
+      <div class="step"><span class="num">4</span><b>Đo mutation</b><span>Dùng MutPy tạo mutant, chạy bộ test, tính mutation score</span></div>
+      <div class="step a"><span class="num">5</span><b>Bổ sung prompt</b><span>Chưa đạt 100&nbsp;% thì thêm một mutant còn sống vào prompt để LLM viết thêm test</span></div>
+      <div class="step"><span class="num">6</span><b>Rút gọn bộ test</b><span>Chỉ giữ test làm tăng điểm, dùng thuật toán tham lam</span></div>
+    </div>
+    <div class="c3" style="flex:none">
+      <div class="note w"><b>Bước 3</b> giả định code luôn đúng. Em sẽ quay lại điểm này ở trang 13.</div>
+      <div class="note"><b>Bước 4 và 5</b> lặp lại đến khi đạt 100&nbsp;% hoặc dùng hết mutant còn sống. Đây là đóng góp chính.</div>
+      <div class="note"><b>Bước 2 và 3</b> cũng là phần tác giả nhấn mạnh: LLM cần xử lý sau mới cho test tốt.</div>
+    </div>
+  </div>
+  <div data-src="Mô tả theo bài báo, mục 3. Tóm tắt: docs/BAO_CAO_MUTAP.md, mục 1.4."></div>
+</section>
+
+<!-- 12. KẾT QUẢ MUTAP -->
+<section class="slide" data-sec="3">
+  <div class="head"><h2>Kết quả trong bài báo: MuTAP vượt xa Pynguin</h2></div>
+  <div class="main">
+    <div class="c2 grow" style="grid-template-columns:1fr 1fr">
+      <div style="display:flex;flex-direction:column;gap:22px;justify-content:center">
+        <div class="legend"><span><i style="background:var(--accent)"></i>MuTAP</span><span><i style="background:#D08A16"></i>Pynguin (không dùng LLM)</span></div>
+        <p style="font-weight:700">HumanEval: mutation score</p>
+        <div class="brow" title="HumanEval, MuTAP: 93,57&nbsp;%"><span>MuTAP</span><div class="track"><div class="bar" style="width:93.57%;background:var(--accent)"></div></div><span class="val">93,57&nbsp;%</span></div>
+        <div class="brow" title="HumanEval, Pynguin: 65,94&nbsp;%"><span>Pynguin</span><div class="track"><div class="bar" style="width:65.94%;background:#D08A16"></div></div><span class="val">65,94&nbsp;%</span></div>
+        <p style="font-weight:700;margin-top:18px">Refactory: phát hiện lỗi thật của sinh viên</p>
+        <div class="brow" title="Refactory, MuTAP: 94,91&nbsp;%"><span>MuTAP</span><div class="track"><div class="bar" style="width:94.91%;background:var(--accent)"></div></div><span class="val">94,91&nbsp;%</span></div>
+        <div class="brow" title="Refactory, Pynguin: 67,54&nbsp;%"><span>Pynguin</span><div class="track"><div class="bar" style="width:67.54%;background:#D08A16"></div></div><span class="val">67,54&nbsp;%</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:22px">
+        <table class="t">
+          <tr><th>Chi tiết</th><th class="n">MuTAP</th><th class="n">Pynguin</th></tr>
+          <tr><td>Mutant bị giết trên tổng 1.260</td><td class="n">1.179</td><td class="n">649</td></tr>
+          <tr><td>Bài đạt mutation score 100&nbsp;%</td><td class="n">114</td><td class="n">46</td></tr>
+        </table>
+        <div class="blk grow"><h3>Tác giả kết luận gì</h3><div class="in mid"><ul class="b">
+          <li>LLM có ích, nhưng cần xử lý sau (sửa cú pháp, sửa giá trị mong đợi, phản hồi mutation) thì test mới thật sự hiệu quả</li>
+          <li>Refactory: phát hiện nhiều hơn Pynguin 468 bài lỗi (28&nbsp;%)</li>
+          <li>79 bài lỗi chỉ MuTAP phát hiện được</li>
+        </ul></div></div>
+      </div>
+    </div>
+  </div>
+  <div data-src="Số liệu trích từ bài báo (llama-2-chat few-shot), em không chạy lại. Thang biểu đồ từ 0 đến 100&nbsp;%."></div>
+</section>
+
+<!-- 13. HAI ĐIỂM -->
+<section class="slide" data-sec="3">
+  <div class="head"><h2>Khi đọc kỹ MuTAP, em thấy hai điểm cần xem xét</h2></div>
+  <div class="main">
+    <div class="c2 grow">
+      <div class="blk n"><h3>Điểm 1: bước 3 mặc định code luôn đúng</h3><div class="in">
+        <div class="code" style="font-size:31px;line-height:1.5"><i># LLM viết đúng theo đặc tả</i>
+assert letter_grade(80) == <span class="good">"B"</span>
+<i># Chạy code có bug: kết quả là "C"
+# Bước 3 thay bằng kết quả của code</i>
+assert letter_grade(80) == <span class="bad">"C"</span></div>
+        <ul class="b">
+          <li>Test đúng bị sửa thành test sai</li>
+          <li>Bộ test mất khả năng bắt chính bug đó</li>
+          <li>Đây chính là oracle problem ở trang 8</li>
+          <li>Quy trình 6 bước không có bước so test với đặc tả</li>
+        </ul>
+      </div></div>
+      <div class="blk n"><h3>Điểm 2: chấm điểm trên "đề đã lộ"</h3><div class="in">
+        <div style="display:grid;grid-template-columns:230px 1fr;gap:12px;align-items:center;font-size:29px" role="img" aria-label="Hình minh hoạ: toàn bộ danh sách mutant dùng để chấm, một phần trong đó đã đưa cho LLM">
+          <span>Dùng để chấm</span><div style="height:50px;background:var(--head);border-radius:3px"></div>
+          <span>Đưa cho LLM</span><div style="height:50px;background:#E4E9EE;border-radius:3px"><div style="width:40%;height:100%;background:#D08A16;border-radius:3px"></div></div>
+        </div>
+        <ul class="b">
+          <li>Mutation score tính lại trên chính danh sách đã lấy mutant đưa vào prompt, không có tập riêng LLM chưa thấy</li>
+          <li>Giống cho xem trước đề rồi chấm trên đúng đề đó</li>
+          <li>Con số 93,57&nbsp;% có thể cao hơn khả năng bắt lỗi mới</li>
+          <li>Kết quả trên Refactory không bị ảnh hưởng, vì lỗi thật không đưa vào prompt</li>
+        </ul>
+      </div></div>
+    </div>
+    <div class="note">Hai điểm này là nhận xét của em khi đọc bài, không phải hạn chế do tác giả tự nêu. Em không nói kết quả của bài là sai.</div>
+  </div>
+  <div data-src="Điểm 2 theo mục 3.3 đến 3.4 và thuật toán của bài. Hình bên phải chỉ minh hoạ khái niệm, tỉ lệ không phải số liệu."></div>
+</section>
+
+<!-- 14. CÂU HỎI NGHIÊN CỨU -->
+<section class="slide" data-sec="4">
+  <div class="head"><h2>Mục tiêu và bốn câu hỏi nghiên cứu</h2></div>
+  <div class="main">
+    <div class="note"><b>Mục tiêu:</b> xây dựng agent tự sinh test theo ý tưởng của MuTAP, khắc phục hai điểm vừa nêu, và dùng được cho nhiều ngôn ngữ.</div>
+    <div class="grow">
+      <table class="t fillt">
+        <tr><th style="width:110px">Câu</th><th>Câu hỏi</th><th style="width:640px">Đo bằng</th></tr>
+        <tr><td><b>CH1</b></td><td>Vòng lặp phản hồi có giúp test chạy được và đúng hơn so với sinh một lần không?</td><td>Số test fail còn lại, coverage, so cấu hình A với B</td></tr>
+        <tr><td><b>CH2</b></td><td>Có phân biệt được test sai với code sai không?</td><td>Nhãn nghi bug đúng và sai, đối chiếu với bản code đã sửa</td></tr>
+        <tr><td><b>CH3</b></td><td>Phản hồi mutation có giúp bắt được lỗi mới, tức mutant LLM chưa thấy, không?</td><td>Mutation score trên tập held-out, so B với C</td></tr>
+        <tr><td><b>CH4</b></td><td>Một vòng lặp có dùng được cho nhiều ngôn ngữ mà không viết lại không?</td><td>Chạy được trên Python và JS/TS; logic vòng lặp có phải sửa không</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 15. PHƯƠNG PHÁP RÚT RA -->
+<section class="slide" data-sec="4">
+  <div class="head"><h2>Phương pháp rút ra từ MuTAP: giữ gì, đổi gì, thêm gì</h2></div>
+  <div class="main">
+    <table class="t fillt" style="font-size:30px">
+      <tr><th style="width:170px"></th><th style="width:430px">Nội dung</th><th style="width:400px">MuTAP</th><th>Đề tài</th></tr>
+      <tr><td><span class="tag k">Giữ</span></td><td>Mutant còn sống làm phản hồi</td><td>Có</td><td>Kế thừa nguyên ý tưởng</td></tr>
+      <tr class="hl"><td><span class="tag">Đổi</span></td><td>Khi test fail trên code</td><td>Sửa test cho khớp code</td><td>So với đặc tả. Test sai thì sửa; nghi code sai thì giữ test, gắn nhãn</td></tr>
+      <tr class="hl"><td><span class="tag">Đổi</span></td><td>Cách chấm mutation</td><td>Trên mutant đã đưa vào prompt</td><td>Chấm cả hai cách, kết luận theo mutant LLM chưa thấy (held-out)</td></tr>
+      <tr class="hl"><td><span class="tag">Đổi</span></td><td>Sửa test bị hỏng</td><td>Không gửi thông báo lỗi</td><td>Gửi kèm thông báo lỗi thật</td></tr>
+      <tr><td><span class="tag w">Thêm</span></td><td>Phản hồi coverage</td><td>Không có</td><td>Có, thực hiện trước bước mutation</td></tr>
+      <tr><td><span class="tag w">Thêm</span></td><td>Bộ nhớ bài học</td><td>Không có</td><td>File JSON đưa vào prompt lần sau, không huấn luyện lại model</td></tr>
+      <tr><td><span class="tag w">Thêm</span></td><td>Ngôn ngữ</td><td>Python</td><td>Python và JavaScript/TypeScript</td></tr>
+      <tr><td><span class="tag g">Chưa làm</span></td><td>Rút gọn bộ test (bước 6)</td><td>Có</td><td>Chưa làm, nằm trong hướng phát triển</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 16. VÒNG LẶP -->
+<section class="slide" data-sec="5">
+  <div class="head"><h2>Hệ thống: vòng lặp tự cải tiến</h2></div>
+  <div class="main">
+    <div class="c2 grow" style="grid-template-columns:760px 1fr">
+      <svg viewBox="0 0 760 560" width="760" height="560" role="img" aria-label="Vòng lặp bốn bước: LLM viết test, chạy test thật, đo chất lượng, tạo phản hồi rồi quay lại LLM" font-family="'Be Vietnam Pro','Segoe UI',sans-serif" style="align-self:center">
+        <g fill="none" stroke="#0B6E82" stroke-width="7"><path d="M300,80 H444"/><path d="M620,160 V384"/><path d="M460,480 H316"/><path d="M140,400 V176"/></g>
+        <g fill="#0B6E82"><path d="M440,56 L474,80 L440,104 z"/><path d="M596,380 L620,414 L644,380 z"/><path d="M320,456 L286,480 L320,504 z"/><path d="M116,180 L140,146 L164,180 z"/></g>
+        <g><rect x="0" y="0" width="290" height="150" rx="6" fill="#12384F"/><rect x="470" y="0" width="290" height="150" rx="6" fill="#E1F0F3"/><rect x="470" y="410" width="290" height="150" rx="6" fill="#E1F0F3"/><rect x="0" y="410" width="290" height="150" rx="6" fill="#FFF2D6"/></g>
+        <g font-size="36" font-weight="700" text-anchor="middle">
+          <text x="145" y="68" fill="#fff">LLM viết</text><text x="145" y="112" fill="#fff">hoặc sửa test</text>
+          <text x="615" y="68" fill="#1A2433">Chạy test</text><text x="615" y="112" fill="#1A2433">thật</text>
+          <text x="615" y="478" fill="#1A2433">Đo coverage,</text><text x="615" y="522" fill="#1A2433">mutation</text>
+          <text x="145" y="478" fill="#1A2433">Tạo phản hồi</text><text x="145" y="522" fill="#1A2433">cụ thể</text>
+        </g>
+        <g font-size="29" fill="#4B5A6B" text-anchor="middle"><text x="380" y="262">Tự viết bằng</text><text x="380" y="302">for và if/else,</text><text x="380" y="342">không dùng LangChain</text></g>
+      </svg>
+      <div style="display:flex;flex-direction:column;gap:20px;min-height:0">
+        <div class="blk"><h3>Mỗi vòng xử lý một vấn đề ưu tiên nhất (giả mã)</h3><div class="in">
+          <div class="code" style="font-size:26px"><i># tối đa 8 vòng</i>
+if  file test lỗi cú pháp, import:  LLM sửa cả file
+elif có test fail:     LLM phân loại test sai / code sai
+elif coverage thấp:    gửi dòng, nhánh chưa phủ
+elif mutation thấp:    gửi mutant còn sống
+else: dừng</div>
+        </div></div>
+        <div class="blk grow"><h3>Các quyết định thiết kế</h3><div class="in mid"><ul class="b" style="font-size:30px">
+          <li><b>Thứ tự:</b> coverage của bộ test đang fail thì không đáng tin, nên xử lý test fail trước</li>
+          <li><b>Ghép test:</b> LLM chỉ trả về test mới hoặc đã sửa, chương trình tự ghép nên LLM không xoá được test cũ</li>
+          <li><b>Ngưỡng:</b> line 95&nbsp;%, branch 90&nbsp;%, mutation 80&nbsp;%</li>
+          <li><b>Dừng:</b> đạt ngưỡng, 2 lần liên tiếp không cải thiện, hoặc hết 8 vòng</li>
+        </ul></div></div>
+      </div>
+    </div>
+  </div>
+  <div data-src="Mã nguồn: testgen/agent.py. Giả mã đã rút gọn."></div>
+</section>
+
+<!-- 17. PROMPT -->
+<section class="slide" data-sec="5">
+  <div class="head"><h2>Mỗi vòng, LLM nhận được phản hồi gì</h2></div>
+  <div class="main">
+    <table class="t" style="font-size:30px">
+      <tr><th style="width:310px">Tình huống</th><th>Đưa vào prompt</th><th style="width:680px">Yêu cầu LLM</th></tr>
+      <tr><td><b>File test không chạy</b></td><td>File test và thông báo lỗi thật</td><td>Sửa cả file, giữ các test đang đúng</td></tr>
+      <tr><td><b>Có test fail</b></td><td>Code, đặc tả, test fail và thông tin lỗi</td><td>Trả JSON: mỗi test là <code>TEST_WRONG</code> hay <code>SUSPECTED_BUG</code></td></tr>
+      <tr><td><b>Coverage thấp</b></td><td>Code đánh số dòng, các dòng và nhánh chưa phủ</td><td>Viết thêm test mới để chạy tới các dòng đó</td></tr>
+      <tr><td><b>Mutant còn sống</b></td><td>Code đánh số dòng, các mutant còn sống</td><td>Viết thêm test pass trên code đúng, fail trên mutant</td></tr>
+    </table>
+    <div class="c2 grow">
+      <div class="blk a"><h3>Quy tắc đầu tiên trong mọi prompt</h3><div class="in mid">
+        <p class="quote">"Viết assert theo ĐẶC TẢ trong docstring, KHÔNG suy ra kết quả mong đợi từ cách code cài đặt."</p>
+        <p>Chỉ chọn <code>SUSPECTED_BUG</code> khi đặc tả nói rõ hành vi mong đợi và code vi phạm điều đó.</p>
+      </div></div>
+      <div class="blk"><h3>Một mutant thật đã đưa vào prompt</h3><div class="in mid">
+        <div class="code" style="font-size:25px">Mutant #16, dòng 43:
+raise ConfigError("Key rỗng")
+  -&gt; raise ConfigError("XXKey rỗngXX")</div>
+        <p>Với loại mutant này, LLM viết test kiểm tra cả nội dung thông báo lỗi.</p>
+      </div></div>
+    </div>
+  </div>
+  <div data-src="Nguồn: testgen/prompts.py; logs/safe_parser_eval_C_*.json."></div>
+</section>
+
+<!-- 18. LOG THẬT -->
+<section class="slide" data-sec="5">
+  <div class="head"><h2>Log thật: hai test fail, hai cách xử lý</h2></div>
+  <div class="main">
+    <div class="c2 grow">
+      <div class="blk n"><h3>SUSPECTED_BUG: nghi code có bug</h3><div class="in">
+        <div class="code" style="font-size:33px;line-height:1.5"><i># test_letter_grade_B</i>
+letter_grade(80) == "B"</div>
+        <p><b>LLM trả lời:</b></p>
+        <p class="quote" style="font-size:36px">"Docstring defines 80 &lt;= score &lt; 90 as 'B', but code returns 'C' for score=80 due to using &gt;80 instead of &gt;=80."</p>
+        <p style="margin-top:auto"><span class="tag n">Xử lý</span> Giữ test, gắn nhãn, báo cho người kiểm tra</p>
+      </div></div>
+      <div class="blk"><h3 style="background:var(--accent)">TEST_WRONG: test viết sai</h3><div class="in">
+        <div class="code" style="font-size:33px;line-height:1.5"><i># test_final_score_rounding</i>
+final_score(...) == <span class="bad">44.9</span> <i>-&gt;</i> <span class="good">48.1</span></div>
+        <p><b>LLM trả lời:</b></p>
+        <p class="quote" style="font-size:36px">"Second assert expects 44.9, but per docstring the correct rounded result is 48.1."</p>
+        <p style="margin-top:auto"><span class="tag">Xử lý</span> Sửa giá trị mong đợi trong test</p>
+      </div></div>
+    </div>
+    <div class="flow" style="flex:none">
+      <div class="st" style="background:var(--no-tint)">Vòng 0: 18 pass, 2 fail</div><div class="ar"></div>
+      <div class="st end">Vòng 1: 19 pass, 0 fail, 1 test mang nhãn nghi bug</div>
+    </div>
+    <div class="note w">Nếu dùng bước 3 của MuTAP, test ở bên trái sẽ bị đổi thành <code>== "C"</code> và bug ở mốc 80 bị che đi.</div>
+  </div>
+  <div data-src="Nguồn: logs/grading_eval_C_20260926-190937.json. Lời LLM giữ nguyên tiếng Anh; code đã lược bớt."></div>
+</section>
+
+<!-- 19. ADAPTER -->
+<section class="slide" data-sec="5">
+  <div class="head"><h2>Kiến trúc Adapter: một vòng lặp, nhiều ngôn ngữ</h2></div>
+  <div class="main">
+    <div class="c2 grow" style="grid-template-columns:1.2fr 1fr">
+      <div style="display:flex;flex-direction:column;gap:0;min-height:0">
+        <div style="background:var(--head);color:#fff;text-align:center;font-weight:700;font-size:36px;padding:20px;border-radius:6px 6px 0 0">Vòng lặp agent: không biết ngôn ngữ</div>
+        <div class="mono" style="background:var(--accent);color:#fff;text-align:center;font-weight:700;font-size:32px;padding:14px;border-radius:0 0 6px 6px;margin-bottom:20px">LanguageAdapter</div>
+        <table class="t fillt" style="font-size:30px">
+          <tr><th></th><th>Python</th><th>JS / TS</th><th>Java</th></tr>
+          <tr><td><b>Chạy test</b></td><td>pytest</td><td>Jest 30</td><td class="soft">JUnit 5</td></tr>
+          <tr><td><b>Coverage</b></td><td>coverage.py</td><td>Istanbul</td><td class="soft">JaCoCo</td></tr>
+          <tr><td><b>Mutation</b></td><td>toán tử mutmut 2.5.1, runner tự viết</td><td>StrykerJS 10</td><td class="soft">PIT</td></tr>
+          <tr><td><b>Nhãn nghi bug</b></td><td><code>xfail</code></td><td><code>test.failing</code></td><td class="soft">Mới phác thảo</td></tr>
+        </table>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:22px;min-height:0">
+        <div class="blk"><h3>Ý tưởng</h3><div class="in"><p>Mọi thao tác phụ thuộc ngôn ngữ nằm sau một giao diện chung. Thêm JS/TS là viết thêm một lớp adapter, không sửa logic vòng lặp.</p></div></div>
+        <div class="blk k grow"><h3>Kiểm chứng khi tách kiến trúc</h3><div class="in mid">
+          <p>So sánh hành vi phần Python trước và sau khi refactor:</p>
+          <ul class="b">
+            <li>8 prompt giống từng ký tự</li>
+            <li>4 bộ test, mỗi bộ 40 mutant: trạng thái từng mutant giống hệt</li>
+            <li>Agent với LLM giả lập: 7 hành động giống hệt</li>
+          </ul>
+        </div></div>
+      </div>
+    </div>
+  </div>
+  <div data-src="Mã nguồn: adapters/. Kết quả so sánh: docs/baseline_truoc_refactor.json. Java: docs/THEM_NGON_NGU_MOI.md."></div>
+</section>
+
+<!-- 20. DEMO -->
+<section class="slide" data-sec="5">
+  <div class="head"><h2>Demo: chạy agent trên TypeScript rồi Python</h2></div>
+  <div class="main">
+    <div class="c2 grow" style="grid-template-columns:1.5fr 1fr">
+      <table class="t fillt">
+        <tr><th style="width:70px">#</th><th>Thao tác</th><th>Cần chú ý</th></tr>
+        <tr><td><b>1</b></td><td>Chọn <code>shipping.ts</code>, bật mutation, chạy agent</td><td>Cùng vòng lặp, chạy trên TypeScript</td></tr>
+        <tr><td><b>2</b></td><td>Xem test fail ở mốc 500</td><td>LLM phân loại là nghi code có bug</td></tr>
+        <tr><td><b>3</b></td><td>Mở tab Code test, phần tô đỏ</td><td>Test được giữ, gắn <code>test.failing</code></td></tr>
+        <tr><td><b>4</b></td><td>Đổi sang <code>grading.py</code></td><td>Cùng vòng lặp, công cụ khác</td></tr>
+        <tr><td><b>5</b></td><td>Mở tab Kết quả thực nghiệm</td><td>Dẫn sang phần kết quả</td></tr>
+      </table>
+      <div style="display:flex;flex-direction:column;gap:22px;min-height:0">
+        <div class="blk a"><h3>Lệnh chạy</h3><div class="in"><div class="code">streamlit run app.py</div></div></div>
+        <div class="blk n"><h3>Bug trong module demo</h3><div class="in"><p>Đặc tả: đơn từ 500 được miễn phí vận chuyển. Code viết <code>total &gt; 500</code>, nên <code>shippingFee(500)</code> trả về 15 thay vì 0.</p></div></div>
+        <div class="blk grow"><h3>Nếu API lỗi</h3><div class="in mid"><p>Dùng chế độ <b>REPLAY</b>: phát lại một lần chạy đã ghi trong log, dữ liệu của lần chạy thật.</p></div></div>
+      </div>
+    </div>
+  </div>
+  <div data-src="Bug 3 trong BUGS.md. Kịch bản đầy đủ: DEMO_CHECKLIST.md."></div>
+</section>
+
+<!-- 21. THỰC NGHIỆM -->
+<section class="slide" data-sec="6">
+  <div class="head"><h2>Thiết kế thực nghiệm: thêm dần từng thành phần</h2></div>
+  <div class="main">
+    <div class="c2 grow" style="grid-template-columns:1fr 1fr">
+      <div style="display:flex;flex-direction:column;gap:20px;min-height:0">
+        <table class="t">
+          <tr><th>Cấu hình</th><th>Thành phần</th></tr>
+          <tr><td><b>A</b></td><td>Sinh một lần, không có vòng lặp</td></tr>
+          <tr><td><b>B</b></td><td>A + xử lý test fail, phản hồi coverage</td></tr>
+          <tr><td><b>C</b></td><td>B + phản hồi mutation</td></tr>
+          <tr><td><b>D</b></td><td>C + bộ nhớ bài học</td></tr>
+        </table>
+        <div class="blk grow"><h3>Dữ liệu và mô hình</h3><div class="in mid"><ul class="b" style="font-size:30px">
+          <li>Python, 5 module: <code>calculator</code>, <code>text_utils</code>, <code>grading</code>, <code>safe_parser</code>, <code>shopping_cart</code>; 2 bug</li>
+          <li>JS/TS, 4 module; 2 bug cùng loại với Python</li>
+          <li><code>nemotron-3-super-120b</code> miễn phí, 50 request/ngày</li>
+        </ul></div></div>
+      </div>
+      <div class="blk a"><h3>Cách chấm</h3><div class="in mid">
+        <p><b>Mutation held-out:</b> bỏ các mutant đã đưa vào prompt của C và D, rồi dùng chung tập còn lại để chấm cả bốn cấu hình.</p>
+        <div style="display:grid;grid-template-columns:1fr;gap:6px;font-size:28px" role="img" aria-label="Hình minh hoạ: tất cả mutant, trừ mutant đã đưa vào prompt, phần còn lại là tập held-out">
+          <div style="display:flex;height:58px;border-radius:3px;overflow:hidden;color:#fff;font-weight:700"><div style="flex:3;background:var(--head);display:flex;align-items:center;justify-content:center">Tập held-out để chấm</div><div style="flex:1;background:var(--wa);display:flex;align-items:center;justify-content:center">Đã lộ</div></div>
+        </div>
+        <p><b>Phát hiện bug:</b> có test fail hoặc mang nhãn trên code lỗi, và pass trên bản đã sửa. Vì vậy nhãn đúng hay sai được chấm tự động.</p>
+        <p><b>Tách hai bước:</b> bước sinh gọi LLM và ghi log; bước chấm chạy lại từ log, không tốn API.</p>
+        <p><b>Sửa sai của chính em:</b> lúc đầu em chấm trên tập có lẫn mutant đã lộ; một lượt review độc lập phát hiện lỗi này, sửa xong kết luận thay đổi.</p>
+      </div></div>
+    </div>
+  </div>
+  <div data-src="A và B lấy từ ảnh chụp trung gian của lần chạy C để so sánh ghép cặp. Hình chỉ minh hoạ khái niệm. Lệnh chấm: python evaluate.py --measure-only."></div>
+</section>
+
+<!-- 22. KẾT QUẢ PYTHON -->
+<section class="slide" data-sec="6">
+  <div class="head"><h2>Kết quả Python: giá trị rõ nhất là xử lý test fail</h2></div>
+  <div class="main">
+    <table class="t" style="font-size:31px">
+      <tr><th>Cấu hình</th><th class="n">Line / branch</th><th class="n">Mutation<br>held-out</th><th class="n">Mutation<br>tất cả</th><th class="n">Test fail<br>còn lại</th><th class="n">Bug gắn<br>nhãn đúng</th><th class="n">Nhãn<br>sai</th><th class="n">Số lần<br>gọi LLM</th></tr>
+      <tr><td><b>A</b> Sinh một lần</td><td class="n">99,0 / 98,4&nbsp;%</td><td class="n">89,1&nbsp;%</td><td class="n">80,7&nbsp;%</td><td class="n"><b>1,2</b></td><td class="n"><b>0 / 2</b></td><td class="n">0</td><td class="n">1,0</td></tr>
+      <tr class="hl"><td><b>B</b> + coverage</td><td class="n">99,0 / 98,4&nbsp;%</td><td class="n">91,8&nbsp;%</td><td class="n">83,0&nbsp;%</td><td class="n"><b>0</b></td><td class="n"><b>2 / 2</b></td><td class="n">0</td><td class="n">2,4</td></tr>
+      <tr><td><b>C</b> + mutation</td><td class="n">99,0 / 98,4&nbsp;%</td><td class="n">91,8&nbsp;%</td><td class="n">86,0&nbsp;%</td><td class="n">0</td><td class="n">2 / 2</td><td class="n">0</td><td class="n">2,6</td></tr>
+      <tr><td><b>D</b> + bộ nhớ</td><td class="n">99,0 / 98,4&nbsp;%</td><td class="n">91,8&nbsp;%</td><td class="n">88,1&nbsp;%</td><td class="n">0</td><td class="n">2 / 2</td><td class="n">0</td><td class="n">3,2</td></tr>
+    </table>
+    <div class="c3 grow">
+      <div class="blk k"><h3>Rõ nhất</h3><div class="in mid"><p>Từ A sang B, test fail còn lại giảm từ 1,2 xuống 0 mỗi module. Hai bug đều được gắn nhãn đúng, không có nhãn sai.</p></div></div>
+      <div class="blk w"><h3>Cần nói rõ</h3><div class="in mid"><p>Ở A, test cũng đã fail ở cả hai bug, nhưng không được phân loại nên người dùng phải tự đoán nguyên nhân.</p></div></div>
+      <div class="blk"><h3>Chưa thấy tác dụng</h3><div class="in mid"><p>Coverage đạt 99&nbsp;% ngay từ lần sinh đầu, nên phản hồi coverage chưa thể hiện được trên các module nhỏ này.</p></div></div>
+    </div>
+    <div class="note w">Đổi lại, số lần gọi LLM tăng từ 1 lên 2,4 đến 3,2 lần mỗi module. Đây là quan sát ban đầu: 5 module, 1 lượt, chưa có ý nghĩa thống kê.</div>
+  </div>
+  <div data-src="Trung bình theo module, 1 lượt chạy LLM thật. Nguồn: results/results.csv."></div>
+</section>
+
+<!-- 23. HAI CÁCH CHẤM -->
+<section class="slide" data-sec="6">
+  <div class="head"><h2>Phát hiện chính: cách chấm làm đổi kết luận</h2></div>
+  <div class="main">
+    <div class="c2 grow" style="grid-template-columns:900px 1fr">
+      <div style="display:flex;flex-direction:column;gap:12px;min-height:0">
+        <div class="legend"><span><i style="background:#0B6E82"></i>Mutant LLM chưa thấy (held-out)</span><span><i style="background:#D08A16"></i>Tất cả mutant, như MuTAP</span></div>
+        <svg viewBox="0 0 820 610" width="900" height="670" role="img" aria-label="Từ cấu hình B sang C: mutant LLM chưa thấy giữ nguyên 91,8 phần trăm; tất cả mutant tăng từ 83,0 lên 86,0 phần trăm" font-family="'Be Vietnam Pro','Segoe UI',sans-serif">
+          <!-- trục y từ 80 đến 95&nbsp;%: y = 550 - (giá trị - 80) * 34 -->
+          <g stroke="#D3DAE1" stroke-width="1.5"><path d="M90,550 H800"/><path d="M90,380 H800"/><path d="M90,210 H800"/><path d="M90,40 H800"/></g>
+          <g fill="#4B5A6B" font-size="27" text-anchor="end"><text x="78" y="559">80</text><text x="78" y="389">85</text><text x="78" y="219">90</text><text x="78" y="49">95&nbsp;%</text></g>
+          <path d="M220,149 H670" stroke="#0B6E82" stroke-width="6" fill="none"/>
+          <path d="M220,448 L670,346" stroke="#D08A16" stroke-width="6" fill="none"/>
+          <circle cx="220" cy="149" r="14" fill="#0B6E82" stroke="#fff" stroke-width="3"><title>B, chưa thấy: 91,8&nbsp;%</title></circle>
+          <circle cx="670" cy="149" r="14" fill="#0B6E82" stroke="#fff" stroke-width="3"><title>C, chưa thấy: 91,8&nbsp;%</title></circle>
+          <circle cx="220" cy="448" r="14" fill="#D08A16" stroke="#fff" stroke-width="3"><title>B, tất cả mutant: 83,0&nbsp;%</title></circle>
+          <circle cx="670" cy="346" r="14" fill="#D08A16" stroke="#fff" stroke-width="3"><title>C, tất cả mutant: 86,0&nbsp;%</title></circle>
+          <g fill="#1A2433" font-size="42" font-weight="800" text-anchor="middle"><text x="220" y="118">91,8</text><text x="670" y="118">91,8</text><text x="220" y="508">83,0</text><text x="670" y="404">86,0</text></g>
+          <g fill="#1A2433" font-size="30" font-weight="700" text-anchor="middle"><text x="220" y="596">B: chưa có mutation</text><text x="670" y="596">C: có mutation</text></g>
+        </svg>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:22px;min-height:0">
+        <div class="blk w"><h3>Chấm như MuTAP</h3><div class="in"><p>Tính cả mutant đã đưa cho LLM: 83,0 lên 86,0&nbsp;%, <b>tăng 3 điểm</b>. Phản hồi mutation trông có tác dụng.</p></div></div>
+        <div class="blk a"><h3>Chấm trên mutant LLM chưa thấy</h3><div class="in"><p>91,8&nbsp;% trước và sau, <b>không tăng</b>. Chưa thấy khả năng bắt lỗi mới tốt lên.</p></div></div>
+        <div class="blk grow"><h3>Vì sao điểm held-out cao hơn?</h3><div class="in mid"><p>Mutant khó nhất còn sống nên được đưa vào prompt, và vì thế bị loại khỏi tập held-out. So sánh giữa các cấu hình vẫn công bằng vì dùng chung một tập.</p></div></div>
+      </div>
+    </div>
+  </div>
+  <div data-src="Trục bắt đầu từ 80&nbsp;%. Python, 5 module, 1 lượt. Nguồn: results/results.csv."></div>
+</section>
+
+<!-- 24. VÌ SAO CHƯA KẾT LUẬN -->
+<section class="slide" data-sec="6">
+  <div class="head"><h2>Nhưng chưa đủ để kết luận về phản hồi mutation</h2></div>
+  <div class="main">
+    <table class="t" style="font-size:31px">
+      <tr><th>Module</th><th>Vòng mutation ở cấu hình C</th><th class="n">Held-out B → C</th><th class="n">Tất cả mutant B → C</th></tr>
+      <tr><td class="mono">calculator</td><td>Đã đạt ngưỡng 80&nbsp;%, không sinh test</td><td class="n">94,1 → 94,1</td><td class="n">77,3 → 77,3</td></tr>
+      <tr><td class="mono">text_utils</td><td>Đã đạt ngưỡng 80&nbsp;%, không sinh test</td><td class="n">96,0 → 96,0</td><td class="n">83,3 → 83,3</td></tr>
+      <tr><td class="mono">grading</td><td>Đã đạt ngưỡng 80&nbsp;%, không sinh test</td><td class="n">90,0 → 90,0</td><td class="n">90,0 → 90,0</td></tr>
+      <tr class="hl"><td class="mono"><b>safe_parser</b></td><td><b>Có sinh test: agent đo 75&nbsp;%, rồi 100&nbsp;%</b></td><td class="n"><b>96,3 → 96,3</b></td><td class="n"><b>81,8 → 97,0</b></td></tr>
+      <tr><td class="mono">shopping_cart</td><td>Đã đạt ngưỡng 80&nbsp;%, không sinh test</td><td class="n">82,5 → 82,5</td><td class="n">82,5 → 82,5</td></tr>
+    </table>
+    <div class="c2 grow">
+      <div class="blk"><h3>Module duy nhất có sinh test: safe_parser</h3><div class="in mid">
+        <p>Cả 5 mutant đưa vào prompt đều chỉ đổi nội dung thông báo lỗi:</p>
+        <div class="code" style="font-size:25px">"Key rỗng"  -&gt;  "XXKey rỗngXX"</div>
+        <p>Những mutant này khác hẳn lỗi về logic hay giá trị biên.</p>
+      </div></div>
+      <div class="blk a"><h3>Em kết luận như thế nào</h3><div class="in mid"><ul class="b">
+        <li>Không nói MuTAP sai, cũng không nói phản hồi mutation vô ích</li>
+        <li>Dữ liệu chỉ cho thấy cách chấm ảnh hưởng đến kết luận</li>
+        <li>Ngưỡng 80&nbsp;% làm vòng mutation gần như chưa chạy; MuTAP lặp tới 100&nbsp;%. Cần thử ngưỡng cao hơn</li>
+      </ul></div></div>
+    </div>
+  </div>
+  <div data-src="Điểm B → C: results/results_by_module.csv. Điểm 75&nbsp;%, 100&nbsp;%: agent đo trên 20 mutant lấy mẫu (logs/*_eval_C_*.json)."></div>
+</section>
+
+<!-- 25. JS/TS -->
+<section class="slide" data-sec="6">
+  <div class="head"><h2>JavaScript/TypeScript: mới có hai lần chạy thử</h2></div>
+  <div class="main">
+    <table class="t" style="font-size:32px">
+      <tr><th>Module</th><th class="n">Line / branch</th><th class="n">Mutation</th><th class="n">Nhãn đúng / sai</th><th>Kết thúc</th></tr>
+      <tr><td class="mono">shipping.ts</td><td class="n">92,9 / 92,9 → 100 / 100&nbsp;%</td><td class="n">90&nbsp;%</td><td class="n">3 / 0</td><td>Đạt ngưỡng</td></tr>
+      <tr><td class="mono">bank_account.js</td><td class="n">96,6 / 95&nbsp;%</td><td class="n">60&nbsp;% <span class="soft">(giữa chừng)</span></td><td class="n">8 / 1</td><td>Hết hạn mức API (lỗi 429)</td></tr>
+    </table>
+    <div class="c2 grow">
+      <div class="blk k"><h3>shipping.ts: vòng lặp chạy đủ</h3><div class="in mid"><ul class="b">
+        <li>Bắt đúng bug biên ở <code>shippingFee(500)</code></li>
+        <li>Phản hồi coverage: đưa 1 dòng, 1 nhánh chưa phủ cho LLM, line và branch lên 100&nbsp;%</li>
+        <li>Agent dừng khi mutation đạt 90&nbsp;%</li>
+      </ul></div></div>
+      <div class="blk w"><h3>bank_account.js: thấy được hạn chế</h3><div class="in mid"><ul class="b">
+        <li>Có 1 nhãn sai, nên kết quả vẫn cần người kiểm tra</li>
+        <li>Nhiều test đọc thuộc tính nội bộ <code>withdrawnToday</code>, tức bám vào chi tiết cài đặt</li>
+        <li>Agent dừng êm, giữ bộ test tốt nhất khi hết hạn mức</li>
+      </ul></div></div>
+    </div>
+    <div class="note n"><b>Chưa có thực nghiệm A/B/C/D cho JS/TS</b>, nên chưa so sánh được với Python. Nguyên nhân: model miễn phí giới hạn 50 request/ngày.</div>
+  </div>
+  <div data-src="Nguồn: logs/shipping_agent_js_20260926-210042.json, logs/bank_account_agent_js_20260926-210423.json."></div>
+</section>
+
+<!-- 26. TRẢ LỜI -->
+<section class="slide" data-sec="6">
+  <div class="head"><h2>Trả lời bốn câu hỏi nghiên cứu</h2></div>
+  <div class="main">
+    <table class="t fillt" style="font-size:30px">
+      <tr><th style="width:110px">Câu</th><th style="width:400px">Câu hỏi</th><th style="width:290px">Trả lời</th><th>Bằng chứng và giới hạn</th></tr>
+      <tr><td><b>CH1</b></td><td>Vòng lặp có giúp test chạy được, đúng hơn?</td><td><span class="tag k">Có</span></td><td>Test fail còn lại giảm từ 1,2 xuống 0 mỗi module. Đổi lại phải gọi LLM nhiều hơn.</td></tr>
+      <tr><td><b>CH2</b></td><td>Phân biệt được test sai với code sai?</td><td><span class="tag k">Có, trên mẫu nhỏ</span></td><td>Python: đúng 2/2 bug, không có nhãn sai. JS: có 1 nhãn sai, nên vẫn cần người kiểm tra.</td></tr>
+      <tr class="hl"><td><b>CH3</b></td><td>Phản hồi mutation giúp bắt lỗi mới?</td><td><span class="tag w">Chưa kết luận được</span></td><td>Held-out không tăng, nhưng vòng mutation mới sinh test ở 1/5 module. Cần ngưỡng cao hơn.</td></tr>
+      <tr><td><b>CH4</b></td><td>Một vòng lặp cho nhiều ngôn ngữ?</td><td><span class="tag k">Có, về kỹ thuật</span></td><td>Thêm JS/TS không sửa logic vòng lặp. Chưa có số liệu so sánh định lượng giữa hai ngôn ngữ.</td></tr>
+    </table>
+  </div>
+  <div data-src="Python: 5 module, 1 lượt. JS/TS: 2 lần chạy thử. Mọi số liệu từ log và results/ của lần chạy LLM thật."></div>
+</section>
+
+<!-- 27. HẠN CHẾ -->
+<section class="slide" data-sec="7">
+  <div class="head"><h2>Hạn chế và hướng phát triển</h2></div>
+  <div class="main">
+    <div class="c2 grow">
+      <div class="blk n"><h3>Hạn chế</h3><div class="in mid"><ul class="b" style="gap:20px">
+        <li><b>Thực nghiệm nhỏ:</b> Python 1 lượt (đề yêu cầu 3), JS/TS chưa có A/B/C/D, 1 model, 9 module tự viết</li>
+        <li><b>Ngưỡng mutation 80&nbsp;%</b> làm vòng lặp dừng sớm</li>
+        <li><b>LLM có thể phân loại sai,</b> test có thể bám chi tiết cài đặt</li>
+        <li><b>Phụ thuộc đặc tả:</b> không có docstring hoặc JSDoc thì không có căn cứ so sánh</li>
+        <li><b>Công cụ đo khác nhau</b> nên so sánh giữa hai ngôn ngữ chỉ tương đối</li>
+      </ul></div></div>
+      <div class="blk k"><h3>Hướng phát triển</h3><div class="in mid"><ul class="b" style="gap:20px">
+        <li><b>Chạy đủ 3 lượt</b> cho mỗi ngôn ngữ, với ngưỡng mutation cao hơn</li>
+        <li><b>Thử trên HumanEval</b> để so sánh trực tiếp với số liệu của MuTAP</li>
+        <li><b>Thử cách của Zhao và cộng sự:</b> thay code trong prompt bằng đặc tả để giảm dẫn dắt sai</li>
+        <li><b>Thêm Java, Go;</b> Java đã phác thảo với JUnit 5, JaCoCo, PIT</li>
+        <li><b>Thêm bước rút gọn</b> bộ test như MuTAP</li>
+      </ul></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 28. KẾT LUẬN -->
+<section class="slide" data-sec="7">
+  <div class="head"><h2>Kết luận</h2></div>
+  <div class="main">
+    <div class="note"><b>Đã xây dựng:</b> agent sinh, chạy, đo, sửa và bổ sung test cho Python và JavaScript/TypeScript, kế thừa ý tưởng phản hồi mutation của MuTAP.</div>
+    <div class="c2 grow">
+      <div class="blk a"><h3>Hai đóng góp so với MuTAP</h3><div class="in mid"><ul class="b" style="gap:20px">
+        <li><b>Không mặc định code đúng:</b> khi test fail thì so với đặc tả, giữ lại test phát hiện bug thay vì sửa cho khớp code</li>
+        <li><b>Chấm trên mutant LLM chưa thấy:</b> cho thấy cách chấm có thể làm đổi kết luận (tăng 3 điểm so với không tăng)</li>
+      </ul></div></div>
+      <div class="blk"><h3>Với số liệu hiện có</h3><div class="in mid"><ul class="b" style="gap:20px">
+        <li>Lợi ích rõ nhất là xử lý test fail: 1,2 xuống 0 mỗi module, gắn nhãn đúng 2/2 bug Python</li>
+        <li>Lợi ích của phản hồi mutation trên lỗi mới <b>chưa được xác nhận</b></li>
+        <li>Con người vẫn là người xác nhận cuối cùng</li>
+      </ul></div></div>
+    </div>
+    <div style="background:var(--head);color:#fff;text-align:center;font-size:44px;font-weight:700;padding:28px;border-radius:6px;flex:none">Em xin cảm ơn thầy/cô đã lắng nghe và xin nhận câu hỏi.</div>
+  </div>
+</section>
+
+<!-- 29. TÀI LIỆU -->
+<section class="slide" data-sec="7">
+  <div class="head"><h2>Tài liệu tham khảo chính</h2></div>
+  <div class="main">
+    <div class="refs">
+      <p><b>[1] MuTAP.</b> A. M. Dakhel et al. Effective Test Generation Using Pre-trained LLMs and Mutation Testing. Information and Software Technology, 2024. doi.org/10.1016/j.infsof.2024.107468</p>
+      <p><b>[2]</b> L. Inozemtseva, R. Holmes. Coverage Is Not Strongly Correlated with Test Suite Effectiveness. ICSE 2014. doi.org/10.1145/2568225.2568271</p>
+      <p><b>[3]</b> R. Just et al. Are Mutants a Valid Substitute for Real Faults in Software Testing? FSE 2014. doi.org/10.1145/2635868.2635929</p>
+      <p><b>[4]</b> E. T. Barr et al. The Oracle Problem in Software Testing: A Survey. IEEE TSE, 2015. doi.org/10.1109/TSE.2014.2372785</p>
+      <p><b>[5] TestPilot.</b> M. Schäfer et al. IEEE TSE, 2024. doi.org/10.1109/TSE.2023.3334955</p>
+      <p><b>[6] CoverUp.</b> J. Altmayer Pizzorno, E. D. Berger. FSE 2025. doi.org/10.1145/3729398</p>
+      <p><b>[7] TestGen-LLM.</b> N. Alshahwan et al. FSE Companion 2024. doi.org/10.1145/3663529.3663839</p>
+      <p><b>[8] ACH.</b> C. Foster et al. FSE Companion 2025. doi.org/10.1145/3696630.3728544</p>
+      <p><b>[9] MutGen.</b> G. Wang et al. IEEE TSE (accepted). arxiv.org/abs/2506.02954</p>
+      <p><b>[10]</b> J. Zhao, S. Zhou, E. Cohen. Misguidance Effect of Buggy Code in LLM-Generated Unit Tests. ISSTA 2026. arxiv.org/abs/2607.22883</p>
+      <p><b>[11] EvoSuite.</b> G. Fraser, A. Arcuri. ESEC/FSE 2011. doi.org/10.1145/2025113.2025179</p>
+      <p><b>[12] Pynguin.</b> S. Lukasczyk, G. Fraser. ICSE 2022 Companion. doi.org/10.1145/3510454.3516829</p>
+    </div>
+  </div>
+  <div data-src="Toàn bộ 37 tài liệu: docs/TAI_LIEU_THAM_KHAO.md"></div>
+</section>
+
+</div>
+
+<div id="hint">← → chuyển trang &nbsp; F toàn màn hình</div>
+<div id="nav"><button id="prev" aria-label="Trang trước">‹</button><button id="next" aria-label="Trang sau">›</button></div>
+
+<script>
+// Điều khiển: mỗi lần bấm sang đúng một trang tĩnh, không có hiệu ứng; F toàn màn hình
+const SECTIONS = ['Giới thiệu', 'Bài toán', 'Cơ sở lý thuyết', 'Nghiên cứu nền tảng', 'Phương pháp', 'Hệ thống', 'Kết quả', 'Kết luận'];
+const slides = [...document.querySelectorAll('.slide')];
+const stage = document.getElementById('stage');
+const hint = document.getElementById('hint');
+let current = 0;
+
+// Dải mục lục ở đầu trang và chân trang (nguồn + số trang); bìa không có
+slides.forEach((s, i) => {
+  if (!i) return;
+  const strip = document.createElement('div');
+  strip.className = 'strip';
+  SECTIONS.forEach((name, k) => {
+    const item = document.createElement('span');
+    item.textContent = name;
+    if (k === Number(s.dataset.sec)) item.className = 'now';
+    strip.appendChild(item);
+  });
+  s.querySelector('.head').prepend(strip);
+
+  const holder = s.querySelector('[data-src]');
+  const foot = document.createElement('div');
+  foot.className = 'foot';
+  const left = document.createElement('span');
+  left.textContent = holder ? holder.dataset.src : '';
+  if (holder) holder.remove();
+  const right = document.createElement('span');
+  right.textContent = (i + 1) + ' / ' + slides.length;
+  foot.append(left, right);
+  s.appendChild(foot);
+});
+
+function fit() {
+  const k = Math.min(innerWidth / 1920, innerHeight / 1080);
+  const x = (innerWidth - 1920 * k) / 2, y = (innerHeight - 1080 * k) / 2;
+  stage.style.transform = 'translate(' + x + 'px, ' + y + 'px) scale(' + k + ')';
+}
+
+function show(i) {
+  current = Math.max(0, Math.min(slides.length - 1, i));
+  slides.forEach((s, k) => s.classList.toggle('on', k === current));
+  history.replaceState(null, '', '#' + (current + 1));
+}
+
+setTimeout(() => { hint.style.display = 'none'; }, 9000);
+addEventListener('keydown', e => {
+  hint.style.display = 'none';
+  const k = e.key;
+  if (['ArrowRight', 'ArrowDown', 'PageDown', ' '].includes(k)) { e.preventDefault(); show(current + 1); }
+  else if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(k)) { e.preventDefault(); show(current - 1); }
+  else if (k === 'Home') show(0);
+  else if (k === 'End') show(slides.length - 1);
+  else if (k === 'f' || k === 'F') { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); }
+});
+document.getElementById('prev').onclick = () => show(current - 1);
+document.getElementById('next').onclick = () => show(current + 1);
+addEventListener('resize', fit);
+addEventListener('hashchange', () => show((parseInt(location.hash.slice(1), 10) || 1) - 1));
+fit();
+show((parseInt(location.hash.slice(1), 10) || 1) - 1);
+</script>
 </body>
 </html>

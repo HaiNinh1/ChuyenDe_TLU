@@ -1426,3 +1426,38 @@ python evaluate.py --measure-only     # chấm lại số liệu từ log, đố
 2. **Số liệu đã đủ cho báo cáo cuối kỳ chưa?** → Chưa: Python mới 1 lượt, JS/TS chưa có lượt A/B/C/D, các slide đều ghi rõ.
 3. **Em có nói MuTAP sai không?** → Không. Em chỉ cho thấy cách chấm ảnh hưởng đến kết luận trên dữ liệu của em; kết quả
    của MuTAP trên lỗi thật Refactory không bị ảnh hưởng bởi vấn đề này.
+
+## TL6 — Làm lại slide cuối kỳ theo góp ý: trang tĩnh, đủ nội dung, sắp lại thứ tự
+
+### (a) Đã làm gì & tại sao
+- Bản TL5 quá ít chữ, nhiều khoảng trống, hiện dần nội dung bằng thao tác bấm và trang đầu chưa nói đề tài làm gì. Bản mới vẫn là
+  29 trang nhưng mỗi trang là một trang tĩnh (bấm một lần sang một trang, không có hiệu ứng), có thanh tiêu đề, dải mục lục
+  cho biết đang ở phần nào, và đủ nội dung để vừa nhìn vừa trình bày.
+- Trang 1 có khối "Đề tài này làm gì"; trang 2 nói đầu vào, xử lý, đầu ra; trang 3 là nội dung trình bày.
+- Thứ tự mới: giới thiệu → bài toán → cơ sở lý thuyết → nghiên cứu nền tảng → phương pháp (câu hỏi nghiên cứu đặt sau khi
+  chỉ ra hai điểm cần xem xét của MuTAP) → hệ thống và demo → thực nghiệm và kết quả → kết luận.
+- Viết lại script `slides/LOI_THOAI_CUOI_KY.md` theo đúng từng trang mới, bỏ các chỗ "bấm để hiện tiếp".
+- Thêm trang "LLM nhận phản hồi gì" (lấy từ `testgen/prompts.py`); đưa bảng kết quả A/B/C/D từ phụ lục vào phần chính; thêm bảng
+  điểm theo từng module ở trang 24.
+
+### (b) Khái niệm quan trọng
+- **Slide để trình bày khác tài liệu để đọc, nhưng cũng khác bảng khẩu hiệu:** người nghe cần thấy đủ cấu trúc và số liệu, còn lời
+  giải thích nằm trong script. Ví dụ trang 22 hiện cả bảng bốn cấu hình kèm ba nhận xét, script giải thích nên nhìn vào cột nào.
+- **Thứ tự theo lập luận:** câu hỏi nghiên cứu CH3 nhắc đến "mutant LLM chưa thấy", nên chỉ dễ hiểu sau khi đã nói điểm yếu về cách chấm
+  của MuTAP. Vì vậy phần câu hỏi nghiên cứu đứng sau phần bài báo.
+
+### (c) File liên quan
+`slides/bao_cao_cuoi_ky.html`, `slides/LOI_THOAI_CUOI_KY.md`, `testgen/prompts.py`, `results/results.csv`, `results/results_by_module.csv`,
+`logs/grading_eval_C_20260926-190937.json`, `logs/safe_parser_eval_C_*.json`, `logs/*_agent_js_*.json`
+
+### (d) Lệnh tự chạy thử
+```bash
+start slides/bao_cao_cuoi_ky.html     # mũi tên phải sang trang sau, F toàn màn hình
+python evaluate.py --measure-only     # chấm lại số liệu từ log, đối chiếu với trang 22, 23 và 24
+```
+
+### (e) Câu hỏi thầy có thể hỏi
+1. **Vì sao câu hỏi nghiên cứu nằm sau phần MuTAP?** → Vì các câu hỏi xuất phát từ hai điểm em thấy cần xem xét trong bài đó.
+2. **Vì sao demo đặt trước phần kết quả?** → Người nghe thấy hệ thống chạy thế nào trước, rồi mới xem số liệu đánh giá.
+3. **Bảng kết quả có gì cần lưu ý?** → Mới có 5 module, 1 lượt nên chỉ là quan sát ban đầu; ở cấu hình A test cũng fail ở cả hai bug
+   nhưng không được phân loại.
