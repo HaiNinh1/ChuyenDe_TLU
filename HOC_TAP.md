@@ -1461,3 +1461,45 @@ python evaluate.py --measure-only     # chấm lại số liệu từ log, đố
 2. **Vì sao demo đặt trước phần kết quả?** → Người nghe thấy hệ thống chạy thế nào trước, rồi mới xem số liệu đánh giá.
 3. **Bảng kết quả có gì cần lưu ý?** → Mới có 5 module, 1 lượt nên chỉ là quan sát ban đầu; ở cấu hình A test cũng fail ở cả hai bug
    nhưng không được phân loại.
+
+---
+
+## TL7 — Chuẩn bị demo cho thầy: đổi model bị rút, tự chuyển API key khi hết quota
+
+### (a) Đã làm gì & tại sao
+- Kiểm tra trước demo phát hiện model cũ `nvidia/nemotron-3-super-120b-a12b:free` trả lỗi 404 (hết miễn phí), nghĩa là phần "Chạy mới"
+  sẽ lỗi ngay trước mặt thầy. Gọi thử các model miễn phí còn lại rồi chọn `nvidia/nemotron-3.5-super-vl:free`.
+- Thêm cơ chế tự đổi key: `OPENROUTER_API_KEY=key1,key2,key3`. Key lỗi 401/402/429 thì chuyển ngay sang key sau; key chạy được
+  thì giữ cho các lần gọi tiếp theo. Prompt và vòng lặp agent không đổi.
+- Chạy thật trên giao diện để có log REPLAY mới, cập nhật `DEMO_CHECKLIST.md`.
+- Số đo một lần chạy (không phải thực nghiệm, không thay cho bảng kết quả trong `results/`, vốn đo bằng model cũ):
+  | Module | Model | Thời gian | Line / Branch / Mutation | Bắt đúng bug? |
+  |---|---|---|---|---|
+  | `grading.py` | `nemotron-3.5-super-vl` | 61 s | 97.5 / 96.9 / 90.0 | có (bug 1) |
+  | `shipping.ts` | `nemotron-3.5-super-vl` | 169 s | 100 / 100 / 95.0 | có (bug 3) |
+  | code dán vào (`ticket_price`) | `nemotron-3.5-super-vl` | 21 s | 100 / 100 / 84.6 | có (biên tuổi 60) |
+  | `grading.py` | `nemotron-3-ultra` | 262 s | 97.5 / 96.9 / 90.0 | có (bug 1) |
+  | `shipping.ts` | `nemotron-3-ultra` | 362 s | 100 / 100 / 95.0 | có (bug 3) |
+  `shipping.ts` với super-vl chạy cùng lúc bộ `pytest` nên thời gian có thể dài hơn bình thường. Các lượt `nemotron-3-ultra` chạy song song với nhau.
+  Mutation ở bảng này là điểm agent tự đo (mutant LLM có thể đã thấy), không phải điểm held-out.
+
+### (b) Khái niệm quan trọng
+- **Failover (chuyển dự phòng):** khác retry. Retry gọi lại với cùng key, hữu ích khi lỗi tạm thời; failover đổi sang key khác vì lỗi
+  nằm ở key. Ví dụ key 1 hết quota (429) → gọi ngay bằng key 2, không tính là một lần retry.
+- **Hạn chế:** quota miễn phí tính theo tài khoản, nên các key cùng tài khoản không cộng thêm quota. Lỗi 429 cũng có thể do nhà cung cấp model
+  quá tải chứ không do key; khi đó đổi key thường không giúp được, phải đổi model hoặc dùng REPLAY.
+
+### (c) File liên quan
+`testgen/config.py`, `testgen/llm_client.py`, `tests/test_llm_client.py`, `DEMO_CHECKLIST.md`, `.env.example`,
+`logs/grading_app_*.json`, `logs/shipping_app_*.json`, `logs/user_module_app_*.json`
+
+### (d) Lệnh tự chạy thử
+```bash
+pytest tests/test_llm_client.py -q
+streamlit run app.py     # Chạy mới -> Dán code -> dán đoạn ticket_price trong DEMO_CHECKLIST.md
+```
+
+### (e) Câu hỏi thầy có thể hỏi
+1. **Kết quả hôm nay có giống bảng thực nghiệm không?** → Không so trực tiếp được: bảng đo bằng model cũ đã bị rút, chạy hôm nay dùng model khác.
+2. **Sao không gọi cùng lúc nhiều key để có thêm quota?** → Mục tiêu chỉ là không gián đoạn khi một key hỏng; quota cũng tính theo tài khoản.
+3. **Mô hình bắt được bug có phải luôn đúng không?** → Không. LLM có thể phân loại sai, nên nhãn là SUSPECTED_BUG (nghi ngờ) và cần người kiểm tra.

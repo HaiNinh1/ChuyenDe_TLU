@@ -3,7 +3,7 @@
 Muốn đổi nhà cung cấp chỉ cần sửa .env, không phải sửa code.
 """
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -47,6 +47,7 @@ class Settings:
     max_tokens: int = 8000
     timeout: int = 180
     max_retries: int = 3
+    api_keys: list = field(default_factory=list)  # tất cả key, key này hết quota thì chuyển sang key sau
 
 
 def load_settings(provider: str = None, model: str = None) -> Settings:
@@ -59,9 +60,10 @@ def load_settings(provider: str = None, model: str = None) -> Settings:
 
     model = model or os.getenv("LLM_MODEL", "").strip() or DEFAULT_MODELS[provider]
 
-    api_key = ""
+    # Một biến có thể chứa nhiều key, cách nhau bằng dấu phẩy: OPENROUTER_API_KEY=key1,key2,key3
+    api_keys = []
     if provider in API_KEY_ENV:
-        api_key = os.getenv(API_KEY_ENV[provider], "").strip()
+        api_keys = [key.strip() for key in os.getenv(API_KEY_ENV[provider], "").split(",") if key.strip()]
 
     if provider == "ollama":
         base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
@@ -71,7 +73,8 @@ def load_settings(provider: str = None, model: str = None) -> Settings:
     return Settings(
         provider=provider,
         model=model,
-        api_key=api_key,
+        api_key=api_keys[0] if api_keys else "",
+        api_keys=api_keys,
         base_url=base_url,
         temperature=float(os.getenv("LLM_TEMPERATURE", "0.2")),
         max_tokens=int(os.getenv("LLM_MAX_TOKENS", "8000")),

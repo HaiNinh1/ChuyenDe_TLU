@@ -20,6 +20,8 @@ class LLMError(Exception):
 
 # Mã lỗi HTTP không nên thử lại: 400 sai yêu cầu, 401 sai key, 402 hết tiền, 403 bị cấm, 404 sai model
 NON_RETRYABLE_STATUS = {400, 401, 402, 403, 404}
+# Mã lỗi do chính key: 401 key sai/hết hạn, 402 hết tiền, 429 hết quota -> đổi sang key khác nếu có
+KEY_PROBLEM_STATUS = {401, 402, 429}
 
 
 @dataclass
@@ -60,7 +62,7 @@ class LLMClient:
         start = time.time()
         for attempt in range(1, self.settings.max_retries + 1):
             try:
-                reply = self._call_once(system, user, task)
+                reply = self._call_with_key_failover(system, user, task)
                 if not reply.text.strip():
                     raise LLMError("LLM trả về nội dung rỗng")
                 self.history.append(CallRecord(
@@ -98,6 +100,28 @@ class LLMClient:
             "cost_usd": round(sum(r.cost for r in self.history), 6),
             "llm_seconds": round(sum(r.seconds for r in self.history), 1),
         }
+
+    # ------------------------------------------------------- đổi key khi key hỏng
+    def _call_with_key_failover(self, system: str, user: str, task: str) -> LLMReply:
+        """Gọi LLM; nếu lỗi do key thì thử lần lượt các key còn lại (mỗi key một lần).
+
+        Key nào chạy được thì giữ nguyên cho các lần gọi sau. Thử hết mà vẫn lỗi -> ném lỗi cho chat() xử lý.
+        """
+        keys = self.settings.api_keys
+        for keys_left in range(len(keys) - 1, 0, -1):
+            try:
+                return self._call_once(system, user, task)
+            except Exception as exc:
+                status = getattr(exc, "status_code", None)
+                if status not in KEY_PROBLEM_STATUS:
+                    raise
+                # Chỉ in số thứ tự, không in key ra màn hình
+                current = keys.index(self.settings.api_key)
+                next_index = (current + 1) % len(keys)
+                print(f"[llm] Key {current + 1}/{len(keys)} lỗi {status} -> chuyển sang key {next_index + 1}")
+                self.settings.api_key = keys[next_index]
+                self._sdk_client = None  # tạo lại client với key mới
+        return self._call_once(system, user, task)
 
     # ------------------------------------------------------- gọi từng nhà cung cấp
     def _call_once(self, system: str, user: str, task: str) -> LLMReply:

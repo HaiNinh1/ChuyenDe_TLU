@@ -14,7 +14,9 @@ Hiện thực 2 ngôn ngữ theo kiến trúc **Adapter**: Python và JavaScript
   Nhãn nghi bug: `// SUSPECTED_BUG: ...` + `test.failing(...)`. Thư mục tạm chạy Jest nằm trong `workspace/js_runs/`
   (để Node tìm thấy `node_modules/`).
 - LLM: đọc từ `.env` (`LLM_PROVIDER`, `LLM_MODEL`, key). Hỗ trợ openrouter, deepseek, openai, anthropic, ollama, mock.
-  `.env` đang dùng OpenRouter + `nvidia/nemotron-3-super-120b-a12b:free` (50 request/ngày; key KHÔNG commit).
+  `.env` đang dùng OpenRouter + `nvidia/nemotron-3.5-super-vl:free` (50 request/ngày; key KHÔNG commit). Nhiều key cách nhau
+  bằng dấu phẩy, tự chuyển key khi lỗi 401/402/429. Model cũ `nemotron-3-super-120b-a12b:free` đã bị rút (404); số liệu trong
+  `results/` đo bằng model cũ này.
 - Demo: Streamlit (`app.py`), biểu đồ matplotlib, slide Marp (`slides/`).
 
 ## Quy tắc (bắt buộc)

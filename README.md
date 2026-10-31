@@ -80,7 +80,7 @@ Mở `.env`, chọn nhà cung cấp và điền key:
 
 | `LLM_PROVIDER` | Key cần điền | Model gợi ý |
 |---|---|---|
-| `openrouter` | `OPENROUTER_API_KEY` | `nvidia/nemotron-3-super-120b-a12b:free` (miễn phí, 50 request/ngày; nạp 10 USD → 1000 request/ngày) hoặc `z-ai/glm-5.2` (trả phí) |
+| `openrouter` | `OPENROUTER_API_KEY` | `nvidia/nemotron-3.5-super-vl:free` (miễn phí, 50 request/ngày; có thể điền nhiều key cách nhau bằng dấu phẩy; nạp 10 USD → 1000 request/ngày) hoặc `z-ai/glm-5.2` (trả phí) |
 | `deepseek` | `DEEPSEEK_API_KEY` | `deepseek-chat` |
 | `openai` | `OPENAI_API_KEY` | `gpt-4o-mini` |
 | `anthropic` | `ANTHROPIC_API_KEY` | `claude-haiku-4-5-20251001` |
