@@ -1390,3 +1390,39 @@ npx @marp-team/marp-cli slides/slides.md --html   # xem slide (nếu đã cài M
 2. **Sao em nói cách chấm của MuTAP có thể lạc quan?** → Mutant dùng để chấm cũng là mutant đã đưa cho AI; em tự thử chấm
    theo hai cách trên cùng dữ liệu và thấy kết luận khác nhau (tăng 3 điểm so với không tăng).
 3. **Báo cáo đã xong chưa?** → Chưa: thiếu thực nghiệm JS và Python lượt 2–3; các chỗ đó đánh dấu [CHỜ SỐ LIỆU].
+
+---
+
+## TL5 — Slide HTML trình bày cuối kỳ (`slides/bao_cao_cuoi_ky.html`)
+
+### (a) Đã làm gì & tại sao
+- Làm bộ slide 29 trang (27 trang trình bày + 2 trang phụ lục) cho buổi trình bày cuối kỳ, gói trong **một file HTML**
+  (font nhúng sẵn nên chạy được khi không có mạng). Mạch trình bày: bài toán → bài nền tảng MuTAP → phương pháp rút ra →
+  kết quả và hạn chế. Slide để chiếu nên mỗi trang một ý, chữ to; lời nói nằm trong script riêng `slides/LOI_THOAI_CUOI_KY.md`.
+- Đọc lại log thực nghiệm để lấy ví dụ thật cho slide, và thấy một điều tài liệu cũ chưa ghi: ở cấu hình C, vòng mutation
+  chỉ sinh test ở **1/5 module** (`safe_parser`); 4 module còn lại đã đạt ngưỡng 80 % nên dừng ngay. Cả 5 mutant đưa vào
+  prompt ở `safe_parser` đều chỉ đổi chuỗi thông báo lỗi. Vì vậy slide ghi CH3 là **chưa kết luận được**, thay vì "chưa thấy"
+  như bản nháp `docs/BAO_CAO_CUOI_KY.md` (mục 5.4 của bản nháp cần cập nhật theo).
+
+### (b) Khái niệm quan trọng
+- **Thiếu dữ liệu khác với kết quả âm tính:** điểm held-out không đổi (91,8 → 91,8 %) không chứng minh phản hồi mutation
+  vô ích, vì ở 4/5 module thành phần này gần như chưa chạy. Ví dụ `safe_parser`: tính tất cả mutant 81,8 → 97,0 %, held-out
+  giữ nguyên 96,3 %.
+- **Ngưỡng dừng ảnh hưởng thực nghiệm:** MuTAP lặp tới 100 %, đồ án dừng ở 80 %, nên hai bên không so trực tiếp được.
+
+### (c) File liên quan
+`slides/bao_cao_cuoi_ky.html`, `slides/LOI_THOAI_CUOI_KY.md`, `results/results.csv`, `results/results_by_module.csv`, `results/runs.csv`,
+`logs/*_eval_C_*.json`, `logs/*_agent_js_*.json`
+
+### (d) Lệnh tự chạy thử
+```bash
+start slides/bao_cao_cuoi_ky.html     # mở slide: mũi tên phải hiện tiếp nội dung hoặc sang trang, F toàn màn hình
+python evaluate.py --measure-only     # chấm lại số liệu từ log, đối chiếu với slide 20, 21 và 28
+```
+
+### (e) Câu hỏi thầy có thể hỏi
+1. **Vì sao em chưa kết luận về phản hồi mutation?** → Vì vòng mutation chỉ sinh test ở 1/5 module; cần chạy thêm với ngưỡng
+   cao hơn rồi mới nói được có tác dụng hay không.
+2. **Số liệu đã đủ cho báo cáo cuối kỳ chưa?** → Chưa: Python mới 1 lượt, JS/TS chưa có lượt A/B/C/D, các slide đều ghi rõ.
+3. **Em có nói MuTAP sai không?** → Không. Em chỉ cho thấy cách chấm ảnh hưởng đến kết luận trên dữ liệu của em; kết quả
+   của MuTAP trên lỗi thật Refactory không bị ảnh hưởng bởi vấn đề này.
