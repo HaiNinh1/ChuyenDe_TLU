@@ -95,7 +95,7 @@ Dakhel và cộng sự, 2024. Ý tưởng chính là đưa mutant còn sống v�
 |---|---|---|
 | **Giữ** | Mutant còn sống làm phản hồi | Bước 3 |
 | **Đổi** | Không mặc định code đúng, so với đặc tả | Bước 2 |
-| **Đổi** | Chấm trên tập held-out | Bước 5 |
+| **Đổi** | Chấm trên tập held-out | Slide 22–24 |
 | **Đổi** | Gửi thông báo lỗi thật khi file test hỏng | Chỉ nói khi được hỏi, chưa có log thật |
 | **Thêm** | Phản hồi coverage, ngôn ngữ thứ hai | Bước 4 |
 | **Thêm** | Bộ nhớ bài học | Tắt khi demo |
@@ -297,7 +297,7 @@ Log này: 20/22 mutant bị giết (90,9 %) → LLM viết thêm 2 test → 22/2
 - **Hỏi: "Sao biết refactor không làm hỏng phần Python?"** → Em so sánh trước và sau: 8 prompt giống từng ký tự, trạng thái từng mutant của 4 bộ test giống hệt, và agent với LLM giả lập cho cùng 7 hành động.
 - **Hỏi: "JavaScript có tốt bằng Python không?"** → Chưa so sánh được, vì mới có 2 lần chạy thử, chưa có thực nghiệm A/B/C/D.
 
-### Bước 5: Tab Kết quả thực nghiệm
+### Bước 5: Cách chấm held-out (nói ở slide 22–24, không chiếu trong demo)
 **Cần làm rõ:** Cách chấm có thể làm đổi kết luận, nhưng dữ liệu còn ít nên chưa kết luận được về phản hồi mutation.
 
 - **Hỏi: "Tập held-out lấy thế nào?"** → Bỏ các mutant đã đưa vào prompt của C và D, rồi dùng chung phần còn lại để chấm cả 4 cấu hình.

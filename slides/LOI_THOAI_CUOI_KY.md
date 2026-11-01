@@ -212,7 +212,7 @@ Bây giờ em xin demo.
 2. Mở tab Code test, chỉ đoạn tô đỏ. Nói: "Test được giữ để người kiểm tra xem lại."
 3. REPLAY `calculator_agent_mutation`. Nói: "Đây là ý tưởng em giữ từ MuTAP: đưa mutant còn sống vào prompt để LLM viết thêm test."
 4. REPLAY `shipping_agent_js`. Nói: "Cùng vòng lặp, giờ chạy trên TypeScript, và có thêm phản hồi coverage."
-5. Mở tab Kết quả thực nghiệm. Nói: "Điểm khác cuối cùng là cách chấm: em chỉ kết luận trên những mutant LLM chưa thấy."
+5. Quay lại slide, sang trang 21. Nói: "Còn một điểm đổi nữa là cách chấm, phải nhìn trên số liệu thực nghiệm, nên em xin chuyển sang phần kết quả."
 
 **Nếu mạng hoặc API lỗi quá 30 giây:** chuyển sang chế độ REPLAY, chọn `user_module_app_20261031-233732` và nói: "Em phát lại một lần chạy đã ghi log, dữ liệu là của lần chạy thật."
 

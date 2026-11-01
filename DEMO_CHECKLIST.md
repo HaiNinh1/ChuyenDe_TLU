@@ -34,7 +34,7 @@
 ## C. Kịch bản demo
 
 Thao tác và lời nói từng bước: **`slides/KICH_BAN_DEMO.md`** (nhắc lại MuTAP, chạy thật `ticket_price`, REPLAY
-`calculator_agent_mutation` và `shipping_agent_js`, rồi tab Kết quả thực nghiệm).
+`calculator_agent_mutation` và `shipping_agent_js`, rồi sang slide 21). Cuối file đó có bảng thuật ngữ để trả lời khi thầy hỏi.
 
 ### Đoạn code dán vào ở bước chạy thật (đã thử: ~20 giây)
 Sidebar: *Chạy mới* → *Dán code* → dán đoạn dưới → **bấm ra ngoài ô để xác nhận** → **Chạy agent**. Hỏi thầy trước:

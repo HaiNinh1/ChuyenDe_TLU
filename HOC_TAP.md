@@ -1578,3 +1578,26 @@ Nhấn đúp `run_demo.bat`, REPLAY `user_module_app_20261031-233732`, đối ch
 ### (e) Câu hỏi thầy có thể hỏi
 1. **LLM có tự chấm điểm không?** → Không. Mọi con số do pytest, Jest, Stryker và các công cụ đo tạo ra.
 2. **Sao thẻ vòng 0 không có điểm mutation?** → Còn test fail thì agent xử lý test fail trước, chưa chạy tới bước mutation.
+
+---
+
+## TL11 — Rút gọn thời lượng demo, thêm phần giải thích đầy đủ và bảng thuật ngữ
+
+### (a) Đã làm gì & tại sao
+- Chiếu còn khoảng 3 phút 45: làm kỹ bước 1–2, rút bước 3–4 còn 30 giây mỗi bước, phần chấm held-out nói ở slide 22–24 vì slide đã có bảng và biểu đồ.
+- Mỗi bước trong `slides/KICH_BAN_DEMO.md` có phần **Nói** và phần **Giải thích đầy đủ**, nên rút thời lượng chiếu nhưng vẫn đủ nội dung khi thầy hỏi sâu.
+- Thêm bảng thuật ngữ cuối file. Sửa slide trang 20, lời thoại trang 20, `DEMO_CHECKLIST.md` và `slides/GIAI_THICH_DEMO.md` cho khớp. Không sửa code.
+
+### (b) Khái niệm quan trọng
+- **Tách thời lượng chiếu và độ sâu giải thích:** chỉ nói phần cần thiết khi chiếu, phần chi tiết để sẵn khi được hỏi. Ví dụ bước 3 chỉ nói 30 giây, nhưng vẫn có sẵn giải thích vì sao LLM phải viết `result is value`.
+- **Mutant tương đương:** mutant có hành vi giống hệt code gốc nên không test nào giết được, vì vậy mutation score 100 % không phải lúc nào cũng đạt được.
+
+### (c) File liên quan
+`slides/KICH_BAN_DEMO.md`, `slides/GIAI_THICH_DEMO.md`, `slides/bao_cao_cuoi_ky.html`, `slides/LOI_THOAI_CUOI_KY.md`, `DEMO_CHECKLIST.md`
+
+### (d) Lệnh tự chạy thử
+Nhấn đúp `run_demo.bat`, làm theo `slides/KICH_BAN_DEMO.md`, bấm giờ phần **Nói**. Nhờ bạn hỏi ngẫu nhiên các thuật ngữ cuối file để tập trả lời.
+
+### (e) Câu hỏi thầy có thể hỏi
+1. **Mutation score 100 % có nghĩa là hết bug không?** → Không. Điểm này chỉ tính trên những mutant đã tạo, và code vẫn có thể sai so với đặc tả.
+2. **Sao demo không chiếu phần chấm held-out?** → Một lần chạy không thấy được cách chấm, nên em trình bày ở phần số liệu thực nghiệm.
