@@ -1555,3 +1555,26 @@ Nhấn đúp `run_demo.bat`, rồi làm theo `slides/KICH_BAN_DEMO.md` và bấm
 ### (e) Câu hỏi thầy có thể hỏi
 1. **Sao chỉ một phần là chạy thật?** → Mỗi lần chạy tốn lượt gọi API và có module mất gần 3 phút. Phần phát lại là log của lần chạy thật, giao diện ghi rõ đang phát lại.
 2. **Sao mutant `age < 60` còn sống?** → Vì đó chính là cách sửa bug, test đúng đặc tả không thể giết mutant này.
+
+---
+
+## TL10 — Tài liệu giải thích mọi thứ trong demo (`slides/GIAI_THICH_DEMO.md`)
+
+### (a) Đã làm gì & tại sao
+- Viết tài liệu để tự giải thích được demo: khái niệm, ai làm việc gì, đi qua một lần chạy thật, nghĩa của từng ô trên giao diện và từng cột kết quả, câu hỏi theo từng bước.
+- Không sửa code. Số liệu lấy từ `logs/` và `results/results.csv`.
+
+### (b) Khái niệm quan trọng
+- **Phân vai rõ ràng:** LLM viết, sửa và phân loại test; công cụ thật chạy và đo; code của em chọn việc tiếp theo. Vì vậy LLM không tự chấm điểm mình.
+- **Số trên thẻ là kết quả đo đầu vòng:** ví dụ thẻ vòng 0 của `calculator` ghi 90,9 %, còn việc giết mutant chỉ có tác dụng ở vòng 1 (100 %).
+- **Log `calculator_agent_mutation` chạy lúc 18:54, quy tắc "không kiểm tra chi tiết cài đặt" được commit lúc 18:59**, nên test `result is value` trong log có thể chưa chịu ảnh hưởng của quy tắc này. Tác dụng của quy tắc chưa được đo.
+
+### (c) File liên quan
+`slides/GIAI_THICH_DEMO.md`, `slides/KICH_BAN_DEMO.md`, `testgen/agent.py`, `testgen/prompts.py`, `evaluate.py`, `results/results.csv`
+
+### (d) Lệnh tự chạy thử
+Nhấn đúp `run_demo.bat`, REPLAY `user_module_app_20261031-233732`, đối chiếu từng ô trên màn hình với Phần 3 và Phần 4 của tài liệu.
+
+### (e) Câu hỏi thầy có thể hỏi
+1. **LLM có tự chấm điểm không?** → Không. Mọi con số do pytest, Jest, Stryker và các công cụ đo tạo ra.
+2. **Sao thẻ vòng 0 không có điểm mutation?** → Còn test fail thì agent xử lý test fail trước, chưa chạy tới bước mutation.
