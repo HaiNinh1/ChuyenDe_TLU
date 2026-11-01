@@ -22,6 +22,8 @@ Mỗi bước có hai phần: **Nói** là phần nói khi chiếu, **Giải th�
 
 ## Bước 1. Nhắc lại MuTAP (1 phút, chưa thao tác)
 
+**Hình để chỉ:** nếu thầy muốn xem toàn bộ luồng, mở **slide trang 16** (thêm `#16` vào cuối địa chỉ của file slide). Sơ đồ cho thấy từng bước chạy và cột so với MuTAP. Lời giải thích nằm ở trang 16 trong `slides/LOI_THOAI_CUOI_KY.md`.
+
 **Nói:**
 
 > Thưa thầy, đề tài của em dựa trên bài MuTAP của Dakhel và cộng sự, năm 2024. Vấn đề của bài là test do LLM viết thường chỉ được đánh giá bằng coverage, trong khi coverage cao chưa chắc đã bắt được lỗi.

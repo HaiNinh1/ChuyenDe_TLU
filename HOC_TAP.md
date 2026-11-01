@@ -1601,3 +1601,25 @@ Nhấn đúp `run_demo.bat`, làm theo `slides/KICH_BAN_DEMO.md`, bấm giờ ph
 ### (e) Câu hỏi thầy có thể hỏi
 1. **Mutation score 100 % có nghĩa là hết bug không?** → Không. Điểm này chỉ tính trên những mutant đã tạo, và code vẫn có thể sai so với đặc tả.
 2. **Sao demo không chiếu phần chấm held-out?** → Một lần chạy không thấy được cách chấm, nên em trình bày ở phần số liệu thực nghiệm.
+
+---
+
+## TL12 — Sơ đồ hệ thống hoàn chỉnh ở slide trang 16
+
+### (a) Đã làm gì & tại sao
+- Hình vòng lặp bốn ô cũ chưa cho thấy hệ thống chạy thế nào và khác MuTAP ở đâu. Thay bằng một sơ đồ trên một trang: luồng chạy thật, việc agent làm ở từng nhánh, và cột so với từng bước của MuTAP.
+- Giữ số trang (29) để các tham chiếu khác không đổi. Viết lại lời thoại trang 16. Không sửa code.
+
+### (b) Khái niệm quan trọng
+- **Đọc sơ đồ theo ba cột:** câu hỏi của vòng lặp → việc agent làm → so với MuTAP. Ví dụ câu hỏi 2 "Có test fail?": agent so với đặc tả và phân loại, còn bước 3 của MuTAP thay giá trị mong đợi bằng kết quả của code.
+- **Sơ đồ có rút gọn:** coverage chưa đạt nhưng không còn cải thiện thì chương trình vẫn chuyển sang mutation (`testgen/agent.py`, `_step`). Nhánh này được lược bỏ và ghi trong lời thoại.
+
+### (c) File liên quan
+`slides/bao_cao_cuoi_ky.html` (trang 16), `slides/LOI_THOAI_CUOI_KY.md`, `slides/KICH_BAN_DEMO.md`, `testgen/agent.py`, `evaluate.py`
+
+### (d) Lệnh tự chạy thử
+Mở `slides/bao_cao_cuoi_ky.html`, thêm `#16` vào cuối địa chỉ, tự giải thích sơ đồ trong 90 giây.
+
+### (e) Câu hỏi thầy có thể hỏi
+1. **Khác MuTAP ở đâu?** → Xem cột phải: giữ bước sinh test và ý tưởng mutant còn sống; đổi cách sửa test hỏng, cách xử lý test fail, cách chấm; thêm coverage, bộ nhớ, Adapter; chưa làm rút gọn bộ test.
+2. **Mỗi vòng có chạy cả bốn việc không?** → Không, mỗi vòng chỉ xử lý vấn đề đầu tiên gặp phải rồi chạy và đo lại.

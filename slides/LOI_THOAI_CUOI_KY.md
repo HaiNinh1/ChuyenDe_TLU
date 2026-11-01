@@ -168,13 +168,19 @@ Bước rút gọn bộ test của MuTAP thì em chưa làm.
 
 ## PHẦN 5. HỆ THỐNG VÀ DEMO
 
-### Trang 16. Vòng lặp tự cải tiến (70 giây)
+### Trang 16. Sơ đồ hệ thống (90 giây)
 
-Hệ thống là một vòng lặp gồm bốn việc như sơ đồ: LLM viết hoặc sửa test, chạy test thật, đo coverage và mutation, rồi tạo phản hồi cụ thể cho vòng sau. Em tự viết vòng lặp này bằng `for` và `if/else`, không dùng LangChain hay framework agent.
+Đây là toàn bộ cách hệ thống chạy. Thầy/cô đọc từ trái sang phải: đầu vào là code có đặc tả, LLM sinh bộ test, rồi chương trình chạy test thật và đo coverage.
 
-Mỗi vòng, chương trình chỉ xử lý vấn đề ưu tiên nhất, theo thứ tự trong khung code: lỗi cú pháp hoặc import, rồi test fail, rồi coverage, cuối cùng là mutant còn sống.
+Sau đó, mỗi vòng đi qua bốn câu hỏi ở giữa, từ trên xuống. File test có chạy được không? Có test fail không? Coverage đạt ngưỡng chưa? Mutation đạt ngưỡng chưa? Gặp vấn đề đầu tiên ở đâu thì chỉ xử lý vấn đề đó, rồi quay lại chạy và đo lại. Em đặt thứ tự này vì coverage của một bộ test đang fail thì không đáng tin.
 
-Em đặt thứ tự này vì coverage của một bộ test đang fail thì không đáng tin. LLM chỉ trả về test mới hoặc test đã sửa, chương trình tự ghép vào file nên LLM không xoá được test cũ. Ngưỡng là line 95 %, branch 90 %, mutation 80 %. Vòng lặp dừng khi đạt ngưỡng, khi hai lần liên tiếp không cải thiện, hoặc khi hết 8 vòng.
+Cột bên phải so từng bước với MuTAP. Màu xanh lá là phần em giữ: sinh test từ LLM và đưa mutant còn sống vào prompt, nhưng em dừng ở ngưỡng 80 %, còn MuTAP lặp tới 100 %. Màu xanh dương là phần em đổi: gửi kèm thông báo lỗi thật; khi test fail thì so với đặc tả thay vì mặc định code đúng; và chấm trên mutant LLM chưa thấy. Màu vàng là phần em thêm: phản hồi coverage, bộ nhớ bài học và Adapter để chạy trên hai ngôn ngữ. Bước rút gọn bộ test của MuTAP thì em chưa làm.
+
+Khung phía dưới bên trái nói rõ phân vai: LLM chỉ viết, sửa và phân loại test; công cụ thật chạy và đo; còn code của em, viết bằng `for` và `if/else`, không dùng LangChain, chọn việc tiếp theo. LLM chỉ trả về test mới hoặc test đã sửa, chương trình tự ghép vào file nên LLM không xoá được test cũ.
+
+Vòng lặp dừng khi đạt ngưỡng, khi hai lần liên tiếp không cải thiện, hoặc khi hết 8 vòng.
+
+*Nếu được hỏi:* coverage chưa đạt nhưng không còn cải thiện thì chương trình chuyển sang bước mutation, sơ đồ đã lược bỏ nhánh này cho dễ nhìn.
 
 ### Trang 17. LLM nhận phản hồi gì (50 giây)
 
