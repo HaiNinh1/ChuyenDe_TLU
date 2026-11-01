@@ -168,19 +168,23 @@ Bước rút gọn bộ test của MuTAP thì em chưa làm.
 
 ## PHẦN 5. HỆ THỐNG VÀ DEMO
 
-### Trang 16. Sơ đồ hệ thống (90 giây)
+### Trang 16. Phương pháp sinh unit test (70 giây)
 
-Đây là toàn bộ cách hệ thống chạy. Thầy/cô đọc từ trái sang phải: đầu vào là code có đặc tả, LLM sinh bộ test, rồi chương trình chạy test thật và đo coverage.
+Phương pháp của em là: LLM viết test, rồi tự cải tiến nhờ phản hồi từ việc chạy test thật.
 
-Sau đó, mỗi vòng đi qua bốn câu hỏi ở giữa, từ trên xuống. File test có chạy được không? Có test fail không? Coverage đạt ngưỡng chưa? Mutation đạt ngưỡng chưa? Gặp vấn đề đầu tiên ở đâu thì chỉ xử lý vấn đề đó, rồi quay lại chạy và đo lại. Em đặt thứ tự này vì coverage của một bộ test đang fail thì không đáng tin.
+Thầy/cô đọc hàng trên từ trái sang phải. Đầu vào là code có đặc tả. Bước 1, LLM viết test theo đặc tả. Bước 2, chương trình chạy test thật. Bước 3, đo kết quả: pass hay fail, coverage và mutation. Nếu đạt ngưỡng thì ra bộ test, kèm nhãn nghi có bug nếu có.
 
-Cột bên phải so từng bước với MuTAP. Màu xanh lá là phần em giữ: sinh test từ LLM và đưa mutant còn sống vào prompt, nhưng em dừng ở ngưỡng 80 %, còn MuTAP lặp tới 100 %. Màu xanh dương là phần em đổi: gửi kèm thông báo lỗi thật; khi test fail thì so với đặc tả thay vì mặc định code đúng; và chấm trên mutant LLM chưa thấy. Màu vàng là phần em thêm: phản hồi coverage, bộ nhớ bài học và Adapter để chạy trên hai ngôn ngữ. Bước rút gọn bộ test của MuTAP thì em chưa làm.
+Nếu chưa đạt thì sang bước 4: gửi phản hồi cho LLM rồi lặp lại. Mỗi vòng chỉ xử lý một vấn đề, theo đúng thứ tự trên hình. File test lỗi thì gửi thông báo lỗi thật. Có test fail thì so với đặc tả: test sai thì sửa, nghi code sai thì giữ test và gắn nhãn. Coverage thấp thì gửi dòng và nhánh chưa phủ. Mutation thấp thì gửi mutant còn sống. Em xử lý test fail trước vì coverage của một bộ test đang fail thì không đáng tin.
 
-Khung phía dưới bên trái nói rõ phân vai: LLM chỉ viết, sửa và phân loại test; công cụ thật chạy và đo; còn code của em, viết bằng `for` và `if/else`, không dùng LangChain, chọn việc tiếp theo. LLM chỉ trả về test mới hoặc test đã sửa, chương trình tự ghép vào file nên LLM không xoá được test cũ.
+Hàng dưới là quan hệ với MuTAP. Em giữ ý tưởng đưa mutant còn sống vào prompt. Em đổi hai điểm: không mặc định code đúng khi test fail, và chấm trên mutant LLM chưa thấy. Em thêm phản hồi coverage, bộ nhớ bài học và chạy trên Python cùng JavaScript/TypeScript.
 
-Vòng lặp dừng khi đạt ngưỡng, khi hai lần liên tiếp không cải thiện, hoặc khi hết 8 vòng.
+Vòng lặp này em tự viết bằng `for` và `if/else`, không dùng LangChain. Vòng lặp dừng khi đạt ngưỡng, khi hai lần liên tiếp không cải thiện, hoặc khi hết 8 vòng.
 
-*Nếu được hỏi:* coverage chưa đạt nhưng không còn cải thiện thì chương trình chuyển sang bước mutation, sơ đồ đã lược bỏ nhánh này cho dễ nhìn.
+*Nếu được hỏi:*
+- **Ngưỡng bao nhiêu?** Line 95 %, branch 90 %, mutation 80 %.
+- **LLM có xóa được test cũ không?** Không. LLM chỉ trả về test mới hoặc test đã sửa, chương trình tự ghép vào file.
+- **Ai đo điểm?** Công cụ thật đo, LLM không tự chấm mình.
+- **Coverage chưa đạt mà không cải thiện thì sao?** Chương trình chuyển sang bước mutation, hình đã lược bỏ nhánh này cho dễ nhìn.
 
 ### Trang 17. LLM nhận phản hồi gì (50 giây)
 

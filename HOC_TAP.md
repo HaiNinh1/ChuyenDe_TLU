@@ -1623,3 +1623,25 @@ Mở `slides/bao_cao_cuoi_ky.html`, thêm `#16` vào cuối địa chỉ, tự g
 ### (e) Câu hỏi thầy có thể hỏi
 1. **Khác MuTAP ở đâu?** → Xem cột phải: giữ bước sinh test và ý tưởng mutant còn sống; đổi cách sửa test hỏng, cách xử lý test fail, cách chấm; thêm coverage, bộ nhớ, Adapter; chưa làm rút gọn bộ test.
 2. **Mỗi vòng có chạy cả bốn việc không?** → Không, mỗi vòng chỉ xử lý vấn đề đầu tiên gặp phải rồi chạy và đo lại.
+
+---
+
+## TL13 — Đơn giản hóa slide trang 16: nêu rõ phương pháp sinh unit test
+
+### (a) Đã làm gì & tại sao
+- Sơ đồ ở TL12 có quá nhiều nhánh và chữ nhỏ, khó thấy ngay đề tài dùng phương pháp gì. Bản mới ghi phương pháp ngay đầu trang, rồi một luồng 4 bước, cuối trang là phần giữ, đổi, thêm so với MuTAP.
+- Viết lại lời thoại trang 16. Không sửa code.
+
+### (b) Khái niệm quan trọng
+- **Phương pháp sinh test bằng LLM có phản hồi:** LLM viết test → chạy thật → đo → gửi phản hồi cụ thể → lặp lại. Ví dụ mutation thấp thì gửi mutant còn sống để LLM viết thêm test.
+- **Hình để chiếu nên rút gọn:** chi tiết như ngưỡng hay nhánh coverage không còn cải thiện được chuyển vào phần "Nếu được hỏi" trong lời thoại.
+
+### (c) File liên quan
+`slides/bao_cao_cuoi_ky.html` (trang 16), `slides/LOI_THOAI_CUOI_KY.md`, `testgen/agent.py`
+
+### (d) Lệnh tự chạy thử
+Mở `slides/bao_cao_cuoi_ky.html`, thêm `#16` vào cuối địa chỉ, tự trình bày trong 70 giây.
+
+### (e) Câu hỏi thầy có thể hỏi
+1. **Em sinh unit test theo phương pháp nào?** → LLM viết test, rồi tự cải tiến nhờ phản hồi từ việc chạy test thật: lỗi, test fail, coverage và mutant còn sống.
+2. **Phương pháp này dựa trên bài nào?** → Dựa trên MuTAP: giữ ý tưởng đưa mutant còn sống vào prompt, đổi cách xử lý test fail và cách chấm, thêm phản hồi coverage và ngôn ngữ thứ hai.

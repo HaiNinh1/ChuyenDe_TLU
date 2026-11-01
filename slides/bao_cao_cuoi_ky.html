@@ -512,121 +512,66 @@ assert letter_grade(80) == <span class="bad">"C"</span></div>
   </div>
 </section>
 
-<!-- 16. VÒNG LẶP -->
+<!-- 16. PHƯƠNG PHÁP SINH TEST (SƠ ĐỒ) -->
 <section class="slide" data-sec="5">
-  <div class="head"><h2>Sơ đồ hệ thống: kế thừa và cải tiến từ MuTAP</h2></div>
+  <div class="head"><h2>Phương pháp sinh unit test của đề tài</h2></div>
   <div class="main" style="padding:18px 72px 10px">
-    <svg viewBox="0 0 1776 860" style="width:100%;flex:1;min-height:0" role="img" aria-label="Sơ đồ hoạt động: code và đặc tả vào, LLM sinh test, chạy test thật, rồi mỗi vòng kiểm tra lần lượt file test, test fail, coverage, mutation, gửi phản hồi cho LLM và quay lại chạy test; khi dừng thì xuất kết quả và chấm riêng trên mutant LLM chưa thấy. Cột phải so sánh từng bước với MuTAP." font-family="'Be Vietnam Pro','Segoe UI',sans-serif" fill="#1A2433">
+    <svg viewBox="0 0 1776 860" style="width:100%;flex:1;min-height:0" role="img" aria-label="Luồng: code và đặc tả vào, LLM viết test, chạy test thật, đo kết quả. Đạt ngưỡng thì ra bộ test và nhãn nghi bug. Chưa đạt thì gửi phản hồi cho LLM rồi lặp lại." font-family="'Be Vietnam Pro','Segoe UI',sans-serif" fill="#1A2433">
       <defs>
-        <marker id="s16a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#12384F"/></marker>
-        <marker id="s16b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0B6E82"/></marker>
-        <marker id="s16c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#A86200"/></marker>
+        <marker id="s16a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="4.5" markerHeight="4.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#12384F"/></marker>
       </defs>
 
-      <!-- Hàng trên: đầu vào -> LLM sinh test -> chạy test -->
-      <rect x="0" y="0" width="250" height="100" rx="6" fill="#F2F5F7" stroke="#12384F" stroke-width="2"/>
-      <g text-anchor="middle"><text x="125" y="32" font-size="26" font-weight="700">Đầu vào</text><text x="125" y="62" font-size="23">Code + đặc tả</text><text x="125" y="88" font-size="23">(docstring, JSDoc)</text></g>
-      <rect x="290" y="0" width="300" height="100" rx="6" fill="#E4F4EB" stroke="#1E7B4F" stroke-width="2"/>
-      <g text-anchor="middle"><text x="440" y="42" font-size="27" font-weight="700">LLM sinh bộ test</text><text x="440" y="76" font-size="23">Viết assert theo đặc tả</text></g>
-      <rect x="630" y="0" width="370" height="100" rx="6" fill="#12384F"/>
-      <g text-anchor="middle" fill="#fff" font-size="28" font-weight="700"><text x="815" y="42">Chạy test thật,</text><text x="815" y="78">đo coverage</text></g>
-      <g fill="none" stroke="#12384F" stroke-width="4">
-        <path d="M250,50 H288" marker-end="url(#s16a)"/><path d="M590,50 H628" marker-end="url(#s16a)"/>
-        <path d="M815,100 V123" marker-end="url(#s16a)"/><path d="M815,225 V288" marker-end="url(#s16a)"/>
-        <path d="M815,390 V453" marker-end="url(#s16a)"/><path d="M815,555 V593" marker-end="url(#s16a)"/><path d="M815,695 V743" marker-end="url(#s16a)"/>
-        <path d="M630,797 H592" marker-end="url(#s16a)"/>
+      <!-- Câu nêu phương pháp -->
+      <rect x="0" y="0" width="1776" height="84" rx="6" fill="#E1F0F3"/><rect x="0" y="0" width="12" height="84" fill="#0B6E82"/>
+      <text x="40" y="54" font-size="35" font-weight="700">LLM viết test, rồi tự cải tiến nhờ phản hồi từ việc chạy test thật</text>
+
+      <!-- Luồng chính -->
+      <g fill="none" stroke="#12384F" stroke-width="5">
+        <path d="M220,195 H262" marker-end="url(#s16a)"/><path d="M544,195 H586" marker-end="url(#s16a)"/>
+        <path d="M868,195 H910" marker-end="url(#s16a)"/><path d="M1192,195 H1234" marker-end="url(#s16a)"/>
+        <path d="M1486,195 H1528" marker-end="url(#s16a)"/>
+        <path d="M1361,270 V368" marker-end="url(#s16a)"/>
+        <path d="M480,530 H404 V272" marker-end="url(#s16a)"/>
+      </g>
+      <rect x="0" y="120" width="220" height="150" rx="6" fill="#F2F5F7" stroke="#12384F" stroke-width="2"/>
+      <g text-anchor="middle"><text x="110" y="185" font-size="29" font-weight="700">Code</text><text x="110" y="226" font-size="27">+ đặc tả</text></g>
+      <g fill="#12384F"><rect x="264" y="120" width="280" height="150" rx="6"/><rect x="588" y="120" width="280" height="150" rx="6"/><rect x="912" y="120" width="280" height="150" rx="6"/></g>
+      <g text-anchor="middle" fill="#fff">
+        <text x="404" y="185" font-size="29" font-weight="700">1. LLM viết test</text><text x="404" y="228" font-size="25">theo đặc tả</text>
+        <text x="728" y="185" font-size="29" font-weight="700">2. Chạy test thật</text><text x="728" y="228" font-size="25">pytest, Jest</text>
+        <text x="1052" y="178" font-size="29" font-weight="700">3. Đo kết quả</text><text x="1052" y="216" font-size="24">pass/fail, coverage,</text><text x="1052" y="246" font-size="24">mutation</text>
+      </g>
+      <polygon points="1266,120 1456,120 1486,195 1456,270 1266,270 1236,195" fill="#fff" stroke="#12384F" stroke-width="3"/>
+      <text x="1361" y="205" text-anchor="middle" font-size="30" font-weight="700">Đạt ngưỡng?</text>
+      <rect x="1530" y="120" width="246" height="150" rx="6" fill="#E4F4EB" stroke="#1E7B4F" stroke-width="2"/>
+      <g text-anchor="middle"><text x="1653" y="180" font-size="28" font-weight="700">Bộ test</text><text x="1653" y="222" font-size="25">+ nhãn nghi bug</text></g>
+      <g font-size="24" font-weight="700" fill="#4B5A6B"><text x="1507" y="182" text-anchor="middle" font-size="20">Đạt</text><text x="1376" y="328">Chưa</text></g>
+
+      <!-- Bước 4: phản hồi -->
+      <rect x="480" y="370" width="1296" height="320" rx="6" fill="#F2F5F7"/>
+      <rect x="480" y="370" width="1296" height="56" rx="6" fill="#0B6E82"/>
+      <text x="504" y="408" font-size="30" font-weight="700" fill="#fff">4. Gửi phản hồi cho LLM: mỗi vòng xử lý một vấn đề, theo thứ tự</text>
+      <g fill="#fff" stroke="#D3DAE1" stroke-width="2"><rect x="495" y="438" width="308" height="240" rx="6"/><rect x="815" y="438" width="308" height="240" rx="6"/><rect x="1135" y="438" width="308" height="240" rx="6"/><rect x="1455" y="438" width="308" height="240" rx="6"/></g>
+      <g font-size="30" font-weight="700"><text x="513" y="486">① File test lỗi</text><text x="833" y="486">② Test fail</text><text x="1153" y="486">③ Coverage thấp</text><text x="1473" y="486">④ Mutation thấp</text></g>
+      <g font-size="26">
+        <text x="513" y="536">Gửi thông báo lỗi</text><text x="513" y="572">thật để LLM sửa</text>
+        <text x="833" y="536">So với đặc tả:</text><text x="833" y="572"><tspan font-weight="700">Test sai:</tspan> sửa test</text><text x="833" y="608"><tspan font-weight="700">Nghi bug:</tspan> giữ test,</text><text x="833" y="644">gắn nhãn</text>
+        <text x="1153" y="536">Gửi dòng, nhánh</text><text x="1153" y="572">chưa phủ để viết</text><text x="1153" y="608">thêm test</text>
+        <text x="1473" y="536">Gửi mutant còn</text><text x="1473" y="572">sống để viết</text><text x="1473" y="608">thêm test</text>
       </g>
 
-      <!-- Bốn câu hỏi, ưu tiên từ trên xuống -->
-      <g fill="#fff" stroke="#12384F" stroke-width="3">
-        <polygon points="660,125 970,125 1000,175 970,225 660,225 630,175"/>
-        <polygon points="660,290 970,290 1000,340 970,390 660,390 630,340"/>
-        <polygon points="660,455 970,455 1000,505 970,555 660,555 630,505"/>
-        <polygon points="660,595 970,595 1000,645 970,695 660,695 630,645"/>
-      </g>
-      <g text-anchor="middle" font-size="25" font-weight="700">
-        <text x="815" y="185">1. File test chạy được?</text>
-        <text x="815" y="350">2. Có test fail?</text>
-        <text x="815" y="498">3. Coverage đạt ngưỡng?</text>
-        <text x="815" y="638">4. Mutation đạt ngưỡng?</text>
-      </g>
-      <g text-anchor="middle" font-size="22" fill="#4B5A6B"><text x="815" y="530">line 95 %, branch 90 %</text><text x="815" y="670">80 %</text></g>
-      <g font-size="22" font-weight="700" fill="#4B5A6B">
-        <text x="827" y="264">Được</text><text x="827" y="428">Không</text><text x="827" y="582">Đạt</text><text x="827" y="726">Đạt</text>
-        <g text-anchor="middle" font-size="20"><text x="1024" y="165">Lỗi</text><text x="1024" y="330">Có</text><text x="1022" y="495">Chưa</text><text x="1022" y="635">Chưa</text></g>
-      </g>
-      <g fill="none" stroke="#0B6E82" stroke-width="4">
-        <path d="M1000,175 H1048" marker-end="url(#s16b)"/><path d="M1000,340 H1048" marker-end="url(#s16b)"/>
-        <path d="M1000,505 H1048" marker-end="url(#s16b)"/><path d="M1000,645 H1048" marker-end="url(#s16b)"/>
-      </g>
+      <!-- Nhãn vòng lặp -->
+      <g font-size="26" fill="#4B5A6B"><text x="0" y="480" font-weight="700" fill="#12384F" font-size="28">Lặp lại</text><text x="0" y="524">đến khi đạt ngưỡng,</text><text x="0" y="560">không cải thiện</text><text x="0" y="596">hoặc hết số vòng</text></g>
 
-      <!-- Việc agent làm -->
-      <text x="1240" y="112" text-anchor="middle" font-size="24" font-weight="700" fill="#4B5A6B">Việc agent làm</text>
-      <rect x="1050" y="125" width="380" height="100" rx="6" fill="#E1F0F3" stroke="#0B6E82" stroke-width="2"/>
-      <g text-anchor="middle" font-size="25"><text x="1240" y="166">LLM sửa cả file, gửi kèm</text><text x="1240" y="198">thông báo lỗi thật</text></g>
-      <rect x="1050" y="255" width="380" height="170" rx="6" fill="#E1F0F3" stroke="#0B6E82" stroke-width="2"/>
-      <g text-anchor="middle" font-size="25" font-weight="700"><text x="1240" y="288">LLM so test với đặc tả,</text><text x="1240" y="318">phân loại từng test</text></g>
-      <rect x="1062" y="330" width="356" height="40" rx="4" fill="#fff"/><rect x="1062" y="376" width="356" height="40" rx="4" fill="#fff"/>
-      <g text-anchor="middle" font-size="23"><text x="1240" y="358"><tspan font-weight="700">Test sai:</tspan> LLM sửa test</text><text x="1240" y="404"><tspan font-weight="700">Nghi bug:</tspan> giữ test, gắn nhãn</text></g>
-      <rect x="1050" y="455" width="380" height="100" rx="6" fill="#FFF2D6" stroke="#A86200" stroke-width="2"/>
-      <g text-anchor="middle" font-size="25"><text x="1240" y="496">Gửi dòng, nhánh chưa phủ,</text><text x="1240" y="528">LLM viết thêm test</text></g>
-      <rect x="1050" y="595" width="380" height="100" rx="6" fill="#E4F4EB" stroke="#1E7B4F" stroke-width="2"/>
-      <g text-anchor="middle" font-size="25"><text x="1240" y="636">Gửi mutant còn sống,</text><text x="1240" y="668">LLM viết thêm test</text></g>
-
-      <!-- Quay lại vòng sau -->
-      <g fill="none" stroke="#12384F" stroke-width="4">
-        <path d="M1430,175 H1450 M1430,340 H1450 M1430,505 H1450 M1430,645 H1450"/>
-        <path d="M1450,645 V55 H1002" marker-end="url(#s16a)"/>
-      </g>
-      <text x="1225" y="42" text-anchor="middle" font-size="23" font-weight="700" fill="#12384F">Xong việc: quay lại chạy và đo lại</text>
-
-      <!-- Cột so với MuTAP -->
-      <text x="1628" y="22" text-anchor="middle" font-size="24" font-weight="700" fill="#4B5A6B">So với MuTAP</text>
-      <g fill="#F2F5F7"><rect x="1480" y="32" width="296" height="68" rx="6"/><rect x="1480" y="125" width="296" height="100" rx="6"/><rect x="1480" y="255" width="296" height="170" rx="6"/><rect x="1480" y="455" width="296" height="100" rx="6"/><rect x="1480" y="595" width="296" height="100" rx="6"/><rect x="1480" y="745" width="296" height="105" rx="6"/></g>
-      <g fill="#1E7B4F"><rect x="1490" y="42" width="66" height="30" rx="4"/><rect x="1490" y="605" width="66" height="30" rx="4"/></g>
-      <g fill="#0B6E82"><rect x="1490" y="135" width="66" height="30" rx="4"/><rect x="1490" y="265" width="66" height="30" rx="4"/><rect x="1490" y="755" width="66" height="30" rx="4"/></g>
-      <rect x="1490" y="465" width="78" height="30" rx="4" fill="#A86200"/>
-      <g fill="#fff" font-size="21" font-weight="700" text-anchor="middle"><text x="1523" y="64">Giữ</text><text x="1523" y="157">Đổi</text><text x="1523" y="287">Đổi</text><text x="1529" y="487">Thêm</text><text x="1523" y="627">Giữ</text><text x="1523" y="777">Đổi</text></g>
-      <g font-size="23">
-        <text x="1566" y="65">B1: LLM sinh test</text>
-        <text x="1566" y="158">B2: chỉ yêu cầu</text><text x="1490" y="192">sửa, không gửi kèm</text><text x="1490" y="218">thông báo lỗi</text>
-        <text x="1566" y="288">B3: giá trị khác</text><text x="1490" y="322">kết quả của code thì</text><text x="1490" y="350">thay bằng kết quả đó,</text><text x="1490" y="378">tức là mặc định</text><text x="1490" y="406">code đúng</text>
-        <text x="1578" y="488">MuTAP không</text><text x="1490" y="524">có phản hồi coverage</text>
-        <text x="1566" y="628">B4–5: ý tưởng</text><text x="1490" y="660">MuTAP lặp tới 100 %,</text><text x="1490" y="686">đề tài dừng ở 80 %</text>
-        <text x="1566" y="778">Chấm trên chính</text><text x="1490" y="810">mutant đã đưa</text><text x="1490" y="838">vào prompt</text>
-      </g>
-
-      <!-- Hàng dưới: dừng, đầu ra, chấm riêng -->
-      <rect x="630" y="745" width="370" height="105" rx="6" fill="#12384F"/>
-      <g text-anchor="middle" fill="#fff"><text x="815" y="778" font-size="28" font-weight="700">Dừng</text><text x="815" y="810" font-size="22">đạt ngưỡng, không cải thiện</text><text x="815" y="838" font-size="22">hoặc hết số vòng</text></g>
-      <rect x="290" y="745" width="300" height="105" rx="6" fill="#F2F5F7" stroke="#12384F" stroke-width="2"/>
-      <g text-anchor="middle"><text x="440" y="780" font-size="26" font-weight="700">Đầu ra</text><text x="440" y="811" font-size="23">File test, nhãn nghi bug,</text><text x="440" y="838" font-size="23">log từng vòng</text></g>
-      <path d="M1000,797 H1048" fill="none" stroke="#0B6E82" stroke-width="4" stroke-dasharray="9 6" marker-end="url(#s16b)"/>
-      <rect x="1050" y="745" width="380" height="105" rx="6" fill="#E1F0F3" stroke="#0B6E82" stroke-width="2" stroke-dasharray="9 6"/>
-      <g text-anchor="middle"><text x="1240" y="778" font-size="24" font-weight="700">Sau đó: chấm thực nghiệm</text><text x="1240" y="810" font-size="23">Kết luận theo mutant LLM</text><text x="1240" y="838" font-size="23">chưa thấy (held-out)</text></g>
-      <rect x="0" y="745" width="250" height="105" rx="6" fill="#fff" stroke="#4B5A6B" stroke-width="2" stroke-dasharray="9 6"/>
-      <g text-anchor="middle" fill="#4B5A6B"><text x="125" y="780" font-size="24" font-weight="700">Chưa làm: B6</text><text x="125" y="811" font-size="23">Rút gọn bộ test</text><text x="125" y="838" font-size="23">của MuTAP</text></g>
-
-      <!-- Chú thích màu -->
-      <text x="0" y="150" font-size="24" font-weight="700" fill="#4B5A6B">Màu so với MuTAP</text>
-      <g stroke-width="2"><rect x="0" y="165" width="30" height="30" rx="4" fill="#E4F4EB" stroke="#1E7B4F"/><rect x="0" y="205" width="30" height="30" rx="4" fill="#E1F0F3" stroke="#0B6E82"/><rect x="0" y="245" width="30" height="30" rx="4" fill="#FFF2D6" stroke="#A86200"/></g>
-      <g font-size="24"><text x="42" y="188">Giữ ý tưởng</text><text x="42" y="228">Đổi cách làm</text><text x="42" y="268">Thêm mới</text></g>
-
-      <!-- Bộ nhớ và Adapter -->
-      <rect x="290" y="150" width="300" height="145" rx="6" fill="#FFF2D6" stroke="#A86200" stroke-width="2"/>
-      <g text-anchor="middle"><text x="440" y="190" font-size="26" font-weight="700">Bộ nhớ bài học</text><text x="440" y="224" font-size="23">Lưu JSON, đưa vào</text><text x="440" y="252" font-size="23">prompt lần sau</text><text x="440" y="280" font-size="22" fill="#4B5A6B">(tắt khi demo)</text></g>
-      <path d="M440,150 V102" fill="none" stroke="#A86200" stroke-width="4" stroke-dasharray="9 6" marker-end="url(#s16c)"/>
-      <rect x="0" y="330" width="590" height="225" rx="6" fill="#FFF2D6" stroke="#A86200" stroke-width="2"/>
-      <text x="295" y="372" text-anchor="middle" font-size="27" font-weight="700">Adapter: vòng lặp không biết ngôn ngữ</text>
-      <g font-size="24"><text x="24" y="418" font-weight="700">Python</text><text x="150" y="418">pytest, coverage.py, mutmut</text><text x="24" y="462" font-weight="700">JS/TS</text><text x="150" y="462">Jest, Istanbul, StrykerJS</text><text x="24" y="506" font-weight="700" fill="#4B5A6B">Java, Go</text><text x="150" y="506" fill="#4B5A6B">hướng phát triển, chưa làm</text></g>
-      <path d="M590,400 H610 V82 H628" fill="none" stroke="#A86200" stroke-width="4" stroke-dasharray="9 6" marker-end="url(#s16c)"/>
-
-      <!-- Ai làm việc gì -->
-      <rect x="0" y="595" width="590" height="100" rx="6" fill="#F2F5F7"/>
-      <g font-size="24"><text x="24" y="628"><tspan font-weight="700">LLM:</tspan> viết, sửa, phân loại test</text><text x="24" y="658"><tspan font-weight="700">Công cụ thật:</tspan> chạy test, đo điểm</text><text x="24" y="686"><tspan font-weight="700">Code của em:</tspan> chọn việc tiếp theo</text></g>
+      <!-- So với MuTAP -->
+      <g><rect x="0" y="715" width="570" height="135" rx="6" fill="#E4F4EB"/><rect x="590" y="715" width="596" height="135" rx="6" fill="#E1F0F3"/><rect x="1206" y="715" width="570" height="135" rx="6" fill="#FFF2D6"/></g>
+      <g font-size="27" font-weight="700"><text x="24" y="756" fill="#1E7B4F">Giữ từ MuTAP</text><text x="614" y="756" fill="#0B6E82">Đổi so với MuTAP</text><text x="1230" y="756" fill="#A86200">Thêm so với MuTAP</text></g>
+      <g font-size="25"><text x="24" y="794">Đưa mutant còn sống vào prompt</text><text x="24" y="828">để LLM viết đúng test còn thiếu</text>
+        <text x="614" y="794">Không mặc định code đúng khi test fail</text><text x="614" y="828">Chấm trên mutant LLM chưa thấy</text>
+        <text x="1230" y="794">Phản hồi coverage, bộ nhớ bài học</text><text x="1230" y="828">Chạy trên Python và JS/TS</text></g>
     </svg>
   </div>
-  <div data-src="B1 đến B6 là các bước của MuTAP (trang 11). Mỗi vòng chỉ làm một việc, ưu tiên từ 1 đến 4. Mã nguồn: testgen/agent.py, evaluate.py."></div>
+  <div data-src="Mã nguồn: testgen/agent.py. Bước rút gọn bộ test của MuTAP em chưa làm."></div>
 </section>
 
 <!-- 17. PROMPT -->
