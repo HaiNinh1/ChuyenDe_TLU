@@ -1503,3 +1503,27 @@ streamlit run app.py     # Chạy mới -> Dán code -> dán đoạn ticket_pric
 1. **Kết quả hôm nay có giống bảng thực nghiệm không?** → Không so trực tiếp được: bảng đo bằng model cũ đã bị rút, chạy hôm nay dùng model khác.
 2. **Sao không gọi cùng lúc nhiều key để có thêm quota?** → Mục tiêu chỉ là không gián đoạn khi một key hỏng; quota cũng tính theo tài khoản.
 3. **Mô hình bắt được bug có phải luôn đúng không?** → Không. LLM có thể phân loại sai, nên nhãn là SUSPECTED_BUG (nghi ngờ) và cần người kiểm tra.
+
+---
+
+## TL8 — File `run_demo.bat`: nhấn đúp để mở giao diện demo
+
+### (a) Đã làm gì & tại sao
+- Thêm `run_demo.bat` để mở giao diện Streamlit mà không phải gõ lệnh, tránh gõ nhầm ngay trước buổi demo.
+- Không sửa code Python hay JS nên hành vi của agent không đổi.
+
+### (b) Khái niệm quan trọng
+- **`%~dp0`** là thư mục chứa file `.bat`. Lệnh `cd /d "%~dp0"` giúp file chạy đúng dù được mở từ đâu. Ví dụ: chạy từ `C:\Users\haini`
+  thì vẫn chuyển về thư mục dự án trước khi chạy `app.py`.
+- **Gọi thẳng `.venv\Scripts\python.exe`** nên không cần kích hoạt môi trường ảo, và không bị chính sách chặn script của PowerShell ảnh hưởng.
+- **`PYTHONUTF8=1`** để Python in tiếng Việt ra cửa sổ dòng lệnh mà không gặp `UnicodeEncodeError` (bảng mã mặc định cp1252).
+
+### (c) File liên quan
+`run_demo.bat`, `app.py`
+
+### (d) Lệnh tự chạy thử
+Nhấn đúp `run_demo.bat`, trình duyệt mở `http://localhost:8501`. Tắt bằng `Ctrl + C` trong cửa sổ đen.
+
+### (e) Câu hỏi thầy có thể hỏi
+1. **Sao dùng `.bat`?** → Chỉ để mở demo nhanh trên Windows; lệnh gốc vẫn là `streamlit run app.py`, chạy được trên mọi hệ điều hành.
+2. **Đóng cửa sổ đen thì sao?** → Máy chủ Streamlit dừng, giao diện trên trình duyệt không còn hoạt động.
