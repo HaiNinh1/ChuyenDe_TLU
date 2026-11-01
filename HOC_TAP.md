@@ -1645,3 +1645,24 @@ Mở `slides/bao_cao_cuoi_ky.html`, thêm `#16` vào cuối địa chỉ, tự t
 ### (e) Câu hỏi thầy có thể hỏi
 1. **Em sinh unit test theo phương pháp nào?** → LLM viết test, rồi tự cải tiến nhờ phản hồi từ việc chạy test thật: lỗi, test fail, coverage và mutant còn sống.
 2. **Phương pháp này dựa trên bài nào?** → Dựa trên MuTAP: giữ ý tưởng đưa mutant còn sống vào prompt, đổi cách xử lý test fail và cách chấm, thêm phản hồi coverage và ngôn ngữ thứ hai.
+
+## TL14 — Xuất slide sang PowerPoint sửa được, lưu các lần chạy demo `ticket_price`
+
+### (a) Đã làm gì & tại sao
+- Thêm `scripts/html_to_pptx.py`: chuyển `slides/bao_cao_cuoi_ky.html` thành file PowerPoint có hình, bảng và biểu đồ gốc, sửa được trực tiếp thay vì chỉ có ảnh chụp.
+- Lưu `slides/bao_cao_cuoi_ky.pptx` (29 trang) và 3 log chạy demo `ticket_price` ngày 01/11/2026 để phát lại bằng REPLAY.
+- **Hạn chế:** file `.pptx` được tạo lúc 11:03, trước khi sửa trang 16 ở TL12 và TL13, nên trang 16 vẫn là bản cũ. Muốn khớp với HTML thì chạy lại script.
+
+### (b) Khái niệm quan trọng
+- **Đo vị trí trên trình duyệt rồi vẽ lại:** Playwright mở HTML ở khổ 1920x1080, đo từng khối, sau đó python-pptx vẽ lại. Ví dụ 1 px trên trang = 6350 EMU = 0,5 pt.
+- **Log REPLAY:** log lưu từng vòng chạy nên phát lại được khi không có mạng hoặc API.
+
+### (c) File liên quan
+`scripts/html_to_pptx.py`, `slides/bao_cao_cuoi_ky.pptx`, `logs/user_module_app_20261101-*.json`, `generated_tests/app/test_user_module.py`
+
+### (d) Lệnh tự chạy thử
+`pip install python-pptx playwright`, `python -m playwright install chromium`, rồi `python scripts/html_to_pptx.py`
+
+### (e) Câu hỏi thầy có thể hỏi
+1. **Vì sao không chụp ảnh từng slide đưa vào PowerPoint?** → Ảnh thì không sửa được chữ và số liệu. Vẽ lại bằng hình, bảng và biểu đồ gốc thì sửa trực tiếp được.
+2. **Biểu đồ trong file PowerPoint lấy số liệu từ đâu?** → Số liệu được ghi trực tiếp trong script, giống số trên slide HTML, nên khi số liệu đổi phải sửa cả hai nơi.

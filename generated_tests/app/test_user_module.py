@@ -1,5 +1,5 @@
-from user_module import ticket_price
 import pytest
+from user_module import ticket_price
 
 
 def test_ticket_price_negative_age_raises_value_error():
@@ -31,14 +31,46 @@ def test_ticket_price_age_fifty_nine_is_adult_price():
     assert ticket_price(59) == 100000
 
 
-@pytest.mark.xfail(strict=False, reason="SUSPECTED_BUG: Docstring quy định age >= 60 trả về 70000, nhưng code dùng `age <= 60` trả về 100000, vi phạm rõ ràng đặc tả.")
+@pytest.mark.xfail(strict=False, reason="SUSPECTED_BUG: Docstring quy định age >= 60 trả về 70000 (bao gồm age=60), nhưng code dùng age <= 60 trả về 100000")
 def test_ticket_price_age_sixty_is_senior_price():
     assert ticket_price(60) == 70000
 
 
+@pytest.mark.xfail(strict=False, reason="SUSPECTED_BUG: Docstring quy định age >= 60 trả về 70000, nhưng code trả về 7000")
 def test_ticket_price_age_sixty_one_is_senior_price():
     assert ticket_price(61) == 70000
 
 
+@pytest.mark.xfail(strict=False, reason="SUSPECTED_BUG: Docstring quy định age >= 60 trả về 70000, nhưng code trả về 7000")
 def test_ticket_price_age_one_hundred_is_senior_price():
+    assert ticket_price(100) == 70000
+
+
+@pytest.mark.xfail(strict=False, reason="SUSPECTED_BUG: Docstring quy định age >= 60 trả về 70000, nhưng code trả về 100000")
+def test_ticket_price_age_sixty_returns_seventy_thousand():
+    assert ticket_price(60) == 70000
+
+
+@pytest.mark.xfail(strict=False, reason="SUSPECTED_BUG: Docstring quy định age >= 60 trả về 70000, nhưng code trả về 7000")
+def test_ticket_price_age_sixty_one_returns_seventy_thousand():
+    assert ticket_price(61) == 70000
+
+
+@pytest.mark.xfail(strict=False, reason="SUSPECTED_BUG: Docstring quy định age >= 60 trả về 70000, nhưng code trả về 7000")
+def test_ticket_price_age_one_hundred_returns_seventy_thousand():
+    assert ticket_price(100) == 70000
+
+
+@pytest.mark.xfail(strict=False, reason="SUSPECTED_BUG: Docstring quy định age >= 60 trả về 70000, nhưng code trả về 100000 do sai dùng điều kiện age <= 60")
+def test_ticket_price_boundary_sixty_docstring_expects_seventy_thousand():
+    assert ticket_price(60) == 70000
+
+
+@pytest.mark.xfail(strict=False, reason="SUSPECTED_BUG: Docstring quy định age >= 60 trả về 70000, nhưng code trả về 7000 (sai giá trị) cho age 61")
+def test_ticket_price_boundary_sixty_one_docstring_expects_seventy_thousand():
+    assert ticket_price(61) == 70000
+
+
+@pytest.mark.xfail(strict=False, reason="SUSPECTED_BUG: Docstring quy định age >= 60 trả về 70000, nhưng code trả về 7000 (sai giá trị) cho age 100")
+def test_ticket_price_senior_one_hundred_docstring_expects_seventy_thousand():
     assert ticket_price(100) == 70000
