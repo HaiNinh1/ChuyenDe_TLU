@@ -206,20 +206,15 @@ Khi tách kiến trúc này từ bản chỉ có Python, em so sánh hành vi tr
 
 Bây giờ em xin demo.
 
-*Thao tác: chuyển sang tab Streamlit, chạy theo bảng trên slide.*
+*Thao tác: chuyển sang tab Streamlit, chạy theo bảng trên slide. Lời nói đầy đủ từng bước nằm trong `slides/KICH_BAN_DEMO.md`.*
 
-1. Chọn JavaScript/TypeScript, module `shipping.ts`, bật mutation, bấm chạy agent.
-   Nói: "Cùng một vòng lặp, giờ chạy trên TypeScript. Module này có bug: đơn đúng 500 phải được miễn phí vận chuyển nhưng code vẫn tính phí 15."
-2. Khi có test fail ở mốc 500.
-   Nói: "LLM phân loại là nghi code có bug, nên agent giữ test và gắn `test.failing`, không sửa cho khớp code."
-3. Mở tab Code test, chỉ vào đoạn tô đỏ.
-   Nói: "Đây là test nghi có bug, người kiểm tra sẽ xem lại."
-4. Đổi sang Python, module `grading.py`.
-   Nói: "Cùng vòng lặp, công cụ khác."
-5. Mở tab Kết quả thực nghiệm.
-   Nói: "Em chuyển sang phần số liệu."
+1. Dán `ticket_price`, bấm chạy agent. Nói: "Coverage cao vẫn có test fail. LLM so với đặc tả và nghi code sai, trong khi bước 3 của MuTAP sẽ sửa test cho khớp code."
+2. Mở tab Code test, chỉ đoạn tô đỏ. Nói: "Test được giữ để người kiểm tra xem lại."
+3. REPLAY `calculator_agent_mutation`. Nói: "Đây là ý tưởng em giữ từ MuTAP: đưa mutant còn sống vào prompt để LLM viết thêm test."
+4. REPLAY `shipping_agent_js`. Nói: "Cùng vòng lặp, giờ chạy trên TypeScript, và có thêm phản hồi coverage."
+5. Mở tab Kết quả thực nghiệm. Nói: "Điểm khác cuối cùng là cách chấm: em chỉ kết luận trên những mutant LLM chưa thấy."
 
-**Nếu mạng hoặc API lỗi quá 30 giây:** chuyển sang chế độ REPLAY và nói: "Em phát lại một lần chạy đã ghi log, dữ liệu là của lần chạy thật."
+**Nếu mạng hoặc API lỗi quá 30 giây:** chuyển sang chế độ REPLAY, chọn `user_module_app_20261031-233732` và nói: "Em phát lại một lần chạy đã ghi log, dữ liệu là của lần chạy thật."
 
 ---
 

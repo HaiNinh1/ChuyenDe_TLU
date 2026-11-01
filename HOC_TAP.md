@@ -1527,3 +1527,31 @@ Nhấn đúp `run_demo.bat`, trình duyệt mở `http://localhost:8501`. Tắt 
 ### (e) Câu hỏi thầy có thể hỏi
 1. **Sao dùng `.bat`?** → Chỉ để mở demo nhanh trên Windows; lệnh gốc vẫn là `streamlit run app.py`, chạy được trên mọi hệ điều hành.
 2. **Đóng cửa sổ đen thì sao?** → Máy chủ Streamlit dừng, giao diện trên trình duyệt không còn hoạt động.
+
+---
+
+## TL9 — Kịch bản demo theo mạch nghiên cứu (`slides/KICH_BAN_DEMO.md`)
+
+### (a) Đã làm gì & tại sao
+- Kịch bản cũ đi theo tính năng (TypeScript rồi Python) nên khó nối với nghiên cứu. Kịch bản mới đi theo MuTAP: nhắc lại bài, chỉ ra hai điểm cần xem
+  xét, rồi mỗi màn hình cho thấy một phần em giữ, đổi hoặc thêm.
+- Đọc toàn bộ 19 log để chọn minh chứng thật: `ticket_price` chạy trực tiếp (phân loại theo đặc tả), `calculator_agent_mutation` (có vòng giết mutant,
+  ngưỡng 100 %), `shipping_agent_js` (có vòng coverage, TypeScript), tab Kết quả thực nghiệm (hai cách chấm).
+- Sửa slide trang 20, lời thoại trang 20 và `DEMO_CHECKLIST.md` cho khớp thứ tự mới. Không sửa code Python hay JS.
+
+### (b) Khái niệm quan trọng
+- **Chạy thật và phát lại bổ sung cho nhau:** lần chạy thật mới nhất dừng ngay vì đạt ngưỡng 80 %, nên không thấy vòng giết mutant. Ví dụ `ticket_price`
+  đạt 84,6 % là dừng, vì vậy phải dùng log `calculator` (90,9 → 100 %) và nói rõ log đó đặt ngưỡng 100 %.
+- **Không có minh chứng thì không khẳng định:** cả 19 log đều không có vòng sửa file test hỏng (`fix_collection`), nên nhánh này chỉ được nêu là đã kiểm tra
+  bằng LLM giả lập.
+
+### (c) File liên quan
+`slides/KICH_BAN_DEMO.md`, `slides/bao_cao_cuoi_ky.html`, `slides/LOI_THOAI_CUOI_KY.md`, `DEMO_CHECKLIST.md`,
+`logs/user_module_app_20261031-233732.json`, `logs/calculator_agent_mutation_20260926-185430.json`, `logs/shipping_agent_js_20260926-210042.json`
+
+### (d) Lệnh tự chạy thử
+Nhấn đúp `run_demo.bat`, rồi làm theo `slides/KICH_BAN_DEMO.md` và bấm giờ.
+
+### (e) Câu hỏi thầy có thể hỏi
+1. **Sao chỉ một phần là chạy thật?** → Mỗi lần chạy tốn lượt gọi API và có module mất gần 3 phút. Phần phát lại là log của lần chạy thật, giao diện ghi rõ đang phát lại.
+2. **Sao mutant `age < 60` còn sống?** → Vì đó chính là cách sửa bug, test đúng đặc tả không thể giết mutant này.

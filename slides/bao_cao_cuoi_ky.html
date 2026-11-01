@@ -640,25 +640,25 @@ final_score(...) == <span class="bad">44.9</span> <i>-&gt;</i> <span class="good
 
 <!-- 20. DEMO -->
 <section class="slide" data-sec="5">
-  <div class="head"><h2>Demo: chạy agent trên TypeScript rồi Python</h2></div>
+  <div class="head"><h2>Demo: mỗi màn hình ứng với một điểm so với MuTAP</h2></div>
   <div class="main">
     <div class="c2 grow" style="grid-template-columns:1.5fr 1fr">
       <table class="t fillt">
         <tr><th style="width:70px">#</th><th>Thao tác</th><th>Cần chú ý</th></tr>
-        <tr><td><b>1</b></td><td>Chọn <code>shipping.ts</code>, bật mutation, chạy agent</td><td>Cùng vòng lặp, chạy trên TypeScript</td></tr>
-        <tr><td><b>2</b></td><td>Xem test fail ở mốc 500</td><td>LLM phân loại là nghi code có bug</td></tr>
-        <tr><td><b>3</b></td><td>Mở tab Code test, phần tô đỏ</td><td>Test được giữ, gắn <code>test.failing</code></td></tr>
-        <tr><td><b>4</b></td><td>Đổi sang <code>grading.py</code></td><td>Cùng vòng lặp, công cụ khác</td></tr>
-        <tr><td><b>5</b></td><td>Mở tab Kết quả thực nghiệm</td><td>Dẫn sang phần kết quả</td></tr>
+        <tr><td><b>1</b></td><td>Dán <code>ticket_price</code>, chạy agent thật</td><td><b>Đổi:</b> test fail thì so với đặc tả</td></tr>
+        <tr><td><b>2</b></td><td>Mở tab Code test, phần tô đỏ</td><td>Test được giữ, không sửa theo code</td></tr>
+        <tr><td><b>3</b></td><td>REPLAY <code>calculator_agent_mutation</code></td><td><b>Giữ:</b> mutant còn sống làm phản hồi</td></tr>
+        <tr><td><b>4</b></td><td>REPLAY <code>shipping_agent_js</code></td><td><b>Thêm:</b> coverage, ngôn ngữ thứ hai</td></tr>
+        <tr><td><b>5</b></td><td>Mở tab Kết quả thực nghiệm</td><td><b>Đổi:</b> chấm trên tập held-out</td></tr>
       </table>
       <div style="display:flex;flex-direction:column;gap:22px;min-height:0">
         <div class="blk a"><h3>Lệnh chạy</h3><div class="in"><div class="code">streamlit run app.py</div></div></div>
-        <div class="blk n"><h3>Bug trong module demo</h3><div class="in"><p>Đặc tả: đơn từ 500 được miễn phí vận chuyển. Code viết <code>total &gt; 500</code>, nên <code>shippingFee(500)</code> trả về 15 thay vì 0.</p></div></div>
+        <div class="blk n"><h3>Bug trong đoạn code dán vào</h3><div class="in"><p>Đặc tả: từ 60 tuổi giá 70000. Code viết <code>age &lt;= 60</code>, nên <code>ticket_price(60)</code> trả về 100000.</p></div></div>
         <div class="blk grow"><h3>Nếu API lỗi</h3><div class="in mid"><p>Dùng chế độ <b>REPLAY</b>: phát lại một lần chạy đã ghi trong log, dữ liệu của lần chạy thật.</p></div></div>
       </div>
     </div>
   </div>
-  <div data-src="Bug 3 trong BUGS.md. Kịch bản đầy đủ: DEMO_CHECKLIST.md."></div>
+  <div data-src="Đoạn code ở bước 1 do em tự viết để demo. Kịch bản đầy đủ: slides/KICH_BAN_DEMO.md."></div>
 </section>
 
 <!-- 21. THỰC NGHIỆM -->
