@@ -74,7 +74,7 @@ def ticket_price(age):
 
 > Đây là đoạn code em tự viết cho buổi demo. Đặc tả ghi từ 60 tuổi trở lên giá 70000. Thầy có thấy lỗi trong code không?
 
-**Thao tác 2:** Bấm **▶️ Chạy agent**, rồi mở tab **🔄 Tiến trình**. Hai lần chạy gần nhất mất 21 và 34 giây. Vừa chờ vừa nói:
+**Thao tác 2:** Bấm **▶️ Chạy agent**, rồi mở tab **🔄 Tiến trình**. Ba lần chạy gần nhất mất 21, 34 và 51 giây. Vừa chờ vừa nói:
 
 > Đầu tiên, LLM đọc code và đặc tả để sinh bộ test, giống như MuTAP. Sau đó agent chạy test thật bằng pytest và đo coverage.
 
@@ -105,7 +105,7 @@ def ticket_price(age):
 | Vòng 1 | Mutation: 11/13 mutant bị giết = 84,6 % | Coverage đã đạt nên chuyển sang mutation |
 | Vòng 1 | ⏹️ Dừng | 84,6 % ≥ ngưỡng 80 % |
 
-Đây là số của hai lần chạy 31/10 và 1/11, kết quả mỗi lần có thể khác, nên hãy đọc số trên màn hình.
+Đây là số của lần chạy 31/10. Số test mỗi lần có thể khác (lần chạy 1/11 lúc 10:46 có 10 pass thay vì 9), nên hãy đọc số trên màn hình.
 
 - **Hai mutant còn sống:** một mutant đổi nội dung thông báo lỗi, một mutant đổi `age <= 60` thành `age < 60`. Mutant thứ hai chính là cách sửa bug, nên không thể giết nó bằng test đúng đặc tả.
 - **Sao LLM biết code sai:** LLM nhận mã nguồn, đặc tả, test đang fail và thông báo lỗi. Prompt yêu cầu chỉ chọn SUSPECTED_BUG khi đặc tả nói rõ và code vi phạm (`testgen/prompts.py:87`).
