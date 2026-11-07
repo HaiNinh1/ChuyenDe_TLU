@@ -22,6 +22,7 @@
       đã chạy thực nghiệm JS) — tab Kết quả thực nghiệm.
 - [ ] Mở sẵn: `slides/bao_cao_cuoi_ky.html`, `slides/KICH_BAN_DEMO.md`, `BUGS.md`, `adapters/base.py`.
 - [ ] Nhấn đúp `run_demo.bat` chạy thử một lần, để sẵn tab trình duyệt `http://127.0.0.1:8000`.
+      Lần đầu sau `git pull`, file `.bat` tự cài thư viện còn thiếu (fastapi, uvicorn) — cần mạng, chỉ một lần.
 - [ ] Tắt thông báo, phóng to font trình duyệt (Ctrl + +) để người xem thấy rõ.
 
 ## B. Ngay trước khi demo (5 phút trước)

@@ -1,2 +1,4 @@
 * text=auto eol=lf
 *.png binary
+# File .bat phai dung CRLF thi cmd cua Windows moi doc dung cac khoi if ( ... )
+*.bat text eol=crlf

@@ -1709,6 +1709,9 @@ Mở `slides/bao_cao_cuoi_ky.html`, thêm `#11` vào cuối địa chỉ, bấm 
   "Bộ test chưa pass trên code gốc". Thêm `.resolve()` cho thư mục tạm. Trên Windows không đổi gì.
 - **Sửa lỗ hổng trong lúc viết** (`server.py`): đường dẫn trả file giao diện kiểu `/..%2F..%2Fserver.py` có thể đọc file
   ngoài `web/dist`; nay chỉ trả file nằm trong `web/dist`. Có test riêng.
+- `run_demo.bat` vẫn nhấn đúp là chạy cả backend lẫn giao diện (server.py phục vụ luôn `web/dist`). File tự kiểm
+  tra `web\dist`, tự cài thư viện còn thiếu theo `requirements.txt` ở lần đầu; `.gitattributes` ép `.bat` dùng CRLF để
+  cmd của Windows đọc đúng các khối `if ( ... )`.
 - **Hạn chế:** nút "Dừng hiển thị" chỉ ngừng nhận dữ liệu, agent trên server vẫn chạy nốt; mỗi lúc chỉ chạy được một
   agent. Chưa thử trên máy Windows (đã thử trên macOS, Chrome).
 
