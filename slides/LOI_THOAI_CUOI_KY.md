@@ -1,11 +1,11 @@
 # Script thuyết trình cuối kỳ
 
-Đi kèm slide: `slides/bao_cao_cuoi_ky.html` (29 trang, mỗi trang tĩnh, bấm một lần sang một trang).
+Đi kèm slide: `slides/bao_cao_cuoi_ky.html` (30 trang, mỗi trang tĩnh, bấm một lần sang một trang).
 
 - **Điều khiển:** mũi tên phải hoặc Space sang trang sau, mũi tên trái về trang trước, F toàn màn hình.
-- **Thời lượng dự kiến:** khoảng 23 phút nói, cộng 3 đến 5 phút demo. Thời gian ghi ở từng trang chỉ là ước lượng, em nên đọc thử một lần có bấm giờ.
+- **Thời lượng dự kiến:** khoảng 24 phút nói, cộng 3 đến 5 phút demo. Thời gian ghi ở từng trang chỉ là ước lượng, em nên đọc thử một lần có bấm giờ.
 - **Trước khi vào phòng:** điền tên, MSSV, giảng viên ở trang 1 (mở file HTML bằng trình soạn thảo, tìm dòng "Sinh viên").
-- **Nếu cần rút còn khoảng 20 phút nói:** đọc lướt trang 6, 9, 10, 12, 17, 19 trong khoảng 15 giây mỗi trang, phần còn lại giữ nguyên.
+- **Nếu cần rút còn khoảng 20 phút nói:** đọc lướt trang 6, 9, 10, 13, 18, 20 trong khoảng 15 giây mỗi trang, phần còn lại giữ nguyên.
 
 ---
 
@@ -121,7 +121,17 @@ Bước 1, LLM sinh test từ code. Bước 2, sửa lỗi cú pháp, yêu cầu
 
 Bước 4, dùng công cụ MutPy tạo mutant và tính điểm. Bước 5 là đóng góp chính: nếu chưa đạt 100 %, thêm một mutant còn sống vào prompt để LLM viết thêm test. Bước 4 và 5 lặp lại đến khi đạt 100 % hoặc hết mutant còn sống. Bước 6, rút gọn bộ test, chỉ giữ những test làm tăng điểm.
 
-### Trang 12. Kết quả trong bài báo (40 giây)
+### Trang 12. Từ MuTAP đến luồng sinh test của đề tài (60 giây)
+
+Trang này đặt quy trình của MuTAP ngay cạnh luồng của đề tài. Hàng trên là 6 bước MuTAP em vừa trình bày, hàng dưới là luồng của em, mỗi bước đặt thẳng cột với bước tương ứng. Nhãn ở giữa cho biết em giữ, đổi hay thêm.
+
+Đi từ trái sang phải. Bước 1, LLM sinh test như MuTAP, nhưng em đưa thêm đặc tả và các bài học đã lưu từ lần chạy trước. Bước 2, khi file test bị lỗi, em gửi kèm thông báo lỗi thật để LLM sửa, MuTAP thì không gửi. Bước 3 là chỗ đổi quan trọng nhất: khi test fail, MuTAP sửa test cho khớp với code; em so với đặc tả, test sai thì sửa test, còn nghi code có bug thì giữ test và gắn nhãn.
+
+Bước 4 là phần em thêm: gửi những dòng, nhánh chưa được phủ để LLM viết thêm test. Bước 5 em giữ nguyên ý tưởng của MuTAP: đưa mutant còn sống vào prompt. Các bước này lặp lại: mỗi vòng chạy test thật, đo lại, chưa đạt ngưỡng thì xử lý tiếp. Kết quả là bộ test và danh sách test nghi bug. Bước rút gọn bộ test của MuTAP em chưa làm.
+
+Hai điểm khác nằm ngoài luồng: em chấm mutation trên mutant LLM chưa thấy, và chạy được cả Python lẫn JavaScript/TypeScript. Vì sao em đổi bước 3 và cách chấm, em xin trình bày ở trang 14, sau khi nói kết quả của bài báo.
+
+### Trang 13. Kết quả trong bài báo (40 giây)
 
 Đây là số liệu trong bài báo, em không chạy lại.
 
@@ -129,7 +139,7 @@ Trên HumanEval, MuTAP đạt mutation score 93,57 %, còn Pynguin là 65,94 %. 
 
 Tác giả kết luận rằng LLM có ích, nhưng cần thêm các bước xử lý sau thì test mới thật sự hiệu quả. Kết quả rất tốt, nhưng khi đọc kỹ, em thấy có hai điểm cần xem xét.
 
-### Trang 13. Hai điểm cần xem xét (70 giây)
+### Trang 14. Hai điểm cần xem xét (70 giây)
 
 Điểm thứ nhất nằm ở bước 3: bước này mặc định code luôn đúng. Giả sử LLM viết đúng theo đặc tả, 80 điểm ra B. Khi chạy, code có bug trả về C, nên bước 3 sửa test thành C. Như vậy test đúng bị sửa thành test sai, và bộ test mất khả năng bắt chính bug đó.
 
@@ -141,7 +151,7 @@ Em nói rõ hai điều. Đây là nhận xét của em khi đọc bài, không 
 
 ## PHẦN 4. PHƯƠNG PHÁP
 
-### Trang 14. Mục tiêu và câu hỏi nghiên cứu (40 giây)
+### Trang 15. Mục tiêu và câu hỏi nghiên cứu (40 giây)
 
 Từ đó, mục tiêu của em là xây dựng agent theo ý tưởng của MuTAP, khắc phục hai điểm vừa nêu, và dùng được cho nhiều ngôn ngữ. Em đặt ra bốn câu hỏi.
 
@@ -152,7 +162,7 @@ Bốn: một vòng lặp có dùng được cho nhiều ngôn ngữ không?
 
 Cột bên phải là cách đo từng câu. Cuối bài em sẽ trả lời theo số liệu, kể cả câu chưa kết luận được.
 
-### Trang 15. Phương pháp rút ra (60 giây)
+### Trang 16. Phương pháp rút ra (60 giây)
 
 Đây là phần em rút ra từ bài báo, chia làm ba nhóm.
 
@@ -168,7 +178,7 @@ Bước rút gọn bộ test của MuTAP thì em chưa làm.
 
 ## PHẦN 5. HỆ THỐNG VÀ DEMO
 
-### Trang 16. Phương pháp sinh unit test (70 giây)
+### Trang 17. Phương pháp sinh unit test (70 giây)
 
 Phương pháp của em là: LLM viết test, rồi tự cải tiến nhờ phản hồi từ việc chạy test thật.
 
@@ -186,7 +196,7 @@ Vòng lặp này em tự viết bằng `for` và `if/else`, không dùng LangCha
 - **Ai đo điểm?** Công cụ thật đo, LLM không tự chấm mình.
 - **Coverage chưa đạt mà không cải thiện thì sao?** Chương trình chuyển sang bước mutation, hình đã lược bỏ nhánh này cho dễ nhìn.
 
-### Trang 17. LLM nhận phản hồi gì (50 giây)
+### Trang 18. LLM nhận phản hồi gì (50 giây)
 
 Bảng này cho thấy mỗi tình huống đưa gì vào prompt. File test không chạy được thì gửi kèm thông báo lỗi thật. Có test fail thì yêu cầu LLM phân loại từng test và trả về JSON. Coverage thấp thì chỉ ra đúng dòng và nhánh chưa phủ. Còn mutant sống thì đưa mutant đó vào, yêu cầu test pass trên code đúng và fail trên mutant.
 
@@ -194,7 +204,7 @@ Quy tắc đầu tiên trong mọi prompt là viết assert theo đặc tả, kh
 
 Khung bên phải là một mutant thật đã đưa vào prompt, chỉ đổi nội dung thông báo lỗi. Em sẽ quay lại loại mutant này ở phần kết quả.
 
-### Trang 18. Log thật (60 giây)
+### Trang 19. Log thật (60 giây)
 
 Đây là một lần chạy thật trên module `grading`. Vòng đầu tiên có hai test fail.
 
@@ -204,7 +214,7 @@ Test bên phải do LLM tính nhầm giá trị mong đợi: viết 44,9 trong k
 
 Sau vòng này, kết quả từ 18 pass, 2 fail thành 19 pass, 0 fail và 1 test mang nhãn. Nếu áp dụng bước 3 của MuTAP, bug ở mốc 80 đã bị che đi.
 
-### Trang 19. Kiến trúc Adapter (50 giây)
+### Trang 20. Kiến trúc Adapter (50 giây)
 
 Để chạy được nhiều ngôn ngữ, em dùng mẫu thiết kế Adapter. Vòng lặp không biết mình đang làm việc với ngôn ngữ nào. Mọi thao tác phụ thuộc ngôn ngữ như chạy test, đo coverage, chạy mutation đều nằm sau giao diện chung `LanguageAdapter`.
 
@@ -212,7 +222,7 @@ Python dùng pytest, coverage.py và các toán tử của mutmut. JavaScript/Ty
 
 Khi tách kiến trúc này từ bản chỉ có Python, em so sánh hành vi trước và sau: 8 prompt giống từng ký tự, trạng thái từng mutant của 4 bộ test giống hệt, và agent với LLM giả lập cho cùng 7 hành động.
 
-### Trang 20. Demo (3 đến 5 phút)
+### Trang 21. Demo (3 đến 5 phút)
 
 Bây giờ em xin demo.
 
@@ -222,7 +232,7 @@ Bây giờ em xin demo.
 2. Mở tab Code test, chỉ đoạn tô đỏ. Nói: "Test được giữ để người kiểm tra xem lại."
 3. REPLAY `calculator_agent_mutation`. Nói: "Đây là ý tưởng em giữ từ MuTAP: đưa mutant còn sống vào prompt để LLM viết thêm test."
 4. REPLAY `shipping_agent_js`. Nói: "Cùng vòng lặp, giờ chạy trên TypeScript, và có thêm phản hồi coverage."
-5. Quay lại slide, sang trang 21. Nói: "Còn một điểm đổi nữa là cách chấm, phải nhìn trên số liệu thực nghiệm, nên em xin chuyển sang phần kết quả."
+5. Quay lại slide, sang trang 22. Nói: "Còn một điểm đổi nữa là cách chấm, phải nhìn trên số liệu thực nghiệm, nên em xin chuyển sang phần kết quả."
 
 **Nếu mạng hoặc API lỗi quá 30 giây:** chuyển sang chế độ REPLAY, chọn `user_module_app_20261031-233732` và nói: "Em phát lại một lần chạy đã ghi log, dữ liệu là của lần chạy thật."
 
@@ -230,7 +240,7 @@ Bây giờ em xin demo.
 
 ## PHẦN 6. THỰC NGHIỆM VÀ KẾT QUẢ
 
-### Trang 21. Thiết kế thực nghiệm (60 giây)
+### Trang 22. Thiết kế thực nghiệm (60 giây)
 
 Em so sánh bốn cấu hình, mỗi cấu hình thêm một thành phần. A là sinh một lần. B thêm xử lý test fail và phản hồi coverage. C thêm phản hồi mutation. D thêm bộ nhớ.
 
@@ -238,7 +248,7 @@ Về cách chấm, em bỏ các mutant đã đưa vào prompt của C và D, r�
 
 Em cũng nói thật: lúc đầu chính em chấm trên tập có lẫn mutant đã đưa cho LLM. Một lượt review độc lập đã phát hiện lỗi này, và sau khi sửa thì kết luận thay đổi.
 
-### Trang 22. Kết quả Python (60 giây)
+### Trang 23. Kết quả Python (60 giây)
 
 Đây là số thật trên 5 module Python, 1 lượt chạy.
 
@@ -248,7 +258,7 @@ Em cần nói rõ: ở cấu hình A, test cũng đã fail ở cả hai bug, nh�
 
 Đổi lại, số lần gọi LLM tăng từ 1 lên khoảng 2,4 đến 3,2 lần mỗi module. Đây là quan sát ban đầu, mẫu còn nhỏ nên chưa có ý nghĩa thống kê.
 
-### Trang 23. Cách chấm làm đổi kết luận (50 giây)
+### Trang 24. Cách chấm làm đổi kết luận (50 giây)
 
 Đây là phát hiện đáng chú ý nhất của em. Biểu đồ so sánh B, chưa có mutation, với C, đã có mutation.
 
@@ -258,7 +268,7 @@ Em cần nói rõ: ở cấu hình A, test cũng đã fail ở cả hai bug, nh�
 
 Thầy/cô có thể thắc mắc vì sao đường xanh cao hơn. Lý do là những mutant khó nhất còn sống nên được đưa vào prompt, và vì thế bị loại khỏi tập held-out. So sánh giữa các cấu hình vẫn công bằng vì dùng chung một tập.
 
-### Trang 24. Vì sao chưa đủ để kết luận (60 giây)
+### Trang 25. Vì sao chưa đủ để kết luận (60 giây)
 
 Em không dừng ở đó mà đọc log để tìm nguyên nhân. Bảng này cho thấy vòng mutation chỉ thực sự sinh test ở 1 trong 5 module. Bốn module còn lại đã đạt ngưỡng 80 % nên agent dừng ngay, điểm không đổi là đương nhiên.
 
@@ -266,7 +276,7 @@ Module duy nhất có sinh test là `safe_parser`, dòng tô màu. Cả 5 mutant
 
 Vì vậy em không nói MuTAP sai, và cũng không nói phản hồi mutation vô ích. Dữ liệu chỉ cho thấy cách chấm ảnh hưởng đến kết luận. Ngưỡng 80 % làm vòng mutation gần như chưa chạy, trong khi MuTAP lặp tới 100 %, nên cần thử với ngưỡng cao hơn.
 
-### Trang 25. JavaScript/TypeScript (40 giây)
+### Trang 26. JavaScript/TypeScript (40 giây)
 
 Với JavaScript/TypeScript, em mới có hai lần chạy thử, do model miễn phí giới hạn 50 request một ngày.
 
@@ -276,7 +286,7 @@ Với JavaScript/TypeScript, em mới có hai lần chạy thử, do model miễ
 
 Em nói thẳng: chưa có thực nghiệm A/B/C/D cho JavaScript, nên chưa so sánh được với Python.
 
-### Trang 26. Trả lời bốn câu hỏi (50 giây)
+### Trang 27. Trả lời bốn câu hỏi (50 giây)
 
 Trở lại bốn câu hỏi.
 
@@ -289,13 +299,13 @@ Câu 4: **có, về mặt kỹ thuật**. Thêm JavaScript không phải sửa l
 
 ## PHẦN 7. KẾT LUẬN
 
-### Trang 27. Hạn chế và hướng phát triển (40 giây)
+### Trang 28. Hạn chế và hướng phát triển (40 giây)
 
 Đề tài còn một số hạn chế. Thực nghiệm còn nhỏ: Python mới 1 lượt trong khi đề yêu cầu 3, JavaScript chưa có so sánh bốn cấu hình, chỉ dùng 1 model và 9 module tự viết. Ngưỡng 80 % làm vòng lặp dừng sớm. LLM vẫn có thể phân loại sai, và chương trình phụ thuộc vào việc code có đặc tả.
 
 Hướng tiếp theo: chạy đủ 3 lượt cho mỗi ngôn ngữ với ngưỡng cao hơn, thử trên HumanEval để so sánh trực tiếp với số liệu của MuTAP, thử cách thay code trong prompt bằng đặc tả của Zhao và cộng sự, thêm Java và Go, và thêm bước rút gọn bộ test.
 
-### Trang 28. Kết luận (40 giây)
+### Trang 29. Kết luận (40 giây)
 
 Tóm lại, em đã xây dựng được một agent sinh, chạy, đo, sửa và bổ sung test cho Python và JavaScript/TypeScript, kế thừa ý tưởng của MuTAP.
 
@@ -305,25 +315,25 @@ Với số liệu hiện có, lợi ích rõ nhất là xử lý test fail. Lợ
 
 Em xin cảm ơn thầy/cô đã lắng nghe, và em xin nhận câu hỏi.
 
-### Trang 29. Tài liệu tham khảo
+### Trang 30. Tài liệu tham khảo
 
-Không đọc. Để trang này hoặc quay lại trang 26 trong lúc trả lời câu hỏi.
+Không đọc. Để trang này hoặc quay lại trang 27 trong lúc trả lời câu hỏi.
 
 ---
 
 ## Câu hỏi thầy/cô có thể hỏi
 
 **1. Đề tài dựa trên bài nào, và khác gì bài đó?**
-Em dựa trên MuTAP. Em giữ ý tưởng đưa mutant còn sống vào prompt. Em đổi cách xử lý test fail và cách chấm, thêm phản hồi coverage và đa ngôn ngữ. (Trang 15)
+Em dựa trên MuTAP. Em giữ ý tưởng đưa mutant còn sống vào prompt. Em đổi cách xử lý test fail và cách chấm, thêm phản hồi coverage và đa ngôn ngữ. (Trang 16)
 
 **2. Vì sao điểm held-out lại cao hơn điểm tính tất cả mutant?**
-Vì những mutant khó nhất còn sống nên được đưa vào prompt, và do đó bị loại khỏi tập held-out. So sánh giữa các cấu hình vẫn công bằng vì dùng chung một tập. (Trang 23)
+Vì những mutant khó nhất còn sống nên được đưa vào prompt, và do đó bị loại khỏi tập held-out. So sánh giữa các cấu hình vẫn công bằng vì dùng chung một tập. (Trang 24)
 
 **3. Vậy em nói MuTAP sai à?**
 Không ạ. Em chỉ cho thấy trên dữ liệu của em, cách chấm ảnh hưởng đến kết luận. Kết quả của MuTAP trên lỗi thật Refactory không bị ảnh hưởng bởi vấn đề này.
 
 **4. Vì sao em chưa kết luận về phản hồi mutation?**
-Vì vòng mutation chỉ sinh test ở 1 trong 5 module, và 5 mutant ở module đó đều chỉ đổi thông báo lỗi. Cần chạy thêm với ngưỡng cao hơn. (Trang 24)
+Vì vòng mutation chỉ sinh test ở 1 trong 5 module, và 5 mutant ở module đó đều chỉ đổi thông báo lỗi. Cần chạy thêm với ngưỡng cao hơn. (Trang 25)
 
 **5. Vì sao không phân loại test fail hoàn toàn tự động mà không cần người?**
 Đây là oracle problem. LLM có thể phân loại sai, ví dụ có 1 nhãn sai ở `bank_account`, nên nhãn chỉ là "nghi có bug" để người kiểm tra.

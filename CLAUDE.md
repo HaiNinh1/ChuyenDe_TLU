@@ -56,7 +56,7 @@ Hiện thực 2 ngôn ngữ theo kiến trúc **Adapter**: Python và JavaScript
 - Bài nền tảng: MuTAP (`docs/BAO_CAO_MUTAP.md`, TL3–TL4); MuTAP chấm MS trên chính mutant đã đưa vào prompt.
   Slide 2.1–2.2 trong `slides/slides.md`. Bản nháp báo cáo cuối kỳ: `docs/BAO_CAO_CUOI_KY.md` (chỗ [CHỜ SỐ LIỆU]
   điền sau khi chạy thực nghiệm JS + lượt 2–3).
-- Slide trình bày cuối kỳ (TL5): `slides/bao_cao_cuoi_ky.html` (HTML chạy không cần mạng, 29 trang tĩnh, không hiệu ứng), script đọc `slides/LOI_THOAI_CUOI_KY.md`; số liệu lấy từ `results/` và `logs/`.
+- Slide trình bày cuối kỳ (TL5): `slides/bao_cao_cuoi_ky.html` (HTML chạy không cần mạng, 30 trang tĩnh; trang 12 đặt luồng của đề tài cạnh quy trình MuTAP, không hiệu ứng), script đọc `slides/LOI_THOAI_CUOI_KY.md`; số liệu lấy từ `results/` và `logs/`.
 - Thiết kế thực nghiệm: bước SINH (log `logs/*_eval_C|D_*.json`, có trường `language`; log cũ không có = Python) tách
   bước CHẤM (`--measure-only`, mutation held-out: loại các mutant đã đưa vào prompt). Không được chấm mutation trên tập
   mutant LLM đã thấy.

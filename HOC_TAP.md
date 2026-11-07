@@ -1666,3 +1666,25 @@ Mở `slides/bao_cao_cuoi_ky.html`, thêm `#16` vào cuối địa chỉ, tự t
 ### (e) Câu hỏi thầy có thể hỏi
 1. **Vì sao không chụp ảnh từng slide đưa vào PowerPoint?** → Ảnh thì không sửa được chữ và số liệu. Vẽ lại bằng hình, bảng và biểu đồ gốc thì sửa trực tiếp được.
 2. **Biểu đồ trong file PowerPoint lấy số liệu từ đâu?** → Số liệu được ghi trực tiếp trong script, giống số trên slide HTML, nên khi số liệu đổi phải sửa cả hai nơi.
+
+## TL15 — Thêm trang 12: luồng sinh unit test của đề tài, đặt cạnh quy trình MuTAP
+
+### (a) Đã làm gì & tại sao
+- Cần một trang ngay sau "Quy trình 6 bước của MuTAP" để nói được câu "MuTAP làm thế này, em phát triển thêm thế này". Trang mới có hai hàng thẳng cột: hàng trên là 6 bước MuTAP, hàng dưới là 5 bước của đề tài, giữa hai hàng là nhãn Giữ / Đổi / Thêm / Chưa làm. Dưới cùng là hai điểm nằm ngoài luồng: cách chấm (mutant LLM chưa thấy) và ngôn ngữ.
+- Slide tăng từ 29 lên 30 trang. Đã đánh lại số trang trong `slides/LOI_THOAI_CUOI_KY.md`, `slides/KICH_BAN_DEMO.md` và hai chỗ nhắc số trang trong slide. Các mục cũ trong HOC_TAP (TL11–TL14) vẫn giữ số trang cũ, ví dụ "trang 16" nay là trang 17.
+- **Hạn chế:** `slides/bao_cao_cuoi_ky.pptx` chưa có trang mới; chạy lại `python scripts/html_to_pptx.py` để cập nhật. Không sửa code nên không chạy lại pytest và snapshot.
+
+### (b) Khái niệm quan trọng
+- **So sánh thẳng cột:** đặt bước tương ứng của hai phương pháp cùng một cột để người nghe thấy ngay chỗ giữ, đổi, thêm. Ví dụ cột 3: MuTAP "sửa giá trị cho khớp code", đề tài "so với đặc tả, nghi bug thì giữ test".
+- **Vòng lặp phản hồi:** bước 2 đến 5 lặp lại, mỗi vòng chạy test thật, đo lại, chưa đạt ngưỡng thì xử lý tiếp.
+
+### (c) File liên quan
+`slides/bao_cao_cuoi_ky.html` (trang 12), `slides/LOI_THOAI_CUOI_KY.md`, `slides/KICH_BAN_DEMO.md`, `testgen/agent.py`
+
+### (d) Lệnh tự chạy thử
+Mở `slides/bao_cao_cuoi_ky.html`, thêm `#11` vào cuối địa chỉ, bấm sang trang 12 và tự trình bày trong 60 giây.
+
+### (e) Câu hỏi thầy có thể hỏi
+1. **Bước nào của MuTAP em không làm?** → Bước 6, rút gọn bộ test. Đây là hướng phát triển.
+2. **Cột 4 của MuTAP ghi "không có" nghĩa là gì?** → MuTAP không dùng phản hồi coverage; đề tài thêm bước gửi dòng, nhánh chưa phủ trước khi sang mutation.
+3. **Vì sao bước 3 khác MuTAP?** → MuTAP mặc định code đúng nên sửa test theo code, có thể che mất bug. Đề tài so với đặc tả; nghi bug thì giữ test và gắn nhãn (trang 14 giải thích bằng ví dụ).

@@ -22,7 +22,7 @@ Mỗi bước có hai phần: **Nói** là phần nói khi chiếu, **Giải th�
 
 ## Bước 1. Nhắc lại MuTAP (1 phút, chưa thao tác)
 
-**Hình để chỉ:** nếu thầy muốn xem toàn bộ luồng, mở **slide trang 16** (thêm `#16` vào cuối địa chỉ của file slide). Sơ đồ cho thấy phương pháp, luồng 4 bước và phần giữ, đổi, thêm so với MuTAP. Lời giải thích nằm ở trang 16 trong `slides/LOI_THOAI_CUOI_KY.md`.
+**Hình để chỉ:** nếu thầy muốn xem toàn bộ luồng, mở **slide trang 17** (thêm `#17` vào cuối địa chỉ của file slide). Sơ đồ cho thấy phương pháp, luồng 4 bước và phần giữ, đổi, thêm so với MuTAP. Lời giải thích nằm ở trang 17 trong `slides/LOI_THOAI_CUOI_KY.md`.
 
 **Nói:**
 
@@ -92,7 +92,7 @@ def ticket_price(age):
 
 **Thao tác 5:** Mở tab **🧾 Code test**, chỉ phần **tô đỏ**.
 
-> Test này vẫn khẳng định `ticket_price(60)` phải là 70000, đúng theo đặc tả. Em chỉ gắn nhãn nghi có bug để người kiểm tra xem lại, vì LLM vẫn có thể phân loại sai. Trường hợp LLM viết sai test thì agent sửa test, như log em đã trình bày ở trang 18.
+> Test này vẫn khẳng định `ticket_price(60)` phải là 70000, đúng theo đặc tả. Em chỉ gắn nhãn nghi có bug để người kiểm tra xem lại, vì LLM vẫn có thể phân loại sai. Trường hợp LLM viết sai test thì agent sửa test, như log em đã trình bày ở trang 19.
 
 **Giải thích đầy đủ:**
 
@@ -174,7 +174,7 @@ def ticket_price(age):
 
 **Mục đích:** điểm đổi thứ hai không thấy được trong một lần chạy, chỉ thấy khi chấm thực nghiệm. Slide đã có bảng và biểu đồ nên không cần chiếu trong demo.
 
-**Câu kết demo, rồi chuyển sang slide trang 21:**
+**Câu kết demo, rồi chuyển sang slide trang 22:**
 
 > Tóm lại, demo vừa rồi cho thấy phần em giữ, đổi và thêm so với MuTAP. Còn một điểm đổi nữa là cách chấm, phải nhìn trên số liệu thực nghiệm, nên em xin chuyển sang phần kết quả.
 
