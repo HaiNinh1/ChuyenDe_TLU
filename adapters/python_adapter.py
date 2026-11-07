@@ -90,7 +90,9 @@ def run_tests(module_path, test_code: str, timeout: int = 60, with_coverage: boo
         result.output = result.collection_error
         return result
 
-    work_dir = Path(tempfile.mkdtemp(prefix="testgen_"))
+    # resolve(): trên macOS /var là liên kết tới /private/var; không đổi sang đường dẫn thật thì pytest
+    # tính sai tên test (node id) và --deselect không bỏ qua được test nào. Trên Windows không thay đổi gì.
+    work_dir = Path(tempfile.mkdtemp(prefix="testgen_")).resolve()
     try:
         shutil.copy(module_path, work_dir / f"{module_name}.py")
         test_file = work_dir / f"test_{module_name}.py"
@@ -247,7 +249,7 @@ def generate_mutants(source: str) -> list:
 
 def _run_one(mutant: Mutant, module_name: str, test_code: str, timeout: int, deselect) -> str:
     """Chạy bộ test trên MỘT mutant trong thư mục tạm riêng. Trả về trạng thái."""
-    work_dir = Path(tempfile.mkdtemp(prefix="mutant_"))
+    work_dir = Path(tempfile.mkdtemp(prefix="mutant_")).resolve()  # xem chú thích trong run_tests
     try:
         (work_dir / f"{module_name}.py").write_text(mutant.source, encoding="utf-8")
         test_file = work_dir / f"test_{module_name}.py"
