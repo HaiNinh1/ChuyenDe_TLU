@@ -15,6 +15,12 @@ openai>=1.30        # dùng cho OpenAI, DeepSeek, OpenRouter (API tương thích
 anthropic>=0.30     # dùng cho Anthropic Claude
 requests>=2.31      # dùng cho Ollama (gọi HTTP trực tiếp)
 
-# Giao diện demo và biểu đồ
-streamlit>=1.40
+# Giao diện demo: server.py (FastAPI) phục vụ giao diện React đã build sẵn trong web/dist
+fastapi>=0.110
+uvicorn>=0.29
+
+# Biểu đồ của evaluate.py
 matplotlib>=3.7
+
+# Giao diện CŨ app.py (Streamlit) — tuỳ chọn, chỉ cài khi cần: pip install streamlit
+# streamlit>=1.40

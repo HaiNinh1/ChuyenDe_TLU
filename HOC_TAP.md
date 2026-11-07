@@ -1688,3 +1688,53 @@ Mở `slides/bao_cao_cuoi_ky.html`, thêm `#11` vào cuối địa chỉ, bấm 
 1. **Bước nào của MuTAP em không làm?** → Bước 6, rút gọn bộ test. Đây là hướng phát triển.
 2. **Cột 4 của MuTAP ghi "không có" nghĩa là gì?** → MuTAP không dùng phản hồi coverage; đề tài thêm bước gửi dòng, nhánh chưa phủ trước khi sang mutation.
 3. **Vì sao bước 3 khác MuTAP?** → MuTAP mặc định code đúng nên sửa test theo code, có thể che mất bug. Đề tài so với đặc tả; nghi bug thì giữ test và gắn nhãn (trang 14 giải thích bằng ví dụ).
+
+## TL16 — Dựng lại giao diện demo bằng React + shadcn/ui (`server.py` + `web/`)
+
+### (a) Đã làm gì & tại sao
+- Giao diện Streamlit cũ trông đơn giản, nhiều emoji, khó chỉnh bố cục. Dựng lại thành hai phần:
+  - `server.py` (FastAPI): **chỉ gọi lại** các hàm có sẵn (adapter, `TestGenAgent`, `LLMClient`), không chứa logic sinh test.
+    Có 7 endpoint: thông tin ngôn ngữ/công cụ, mã nguồn, nhận diện ngôn ngữ, **chạy agent (đẩy từng vòng về trình
+    duyệt bằng Server-Sent Events)**, danh sách + nội dung log (REPLAY), kết quả thực nghiệm (`results/*.csv`).
+  - `web/` (React + Vite + Tailwind + **shadcn/ui**): thanh bên cấu hình (Sidebar, Select, Slider, Switch, ToggleGroup),
+    dòng thời gian các vòng lặp, ô chỉ số tổng kết, biểu đồ (component `chart` của shadcn, dựa trên recharts), xem code
+    test có tô màu cú pháp + tô đỏ test SUSPECTED_BUG + chế độ diff, tab kết quả thực nghiệm (biểu đồ cột + bảng), chế độ
+    sáng/tối. Bản build `web/dist` được commit nên máy demo chỉ cần `python server.py`, không cần build.
+- Giữ đủ chức năng của app.py cũ: chạy mới (module mẫu hoặc dán code, tự nhận diện ngôn ngữ), REPLAY không cần mạng,
+  kiểm tra công cụ đã cài chưa. `app.py` vẫn giữ làm phương án dự phòng (Streamlit thành tuỳ chọn trong requirements).
+- Màu biểu đồ: line = xanh lam, branch = xanh ngọc (nét đứt vì hay trùng line), mutation = cam; đã kiểm tra bằng script
+  đo độ tách màu cho người mù màu ở cả chế độ sáng và tối.
+- **Sửa một lỗi có sẵn khi chạy trên macOS** (`adapters/python_adapter.py`): thư mục tạm `/var/...` thực chất là
+  `/private/var/...`; pytest 9 tính tên test theo đường dẫn thật nên `--deselect` không bỏ qua được test fail, mutation báo
+  "Bộ test chưa pass trên code gốc". Thêm `.resolve()` cho thư mục tạm. Trên Windows không đổi gì.
+- **Sửa lỗ hổng trong lúc viết** (`server.py`): đường dẫn trả file giao diện kiểu `/..%2F..%2Fserver.py` có thể đọc file
+  ngoài `web/dist`; nay chỉ trả file nằm trong `web/dist`. Có test riêng.
+- **Hạn chế:** nút "Dừng hiển thị" chỉ ngừng nhận dữ liệu, agent trên server vẫn chạy nốt; mỗi lúc chỉ chạy được một
+  agent. Chưa thử trên máy Windows (đã thử trên macOS, Chrome).
+
+### (b) Khái niệm quan trọng
+- **Tách lớp logic và lớp hiển thị:** agent gọi callback `progress(kind, payload)`; Streamlit cũ vẽ thẳng, còn `server.py`
+  bỏ sự kiện vào một `queue.Queue` rồi gửi dần về trình duyệt. Agent không phải sửa dòng nào.
+- **Server-Sent Events (SSE):** một response HTTP không đóng ngay, server ghi nhiều đoạn `event: iteration\ndata: {...}\n\n`.
+  Trình duyệt đọc dần bằng `fetch` + `ReadableStream` nên thấy từng vòng ngay khi agent chạy xong vòng đó.
+- **shadcn/ui:** không phải thư viện cài vào `node_modules` mà là mã nguồn component được chép vào `web/src/components/ui/`
+  (`npx shadcn@latest add card`), sửa trực tiếp được.
+
+### (c) File liên quan
+`server.py`, `web/src/App.tsx`, `web/src/lib/api.ts`, `web/src/components/*.tsx`, `web/dist/`, `tests/test_server.py`,
+`tests/test_app.py` (tự bỏ qua nếu chưa cài streamlit), `adapters/python_adapter.py`, `run_demo.bat`, `requirements.txt`
+
+### (d) Lệnh tự chạy thử
+```bash
+pip install -r requirements.txt
+python server.py                 # mở http://127.0.0.1:8000 -> Replay log -> shipping_agent_js_* -> Phát lại
+pytest tests/test_server.py -v
+cd web && npm install && npm run dev   # sửa giao diện, xem ở http://localhost:5173
+```
+
+### (e) Câu hỏi thầy có thể hỏi
+1. **Đổi giao diện có làm đổi kết quả không?** → Không. Server chỉ gọi lại agent và adapter; số liệu vẫn lấy từ log và
+   `results/*.csv`. Snapshot hồi quy phần Python vẫn giống hệt.
+2. **Làm sao giao diện thấy từng vòng khi agent còn đang chạy?** → Agent chạy ở luồng phụ, mỗi vòng gọi callback bỏ dữ
+   liệu vào hàng đợi; luồng trả lời lấy ra và gửi về trình duyệt theo định dạng SSE.
+3. **Vì sao vẫn giữ `app.py`?** → Làm phương án dự phòng; giao diện mới là mặc định, cũ chỉ dùng khi cần.

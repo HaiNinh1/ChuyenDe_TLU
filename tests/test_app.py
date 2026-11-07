@@ -2,7 +2,10 @@
 import json
 
 import pytest
-from streamlit.testing.v1 import AppTest
+
+# Giao diện cũ (Streamlit) là tuỳ chọn: chưa cài streamlit thì bỏ qua cả file
+pytest.importorskip("streamlit")
+from streamlit.testing.v1 import AppTest  # noqa: E402
 
 from adapters import get_adapter
 from testgen import agent as agent_module

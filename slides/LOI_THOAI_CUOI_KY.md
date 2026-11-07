@@ -226,7 +226,7 @@ Khi tách kiến trúc này từ bản chỉ có Python, em so sánh hành vi tr
 
 Bây giờ em xin demo.
 
-*Thao tác: chuyển sang tab Streamlit, chạy theo bảng trên slide. Lời nói đầy đủ từng bước nằm trong `slides/KICH_BAN_DEMO.md`.*
+*Thao tác: chuyển sang tab giao diện demo (`http://127.0.0.1:8000`), chạy theo bảng trên slide. Lời nói đầy đủ từng bước nằm trong `slides/KICH_BAN_DEMO.md`.*
 
 1. Dán `ticket_price`, bấm chạy agent. Nói: "Coverage cao vẫn có test fail. LLM so với đặc tả và nghi code sai, trong khi bước 3 của MuTAP sẽ sửa test cho khớp code."
 2. Mở tab Code test, chỉ đoạn tô đỏ. Nói: "Test được giữ để người kiểm tra xem lại."

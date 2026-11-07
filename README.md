@@ -48,7 +48,9 @@ targets/python/           5 module Python (dễ -> khó), 2 bug cài sẵn
 targets/javascript/       4 module JS/TS (dễ -> khó), 2 bug cài sẵn      (xem BUGS.md)
 evaluation/fixed_targets/ bản đã sửa bug (chỉ dùng để chấm "phát hiện bug")
 evaluate.py               thực nghiệm A/B/C/D trên cả hai ngôn ngữ -> results/
-app.py                    giao diện demo Streamlit
+server.py                 API cho giao diện demo (FastAPI): gọi lại agent, đẩy tiến trình từng vòng (SSE)
+web/                      giao diện demo React + shadcn/ui (mã nguồn src/, bản build sẵn dist/)
+app.py                    giao diện CŨ bằng Streamlit (tuỳ chọn)
 tests/                    test của chính công cụ (LLM giả lập, không tốn API)
 scripts/snapshot_python.py  chụp hành vi phần Python để chứng minh refactor không làm hỏng
 generated_tests/ logs/ results/ memory/   đầu ra
@@ -122,8 +124,8 @@ python evaluate.py --languages javascript --runs 1  # chỉ JavaScript
 python evaluate.py --runs 3                         # đầy đủ: 5 module Python + 4 module JS, 3 lần
 python evaluate.py --measure-only                   # không gọi LLM: chấm lại từ log + vẽ biểu đồ
 
-# 6) Giao diện demo
-streamlit run app.py
+# 6) Giao diện demo -> mở http://127.0.0.1:8000
+python server.py
 
 # Kiểm tra refactor không làm hỏng phần Python (so với ảnh chụp trước refactor)
 python scripts/snapshot_python.py --out docs/thu.json --compare docs/baseline_truoc_refactor.json
@@ -141,12 +143,17 @@ Kết quả đầu ra:
 ## Chạy demo
 
 ```bash
-streamlit run app.py
+python server.py          # Windows: nhấn đúp run_demo.bat
 ```
+
+Mở `http://127.0.0.1:8000`. Giao diện viết bằng **React + shadcn/ui** (thư mục `web/`); bản build đã có sẵn trong
+`web/dist` nên **không cần cài gì thêm cho giao diện**. Muốn sửa giao diện: `cd web && npm install && npm run dev`
+(mở `http://localhost:5173`, vẫn cần `python server.py` chạy song song). Sửa xong: `npm run build` rồi commit `web/dist`.
+Giao diện cũ bằng Streamlit vẫn giữ: `pip install streamlit` rồi `streamlit run app.py`.
 
 - **Chạy mới:** chọn **ngôn ngữ** + module mẫu, hoặc **dán code** (ngôn ngữ được tự nhận diện, có thể chọn lại).
   Thanh bên hiện **công cụ đang dùng** và báo nếu chưa cài. Bật/tắt mutation, bộ nhớ → **Chạy agent**. Tab
-  *Tiến trình* hiện từng vòng; tab *Biểu đồ* vẽ coverage/mutation qua các vòng; tab *Code test* xem code mỗi vòng,
+  *Tiến trình* hiện từng vòng ngay khi agent chạy; tab *Biểu đồ* vẽ coverage/mutation qua các vòng; tab *Code test* xem code mỗi vòng,
   test `SUSPECTED_BUG` được **tô đỏ**, có chế độ xem *diff*.
 - **REPLAY từ log:** phát lại một lần chạy đã lưu trong `logs/` (có log mẫu cho cả Python và JS) — **không cần
   mạng/API** (phương án dự phòng khi demo).
@@ -167,4 +174,4 @@ cài đặt khi tối ưu mutation score; bộ nhớ chỉ là học trong ngữ
 
 `adapters/base.py` → `adapters/registry.py` → `testgen/agent.py` (`__init__`, `run`, `_step`) →
 `adapters/python_adapter.py` → `testgen/prompts.py` → `adapters/javascript_adapter.py` → `adapters/js_edit.py` →
-`testgen/memory.py` → `evaluate.py` → `app.py`. Chi tiết: mục cuối `HOC_TAP.md`.
+`testgen/memory.py` → `evaluate.py` → `server.py` → `web/src/App.tsx`. Chi tiết: mục cuối `HOC_TAP.md`.

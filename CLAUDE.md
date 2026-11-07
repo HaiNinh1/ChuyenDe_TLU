@@ -17,7 +17,9 @@ Hiện thực 2 ngôn ngữ theo kiến trúc **Adapter**: Python và JavaScript
   `.env` đang dùng OpenRouter + `nvidia/nemotron-3.5-super-vl:free` (50 request/ngày; key KHÔNG commit). Nhiều key cách nhau
   bằng dấu phẩy, tự chuyển key khi lỗi 401/402/429. Model cũ `nemotron-3-super-120b-a12b:free` đã bị rút (404); số liệu trong
   `results/` đo bằng model cũ này.
-- Demo: Streamlit (`app.py`), biểu đồ matplotlib, slide Marp (`slides/`).
+- Demo: `python server.py` (FastAPI) + giao diện React/Vite/Tailwind/shadcn trong `web/` (bản build `web/dist` được
+  commit để máy demo không cần build). Sửa giao diện: `cd web && npm run dev`, xong `npm run build` rồi commit `web/dist`.
+  `app.py` (Streamlit) là giao diện cũ, tuỳ chọn. Biểu đồ matplotlib (evaluate.py), slide Marp (`slides/`).
 
 ## Quy tắc (bắt buộc)
 1. Code đơn giản, dễ đọc cho sinh viên. KHÔNG dùng LangChain hay framework agent — tự viết vòng lặp.
@@ -40,7 +42,7 @@ Hiện thực 2 ngôn ngữ theo kiến trúc **Adapter**: Python và JavaScript
   `runner.py`/`mutation.py` (cổng chung + CLI), `memory.py` (chia theo ngôn ngữ), `llm_client.py`, `config.py`, `code_utils.py`
 - `targets/python/` (5 module, bug 1-2), `targets/javascript/` (4 module, bug 3-4)
 - `tests/` — test của công cụ (LLM mock; test JS tự skip nếu chưa cài Node)
-- `generated_tests/`, `logs/`, `memory/`, `results/` — đầu ra; `evaluate.py`, `app.py`, `slides/`, `docs/`, `scripts/`
+- `generated_tests/`, `logs/`, `memory/`, `results/` — đầu ra; `evaluate.py`, `server.py` + `web/`, `app.py` (cũ), `slides/`, `docs/`, `scripts/`
 
 ## Tiến độ
 - GĐ0–GĐ10 (bản chỉ-Python) xong trên nhánh `main`.

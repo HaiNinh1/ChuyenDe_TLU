@@ -21,12 +21,12 @@
 - [ ] `results/results.csv`, `results/summary_python.png` (+ `summary_javascript.png`, `language_comparison.png` nếu
       đã chạy thực nghiệm JS) — tab Kết quả thực nghiệm.
 - [ ] Mở sẵn: `slides/bao_cao_cuoi_ky.html`, `slides/KICH_BAN_DEMO.md`, `BUGS.md`, `adapters/base.py`.
-- [ ] Nhấn đúp `run_demo.bat` chạy thử một lần, để sẵn tab trình duyệt `http://localhost:8501`.
+- [ ] Nhấn đúp `run_demo.bat` chạy thử một lần, để sẵn tab trình duyệt `http://127.0.0.1:8000`.
 - [ ] Tắt thông báo, phóng to font trình duyệt (Ctrl + +) để người xem thấy rõ.
 
 ## B. Ngay trước khi demo (5 phút trước)
 
-- [ ] `streamlit run app.py` đang chạy. Thanh bên hiện "🔧 Python: pytest + ..." (không có dòng báo thiếu công cụ).
+- [ ] `python server.py` đang chạy. Ô "Bộ công cụ Python" ở thanh bên hiện pytest, coverage.py, mutmut (không có dòng báo thiếu công cụ).
 - [ ] Chọn ngôn ngữ **JavaScript/TypeScript** một lần để chắc thanh bên hiện "Jest + Istanbul + StrykerJS".
 - [ ] Kiểm tra mạng. **Mất mạng / API lỗi → dùng chế độ REPLAY**, không cần hoảng.
 - [ ] Đóng các cửa sổ chứa `.env` (không để lộ API key trên màn chiếu).
@@ -70,7 +70,7 @@ def ticket_price(age):
 | Model bị rút / quá tải (404, 429 ở mọi key) | Sửa ô **Model** ở thanh bên thành `nvidia/nemotron-3-ultra-550b-a55b:free` (chậm hơn, 4–6 phút) hoặc dùng REPLAY |
 | Mất mạng / hết quota cả 3 key | Chế độ **REPLAY từ log** (không cần mạng): `[python] user_module_app_20261031-233732` thay cho bước chạy thật |
 | Máy demo chưa cài Node.js | Thanh bên báo thiếu công cụ + lệnh cài; demo phần Python, REPLAY log JS (không cần Node) |
-| Streamlit không mở | CLI: `python -m testgen.agent targets/javascript/shipping.ts --mutation` hoặc mở log JSON trong `logs/` |
+| Giao diện không mở (cổng 8000 bận / lỗi server) | CLI: `python -m testgen.agent targets/javascript/shipping.ts --mutation` hoặc mở log JSON trong `logs/` |
 | Hỏi "chạy code của em thử?" | Sidebar → *Dán code* → ngôn ngữ được **tự nhận diện** (chọn lại được) → đặt tên module → Chạy |
 | Hỏi "thêm Java mất bao lâu?" | Mở `docs/THEM_NGON_NGU_MOI.md` (ước lượng 5–6 ngày, bảng phương thức cần viết) |
 | Hỏi kết quả chi tiết | Mở `results/runs.csv` / tab thực nghiệm → *Dữ liệu thô* |
